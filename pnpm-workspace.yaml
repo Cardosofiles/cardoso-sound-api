@@ -1,0 +1,16 @@
+# Política de execução de scripts de build de dependências (pnpm 11).
+# Um pacote sem decisão aqui faz `pnpm install` abortar com ERR_PNPM_IGNORED_BUILDS.
+# Ver .agents/memory/DECISIONS.md · D-32.
+allowBuilds:
+  # Necessários — sem eles o projeto não compila nem linta.
+  esbuild: true # binário de plataforma; usado por tsup, vitest/vite e drizzle-kit
+  unrs-resolver:
+    true # binding nativo do eslint-import-resolver-typescript,
+    # do qual eslint-plugin-boundaries depende para valer as fronteiras de arquitetura
+
+  # Opcionais — vêm de @testcontainers/postgresql → dockerode.
+  # Testcontainers fala com o Docker pelo socket unix local, não por SSH,
+  # então nada abaixo é exercitado neste projeto.
+  ssh2: false # só constrói o binding de cripto opcional; fallback puro JS funciona
+  cpu-features: false # aceleração nativa opcional do ssh2
+  protobufjs: false # postinstall é setup de CLI, não usado em runtime

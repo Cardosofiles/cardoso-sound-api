@@ -1,0 +1,9 @@
+node_modules
+dist
+.git
+tests
+docs
+.agents
+coverage
+*.md
+.env*
