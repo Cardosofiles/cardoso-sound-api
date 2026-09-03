@@ -2,7 +2,7 @@
 name: test-runner
 description: >-
   Use this skill when running unit tests with Vitest, integration tests with
-  Testcontainers, or full HTTP end-to-end tests with Playwright.
+  Testcontainers, or full HTTP end-to-end tests with Vitest app.inject().
 ---
 
 # Automated Test Runner Skill
@@ -40,18 +40,13 @@ pnpm vitest run tests/setup/testcontainers.ts
 - Verify that the database container initializes without port collisions.
 - Check that migrations apply cleanly to the ephemeral database before assertions run.
 
-## 3. End-to-End Tests (Playwright)
+## 3. End-to-End Tests (Vitest + app.inject())
 
-E2E tests validate complete HTTP workflows against the running Fastify server:
+E2E tests validate complete HTTP workflows against the Fastify application using `app.inject()`:
 
-1. Ensure the development server is running:
-   ```bash
-   pnpm dev
-   ```
-2. Run Playwright tests in a separate terminal:
-   ```bash
-   pnpm playwright test
-   ```
+```bash
+pnpm vitest run --project e2e
+```
 
 ## 4. Troubleshooting Test Failures
 
