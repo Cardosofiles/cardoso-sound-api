@@ -330,3 +330,24 @@
   ambas `404 Not Found`. O isolamento é feito na cláusula `WHERE` da query, nunca em memória.
 - **Consequência:** **nenhuma rota do MVP emite 403.** `ForbiddenError` existe na hierarquia
   de erros para uso futuro. O caso E6 da suíte E2E cobre exatamente isso.
+
+### D-34 · `exactOptionalPropertyTypes: false` no TypeScript
+
+- **Data:** 2026-09-03 · **Sprint:** F1-S02 · **Status:** vigente
+- **Contexto:** com `exactOptionalPropertyTypes: true`, propriedades opcionais tipadas como `prop?: string` rejeitam explicitamente `{ prop: undefined }`, gerando atrito e incompatibilidade severa com `fastify-type-provider-zod` e schemas de validação Fastify.
+- **Decisão:** manter `exactOptionalPropertyTypes: false` no `tsconfig.json`.
+- **Consequência:** schemas e plugins Fastify convivem com campos opcionais sem type assertions redundantes.
+
+### D-35 · `bundle: false` no tsup
+
+- **Data:** 2026-09-03 · **Sprint:** F1-S02 · **Status:** vigente
+- **Contexto:** os scripts de produção (`db:migrate:deploy` apontando para `dist/db/migrate.js` e `jobs` apontando para `dist/jobs/runner.js`) exigem preservar a estrutura modular de arquivos em `dist/`. Um bundle unificado mesclaria entradas e romperia resolução relativa de imports ESM com terminação `.js`.
+- **Decisão:** `bundle: false` na configuração de empacotamento do `tsup.config.ts`.
+- **Consequência:** a árvore de módulos compilados espelha `src/` em `dist/` com integridade de caminhos e sourcemaps.
+
+### D-36 · `singleFork: true` no pool do Vitest
+
+- **Data:** 2026-09-03 · **Sprint:** F1-S02 · **Status:** vigente
+- **Contexto:** em suítes com Testcontainers (PostgreSQL efêmero a partir de F2-S02), a execução paralela indiscriminada de múltiplos processos concorre por portas/sockets e pode disparar containers demais no daemon Docker local ou nos runners de CI.
+- **Decisão:** configurar `pool: 'forks'` com `poolOptions: { forks: { singleFork: true } }` em `vitest.config.ts`.
+- **Consequência:** execução previsível e sequencial de suítes que necessitam de isolamento de infraestrutura real, prevenindo contenção de recursos.
