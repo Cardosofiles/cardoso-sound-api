@@ -12,15 +12,15 @@
 | Campo                  | Valor                                                            |
 | ---------------------- | ---------------------------------------------------------------- |
 | **Fase corrente**      | F1 — Fundação                                                    |
-| **Próximo sprint**     | **F1-S02** — Toolchain TypeScript e qualidade                    |
+| **Próximo sprint**     | **F1-S03** — Ambiente: Docker, env e constantes                  |
 | **Última tag**         | — (nenhuma)                                                      |
 | **`gh` CLI**           | ✅ 2.46.0, autenticado como `Cardosofiles`, protocolo SSH (D-33) |
 | **`pnpm install`**     | ✅ passa — `allowBuilds` decidido (D-32)                         |
 | **Repositório**        | ✅ público `Cardosofiles/cardoso-sound-api` no GitHub            |
-| **Branch de trabalho** | `feature/f1s01-repositorio-e-gitflow` (default: `develop`)       |
+| **Branch de trabalho** | `feature/f1s02-toolchain-typescript` (default: `develop`)        |
 | **CI**                 | ⚠️ `.github/workflows/ci.yml` está vazio                         |
 | **Banco**              | ⚠️ nenhuma migração gerada; `drizzle/` não existe                |
-| **Última atualização** | 2026-09-03 — F1-S01 concluído                                    |
+| **Última atualização** | 2026-09-03 — F1-S02 concluído                                    |
 
 ### ⚠️ O scaffold está VAZIO
 
@@ -28,9 +28,8 @@
 diretórios, o `package.json` e a documentação estão completos; o código não. Antes de
 assumir que um arquivo tem conteúdo, **verifique**.
 
-Consequência: `pnpm typecheck`, `lint`, `build` e todo `db:*` falham até que F1-S01,
-F1-S02 e F1-S03 escrevam `tsconfig.json`, `eslint.config.mjs`, `tsup.config.ts`,
-`vitest.config.ts` e `drizzle.config.ts`.
+Consequência: `pnpm typecheck`, `lint`, `format`, `test` e `build` agora passam (F1-S02).
+Comandos `db:*` falham até F1-S03 e F2-S01 configurarem `drizzle.config.ts`.
 
 ---
 
@@ -45,7 +44,7 @@ Legenda: ⬜ pendente · 🟡 em andamento · ✅ concluído · 🔴 bloqueado
 | Sprint     | Título                                     | Status | PR  | Data       |
 | ---------- | ------------------------------------------ | ------ | --- | ---------- |
 | **F1-S01** | Repositório e Git Flow                     | ✅     | #1  | 2026-09-03 |
-| **F1-S02** | Toolchain TypeScript e qualidade           | ⬜     | —   | —          |
+| **F1-S02** | Toolchain TypeScript e qualidade           | ✅     | #2  | 2026-09-03 |
 | **F1-S03** | Ambiente: Docker, env e constantes         | ⬜     | —   | —          |
 | **F1-S04** | Pipeline de CI                             | ⬜     | —   | —          |
 | **F1-S05** | Núcleo: erros, app factory, server, logger | ⬜     | —   | —          |
@@ -98,9 +97,9 @@ Legenda: ⬜ pendente · 🟡 em andamento · ✅ concluído · 🔴 bloqueado
 Preenchido conforme os sprints avançam — serve para o agente saber o que **já existe**
 antes de reimplementar.
 
-| Rota              | Sprint | Arquivo |
-| ----------------- | ------ | ------- |
-| _(nenhuma ainda)_ |        |         |
+| Rota / Símbolo                                 | Sprint | Arquivo                          |
+| ---------------------------------------------- | ------ | -------------------------------- |
+| Pagination (`toOffset`, `buildPaginationMeta`) | F1-S02 | `src/shared/utils/pagination.ts` |
 
 ---
 
