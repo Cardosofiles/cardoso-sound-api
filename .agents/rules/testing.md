@@ -16,9 +16,9 @@ Protocols for unit, integration, and end-to-end testing across the codebase.
    - Run Drizzle migrations before test suites execute.
    - Test Repositories and real SQL queries with relational joins and transactions.
 
-3. **E2E Tests (Playwright)**:
+3. **E2E Tests (Vitest + app.inject())**:
    - Located in `tests/e2e/specs/**`.
-   - Execute full HTTP request/response flows against the running Fastify application.
+   - Execute full HTTP request/response flows against the Fastify application using `app.inject()` (zero browser, zero network port binding).
    - Validate authentication sign-up/sign-in flows, cookie handling, playlist creation, track addition, and favorites lifecycle.
 
 ## 2. Best Practices

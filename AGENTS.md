@@ -8,14 +8,14 @@ Seu objetivo é gerar código limpo, modular, altamente testável e de alta perf
 
 # Stack Tecnológico Principal
 
-- **Runtime & Linguagem:** Node.js (v20+) com TypeScript em **Strict Mode** e ESM nativo (`"type": "module"`).
+- **Runtime & Linguagem:** Node.js 24 LTS com TypeScript em **Strict Mode** e ESM nativo (`"type": "module"`).
 - **Framework Web:** Fastify v5 (com `fastify-type-provider-zod` e `fastify-plugin`).
-- **Banco de Dados:** PostgreSQL 16 (via Docker).
+- **Banco de Dados:** PostgreSQL 17 (via Docker).
 - **ORM / Query Builder:** Drizzle ORM com Drizzle Kit para migrations tipadas.
 - **Autenticação & Sessões:** Better Auth com `drizzleAdapter` para PostgreSQL.
 - **Segurança & Resiliência:** `@fastify/helmet`, `@fastify/cors`, `@fastify/rate-limit`, `@fastify/under-pressure`.
-- **Validação de Schemas:** Zod v3.
-- **Testes:** Vitest (Unitários), Testcontainers (Integração com PostgreSQL real), Playwright (E2E HTTP flows).
+- **Validação de Schemas:** Zod 4.
+- **Testes:** Vitest (Unitários), Testcontainers (Integração com PostgreSQL real), Vitest + `app.inject()` (E2E HTTP flows).
 - **Build & Bundle:** `tsup`.
 
 ---
@@ -43,7 +43,7 @@ O ecossistema do assistente neste projeto está centralizado no diretório [`.ag
 ├── skills/           # Procedimentos e runbooks acionados sob demanda
 │   ├── db-migrate/          # Geração, inspeção e aplicação de migrations Drizzle
 │   ├── db-seed/             # Povoamento do catálogo com 30+ faixas e artistas mock
-│   ├── test-runner/         # Execução padronizada de Vitest, Testcontainers e Playwright
+│   ├── test-runner/         # Execução padronizada de Vitest, Testcontainers e app.inject()
 │   └── code-quality/        # Typecheck (tsc), Lint (ESLint), Format (Prettier) e Build (tsup)
 │
 └── mcp_config.json   # Integração com servidores Model Context Protocol
@@ -55,13 +55,13 @@ O ecossistema do assistente neste projeto está centralizado no diretório [`.ag
 
 Quando uma tarefa exigir foco profundo ou envolver múltiplos passos de uma disciplina específica, orquestre e delegue a execução aos subagentes especializados utilizando a ferramenta `invoke_subagent`:
 
-| Subagente               | Arquivo de Definição                                                         | Responsabilidade Primária                                                                                                 | Quando Invocar                                                                                        |
-| ----------------------- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| **`backend-architect`** | [`.agents/agents/backend-architect.md`](.agents/agents/backend-architect.md) | Desenho arquitetural, validação de fronteiras Clean Architecture, padronização de DTOs e contratos de rotas.              | Ao planejar novos módulos, definir schemas de entrada/saída Zod ou refatorar camadas de serviços.     |
-| **`db-specialist`**     | [`.agents/agents/db-specialist.md`](.agents/agents/db-specialist.md)         | Modelagem relacional PostgreSQL, criação de schemas Drizzle, migrations, índices e conexão com `pg.Pool`.                 | Ao alterar ou criar tabelas, ajustar constraints, transações complexas ou preparar migrations.        |
-| **`api-developer`**     | [`.agents/agents/api-developer.md`](.agents/agents/api-developer.md)         | Implementação de rotas Fastify, Services, Repositories, Fastify plugins e rotinas em background.                          | Para codificar endpoints, regras de negócio em serviços, repositórios de dados ou plugins Fastify.    |
-| **`qa-engineer`**       | [`.agents/agents/qa-engineer.md`](.agents/agents/qa-engineer.md)             | Automação de testes unitários isolados (Vitest), integração com banco efêmero (Testcontainers) e fluxos E2E (Playwright). | Ao criar ou corrigir suítes de testes, aumentar cobertura ou investigar falhas em pipelines.          |
-| **`security-reviewer`** | [`.agents/agents/security-reviewer.md`](.agents/agents/security-reviewer.md) | Auditoria de Better Auth, decorators de sessão, cabeçalhos de segurança (Helmet), CORS e mitigação de brute force.        | Antes de finalizar recursos de autenticação, alteração de permissões RBAC ou auditorias de segurança. |
+| Subagente               | Arquivo de Definição                                                         | Responsabilidade Primária                                                                                                            | Quando Invocar                                                                                     |
+| ----------------------- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------- |
+| **`backend-architect`** | [`.agents/agents/backend-architect.md`](.agents/agents/backend-architect.md) | Desenho arquitetural, validação de fronteiras Clean Architecture, padronização de DTOs e contratos de rotas.                         | Ao planejar novos módulos, definir schemas de entrada/saída Zod ou refatorar camadas de serviços.  |
+| **`db-specialist`**     | [`.agents/agents/db-specialist.md`](.agents/agents/db-specialist.md)         | Modelagem relacional PostgreSQL, criação de schemas Drizzle, migrations, índices e conexão com `pg.Pool`.                            | Ao alterar ou criar tabelas, ajustar constraints, transações complexas ou preparar migrations.     |
+| **`api-developer`**     | [`.agents/agents/api-developer.md`](.agents/agents/api-developer.md)         | Implementação de rotas Fastify, Services, Repositories, Fastify plugins e rotinas em background.                                     | Para codificar endpoints, regras de negócio em serviços, repositórios de dados ou plugins Fastify. |
+| **`qa-engineer`**       | [`.agents/agents/qa-engineer.md`](.agents/agents/qa-engineer.md)             | Automação de testes unitários isolados (Vitest), integração com banco efêmero (Testcontainers) e fluxos E2E (Vitest + app.inject()). | Ao criar ou corrigir suítes de testes, aumentar cobertura ou investigar falhas em pipelines.       |
+| **`security-reviewer`** | [`.agents/agents/security-reviewer.md`](.agents/agents/security-reviewer.md) | Auditoria de Better Auth, decorators de sessão, cabeçalhos de segurança (Helmet), CORS e mitigação de brute force.                   | Antes de finalizar recursos de autenticação ou auditorias de segurança.                            |
 
 ---
 
@@ -108,7 +108,7 @@ As regras em [`.agents/rules/`](.agents/rules/) definem as restrições inegoci�
 - **Pirâmide de Testes:**
   - **Unitários:** Rápidos, isolados, com stubs/mocks em memória para Repositories (`tests/unit/modules/**`).
   - **Integração:** Validação real de queries e constraints com PostgreSQL efêmero via Testcontainers (`tests/integration/**`).
-  - **E2E:** Validação de fluxos HTTP completos contra a instância do Fastify via Playwright (`tests/e2e/specs/**`).
+  - **E2E:** Validação de fluxos HTTP completos contra a instância do Fastify via `app.inject()` (`tests/e2e/specs/**`).
 - **Determinismo:** Testes devem ser isolados e sem efeito colateral cruzado (`vi.clearAllMocks()`).
 
 ---
@@ -139,7 +139,7 @@ As skills contêm os procedimentos passo a passo a serem seguidos pelo agente na
    - Execução padronizada de testes:
      - Unitários: `pnpm test` ou `pnpm vitest run <caminho>`.
      - Integração: `pnpm vitest run tests/setup/testcontainers.ts`.
-     - E2E: Servidor ativo (`pnpm dev`) + `pnpm playwright test`.
+     - E2E: `pnpm vitest run --project e2e`.
 
 ---
 
@@ -150,7 +150,6 @@ Quando confrontado com tarefas específicas, você **deve** utilizar as ferramen
 - **Context 7 (Docs):** Sempre que a documentação nativa do seu modelo sobre Drizzle, Fastify, Better Auth ou Node.js precisar de confirmação sobre APIs recentes, utilize este MCP para consultar a documentação antes de codificar.
 - **GitHub MCP:** Utilize para integrar o fluxo Git Flow: criar branches, abrir Pull Requests, consultar issues ou verificar status de revisões diretamente pela API do GitHub.
 - **PostgreSQL MCP:** Em cenários de depuração de banco de dados, se um erro de constraint/foreign key ocorrer ou se precisar validar a aplicação de uma migration do Drizzle, utilize este MCP para inspecionar schemas e rodar queries de introspecção no banco local.
-- **Playwright MCP:** Ao validar testes E2E ou depurar requisições HTTP da API e interações, utilize as ferramentas de navegação e inspeção do Playwright.
 
 ---
 
