@@ -9,18 +9,18 @@
 
 ## Estado atual
 
-| Campo                  | Valor                                                                  |
-| ---------------------- | ---------------------------------------------------------------------- |
-| **Fase corrente**      | F1 — Fundação                                                          |
-| **Próximo sprint**     | **F1-S06** — Plugins de borda, health e Swagger                        |
-| **Última tag**         | — (nenhuma)                                                            |
-| **`gh` CLI**           | ✅ 2.46.0, autenticado como `Cardosofiles`, protocolo SSH (D-33)       |
-| **`pnpm install`**     | ✅ passa — `allowBuilds` decidido (D-32)                               |
-| **Repositório**        | ✅ público `Cardosofiles/cardoso-sound-api` no GitHub                  |
-| **Branch de trabalho** | `feature/f1s05-nucleo-erros-app-e-logger` (default: `develop`)         |
-| **CI**                 | ✅ ativo (`.github/workflows/ci.yml`) — check obrigatório nos rulesets |
-| **Banco**              | ✅ Postgres 17 ativo via Docker Compose                                |
-| **Última atualização** | 2026-09-04 — F1-S05 concluído                                          |
+| Campo                  | Valor                                                            |
+| ---------------------- | ---------------------------------------------------------------- |
+| **Fase corrente**      | F1 — Fundação · **concluída**                                    |
+| **Próximo sprint**     | **F2-S01** — Schema Drizzle e migração inicial                   |
+| **Última tag**         | `v0.1.0` (preparada)                                             |
+| **`gh` CLI**           | ✅ 2.46.0, autenticado como `Cardosofiles`, protocolo SSH (D-33) |
+| **`pnpm install`**     | ✅ passa — `allowBuilds` decidido (D-32)                         |
+| **Repositório**        | ✅ público `Cardosofiles/cardoso-sound-api` no GitHub            |
+| **Branch de trabalho** | `feature/f1s06-plugins-de-borda-e-health` (default: `develop`)   |
+| **CI**                 | ✅ ativo (`.github/workflows/ci.yml`) — check obrigatório        |
+| **Banco**              | ✅ Postgres 17 ativo via Docker Compose                          |
+| **Última atualização** | 2026-09-04 — F1-S06 concluído (F1 encerrada)                     |
 
 ### ⚠️ O scaffold está VAZIO
 
@@ -33,7 +33,7 @@ Comandos `db:*` falham até F1-S03 e F2-S01 configurarem `drizzle.config.ts`.
 
 ---
 
-## Roadmap — 18 sprints em 5 fases
+## Roadmap — 19 sprints em 5 fases
 
 Legenda: ⬜ pendente · 🟡 em andamento · ✅ concluído · 🔴 bloqueado
 
@@ -48,7 +48,7 @@ Legenda: ⬜ pendente · 🟡 em andamento · ✅ concluído · 🔴 bloqueado
 | **F1-S03** | Ambiente: Docker, env e constantes         | ✅     | #5  | 2026-09-04 |
 | **F1-S04** | Pipeline de CI                             | ✅     | #7  | 2026-09-04 |
 | **F1-S05** | Núcleo: erros, app factory, server, logger | ✅     | #8  | 2026-09-04 |
-| **F1-S06** | Plugins de borda, health e Swagger         | ⬜     | —   | —          |
+| **F1-S06** | Plugins de borda, health e Swagger         | ✅     | #11 | 2026-09-04 |
 
 ### F2 — Catálogo → tag `v0.2.0`
 
@@ -63,12 +63,13 @@ Legenda: ⬜ pendente · 🟡 em andamento · ✅ concluído · 🔴 bloqueado
 
 ### F3 — Identidade → tag `v0.3.0`
 
-> Objetivo: cadastro, login (bearer + cookie) e perfil.
+> Objetivo: cadastro, login (bearer + cookie), perfil, login social e e-mail transacional.
 
 | Sprint     | Título                               | Status | PR  | Data |
 | ---------- | ------------------------------------ | ------ | --- | ---- |
 | **F3-S01** | Better Auth: config, plugin e guards | ⬜     | —   | —    |
 | **F3-S02** | Módulo `users` (`/me`)               | ⬜     | —   | —    |
+| **F3-S03** | OAuth social e e-mail transacional   | ⬜     | —   | —    |
 
 ### F4 — Biblioteca → tag `v0.4.0`
 
@@ -107,6 +108,11 @@ antes de reimplementar.
 | `errorHandlerPlugin` (envelope RFC 7807, 404 handler)                                                  | F1-S05 | `src/plugins/error-handler.plugin.ts` |
 | `buildApp()` (factory pura Fastify, Zod type provider, Pino)                                           | F1-S05 | `src/app.ts`                          |
 | Bootstrap do servidor e graceful shutdown                                                              | F1-S05 | `src/server.ts`                       |
+| R01: `GET /health` (Liveness, não toca no banco)                                                       | F1-S06 | `src/plugins/health.plugin.ts`        |
+| R02: `GET /health/ready` (Readiness, faz `SELECT 1`)                                                   | F1-S06 | `src/plugins/health.plugin.ts`        |
+| R03: `GET /docs`, `GET /docs/json` (OpenAPI 3.0.3 + Swagger UI)                                        | F1-S06 | `src/plugins/swagger.plugin.ts`       |
+| Cliente Drizzle e Pool Postgres (`pool`, `db`, `checkDatabase`, `setPool`)                             | F1-S06 | `src/db/client.ts`                    |
+| Plugins de borda e defesa (`helmet`, `cors`, `rate-limit`, `under-pressure`)                           | F1-S06 | `src/plugins/`                        |
 
 ---
 

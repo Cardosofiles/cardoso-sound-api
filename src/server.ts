@@ -1,6 +1,7 @@
 import { buildApp } from './app.js';
 import { SHUTDOWN_TIMEOUT_MS } from './config/constants.js';
 import { env } from './config/env.js';
+import { pool } from './db/client.js';
 
 let isShuttingDown = false;
 
@@ -25,7 +26,7 @@ async function bootstrap(): Promise<void> {
 
     try {
       await app.close();
-      // Em F2-S01 adicionaremos o encerramento do pool Postgres aqui
+      await pool.end();
       app.log.info('Server closed successfully.');
       process.exit(0);
     } catch (error: unknown) {
