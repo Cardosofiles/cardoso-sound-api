@@ -1,0 +1,49 @@
+{
+  "agent-security": {
+    "enabled": true,
+    "PreToolUse": [
+      {
+        "matcher": "run_command",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "./.agents/hooks/block_rm.sh",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "write_to_file|replace_file_content|multi_replace_file_content|edit_file|view_file|list_dir|find_by_name|grep_search",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "./.agents/hooks/guard_file_ops.sh",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "read_url_content|search_web",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "./.agents/hooks/guard_web_access.sh",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "read_url_content|search_web|view_file|run_command",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "./.agents/hooks/inspect_tool_output.sh",
+            "timeout": 15
+          }
+        ]
+      }
+    ]
+  }
+}
