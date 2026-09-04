@@ -12,15 +12,15 @@
 | Campo                  | Valor                                                            |
 | ---------------------- | ---------------------------------------------------------------- |
 | **Fase corrente**      | F1 — Fundação                                                    |
-| **Próximo sprint**     | **F1-S03** — Ambiente: Docker, env e constantes                  |
+| **Próximo sprint**     | **F1-S04** — Pipeline de CI                                      |
 | **Última tag**         | — (nenhuma)                                                      |
 | **`gh` CLI**           | ✅ 2.46.0, autenticado como `Cardosofiles`, protocolo SSH (D-33) |
 | **`pnpm install`**     | ✅ passa — `allowBuilds` decidido (D-32)                         |
 | **Repositório**        | ✅ público `Cardosofiles/cardoso-sound-api` no GitHub            |
-| **Branch de trabalho** | `feature/f1s02-toolchain-typescript` (default: `develop`)        |
+| **Branch de trabalho** | `feature/f1s03-ambiente-docker-e-config` (default: `develop`)    |
 | **CI**                 | ⚠️ `.github/workflows/ci.yml` está vazio                         |
-| **Banco**              | ⚠️ nenhuma migração gerada; `drizzle/` não existe                |
-| **Última atualização** | 2026-09-03 — F1-S02 concluído                                    |
+| **Banco**              | ✅ Postgres 17 ativo via Docker Compose                          |
+| **Última atualização** | 2026-09-04 — F1-S03 concluído                                    |
 
 ### ⚠️ O scaffold está VAZIO
 
@@ -41,14 +41,14 @@ Legenda: ⬜ pendente · 🟡 em andamento · ✅ concluído · 🔴 bloqueado
 
 > Objetivo: o projeto compila, sobe, responde `/health` e tem CI verde.
 
-| Sprint     | Título                                     | Status | PR  | Data       |
-| ---------- | ------------------------------------------ | ------ | --- | ---------- |
-| **F1-S01** | Repositório e Git Flow                     | ✅     | #1  | 2026-09-03 |
-| **F1-S02** | Toolchain TypeScript e qualidade           | ✅     | #2  | 2026-09-03 |
-| **F1-S03** | Ambiente: Docker, env e constantes         | ⬜     | —   | —          |
-| **F1-S04** | Pipeline de CI                             | ⬜     | —   | —          |
-| **F1-S05** | Núcleo: erros, app factory, server, logger | ⬜     | —   | —          |
-| **F1-S06** | Plugins de borda, health e Swagger         | ⬜     | —   | —          |
+| Sprint     | Título                                     | Status | PR                    | Data       |
+| ---------- | ------------------------------------------ | ------ | --------------------- | ---------- |
+| **F1-S01** | Repositório e Git Flow                     | ✅     | #1                    | 2026-09-03 |
+| **F1-S02** | Toolchain TypeScript e qualidade           | ✅     | #2                    | 2026-09-03 |
+| **F1-S03** | Ambiente: Docker, env e constantes         | ✅     | (aberto nesta sessão) | 2026-09-04 |
+| **F1-S04** | Pipeline de CI                             | ⬜     | —                     | —          |
+| **F1-S05** | Núcleo: erros, app factory, server, logger | ⬜     | —                     | —          |
+| **F1-S06** | Plugins de borda, health e Swagger         | ⬜     | —                     | —          |
 
 ### F2 — Catálogo → tag `v0.2.0`
 
@@ -97,9 +97,11 @@ Legenda: ⬜ pendente · 🟡 em andamento · ✅ concluído · 🔴 bloqueado
 Preenchido conforme os sprints avançam — serve para o agente saber o que **já existe**
 antes de reimplementar.
 
-| Rota / Símbolo                                 | Sprint | Arquivo                          |
-| ---------------------------------------------- | ------ | -------------------------------- |
-| Pagination (`toOffset`, `buildPaginationMeta`) | F1-S02 | `src/shared/utils/pagination.ts` |
+| Rota / Símbolo                                               | Sprint | Arquivo                          |
+| ------------------------------------------------------------ | ------ | -------------------------------- |
+| Pagination (`toOffset`, `buildPaginationMeta`)               | F1-S02 | `src/shared/utils/pagination.ts` |
+| `env`, `parseEnv`, `isProduction`, `isTest`, `isDevelopment` | F1-S03 | `src/config/env.ts`              |
+| `APP_NAME`, `API_PREFIX`, `AUTH_PREFIX`, `GENRES`, limites   | F1-S03 | `src/config/constants.ts`        |
 
 ---
 
@@ -109,7 +111,7 @@ antes de reimplementar.
 | ------ | ------------------------------------------------------------------ | ----------------------------- | ------------------------------------------------------------------------------------------------ |
 | ~~B1~~ | ~~`gh` CLI não instalado~~                                         | —                             | ✅ **resolvido 2026-09-03** — `gh` 2.46.0, autenticado como `Cardosofiles`, protocolo SSH (D-33) |
 | ~~B4~~ | ~~`pnpm install` abortando com `ERR_PNPM_IGNORED_BUILDS`~~         | —                             | ✅ **resolvido 2026-09-03** — `allowBuilds` preenchido (D-32)                                    |
-| B2     | `.env` vazio, sem `DATABASE_URL`                                   | F1-S03 em diante              | F1-S03                                                                                           |
+| ~~B2~~ | ~~`.env` vazio, sem `DATABASE_URL`~~                               | —                             | ✅ **resolvido 2026-09-04** em F1-S03 (`.env.example`, validação Zod e docker compose)           |
 | ~~B3~~ | ~~`AGENTS.md` e `README.md` contradizem D-01/D-03/D-09/D-10/D-16~~ | —                             | ✅ **resolvido 2026-09-03** em F1-S01                                                            |
 | B5     | Token do `gh` sem escopo `workflow`                                | possivelmente F1-S04 e F5-S02 | **Você**, só se um push de workflow for recusado: `gh auth refresh -h github.com -s workflow`    |
 | P1     | Exigir status check obrigatório `ci` nos rulesets                  | F1-S04 em diante              | F1-S04 (após criação do workflow de CI)                                                          |
