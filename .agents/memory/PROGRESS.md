@@ -56,7 +56,7 @@ Legenda: ⬜ pendente · 🟡 em andamento · ✅ concluído · 🔴 bloqueado
 
 | Sprint     | Título                                   | Status | PR  | Data       |
 | ---------- | ---------------------------------------- | ------ | --- | ---------- |
-| **F2-S01** | Schema Drizzle e migração inicial        | ✅     | —   | 2026-09-04 |
+| **F2-S01** | Schema Drizzle e migração inicial        | ✅     | #16 | 2026-09-04 |
 | **F2-S02** | Seed do catálogo e harness de integração | ⬜     | —   | —          |
 | **F2-S03** | Módulo `artists`                         | ⬜     | —   | —          |
 | **F2-S04** | Módulo `tracks` com busca e filtros      | ⬜     | —   | —          |
