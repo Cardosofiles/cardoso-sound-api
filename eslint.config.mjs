@@ -117,7 +117,7 @@ export default tseslint.config(
             },
             {
               from: 'shared',
-              allow: [],
+              allow: ['shared'],
             },
             {
               from: 'config',
