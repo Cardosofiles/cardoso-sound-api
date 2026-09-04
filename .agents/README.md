@@ -9,7 +9,7 @@ This directory contains the workspace customization configuration for **Google A
 ```
 .agents/
 ├── mcp_config.json          # Model Context Protocol servers configuration
-├── hooks.json               # Security hook registration (PreToolUse / PostToolUse)
+├── hooks.json.example       # Security hook registration template (copy to hooks.json)
 ├── README.md                # Overview of workspace agents and capabilities
 │
 ├── hooks/                   # Runtime guardrails - see hooks/README.md
@@ -82,7 +82,9 @@ Rules in `.agents/rules/` are automatically discovered and loaded by Antigravity
 
 ## 🛡️ Security Hooks
 
-Registered in [`.agents/hooks.json`](./hooks.json), implemented in
+Registered in `.agents/hooks.json` — git-ignored and per-clone, generated from
+[`.agents/hooks.json.example`](./hooks.json.example) as described in
+[`.agents/hooks/README.md`](./hooks/README.md) — and implemented in
 [`.agents/hooks/`](./hooks/README.md). They enforce the shared policy in
 `scripts/agent-security/policy.sh`, which is also enforced for Claude Code via
 `.claude/hooks/` — one denylist, two harnesses.

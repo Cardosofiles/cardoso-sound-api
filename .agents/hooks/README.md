@@ -36,10 +36,30 @@ already granted, export:
 AGY_DEFAULT_DECISION=deny_unless_prior_grant
 ```
 
-## Path caveat
+## Setup: hooks.json is per-clone
 
-`hooks.json` uses workspace-relative commands (`./.agents/hooks/...`). Some
-Antigravity builds require an absolute path; if the hooks do not fire, replace
-them with the absolute path to this directory and re-test.
+Antigravity CLI 1.1.25 resolves hook commands from its own working directory,
+not from the workspace root, so workspace-relative commands
+(`./.agents/hooks/...`) fail with `exit status 127` and every tool call is
+refused — the harness fails closed, so the agent loses `run_command`,
+`view_file` and `search_web` at once, not just the guarded operations.
+
+The commands must therefore be absolute, which makes them machine-specific.
+`.agents/hooks.json` is git-ignored for that reason; the committed template is
+`.agents/hooks.json.example`. After cloning:
+
+```bash
+cp .agents/hooks.json.example .agents/hooks.json
+sed -i "s#\"\./\.agents/hooks/#\"$PWD/.agents/hooks/#g" .agents/hooks.json
+bash scripts/agent-security/test-hooks.sh
+```
+
+To confirm the hooks fire from an arbitrary directory — the condition that
+actually broke:
+
+```bash
+cd /tmp && printf '%s' '{"toolCall":{"name":"run_command","args":{"CommandLine":"rm -rf /"}}}' \
+  | sh -c "$OLDPWD/.agents/hooks/block_rm.sh"   # must answer deny, never 127
+```
 
 Tests: `bash scripts/agent-security/test-hooks.sh`.

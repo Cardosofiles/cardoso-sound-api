@@ -50,7 +50,29 @@ fi
 . "$AGY_POLICY"
 
 AGY_PAYLOAD=""
-agy_read_payload() { AGY_PAYLOAD="$(cat)"; }
+
+# True when the payload is well-formed JSON, or when no parser is available to
+# tell (the degraded path below is coarse but scans the raw text).
+agy__payload_parses() {
+  if command -v jq >/dev/null 2>&1; then
+    printf '%s' "$AGY_PAYLOAD" | jq -e . >/dev/null 2>&1
+  elif command -v python3 >/dev/null 2>&1; then
+    printf '%s' "$AGY_PAYLOAD" | python3 -c 'import json,sys; json.load(sys.stdin)' >/dev/null 2>&1
+  else
+    return 0
+  fi
+}
+
+# Fail closed on an unreadable envelope. Field extraction returns empty for
+# every key when the JSON is malformed, which would otherwise walk past every
+# check and land on the permissive default.
+agy_read_payload() {
+  AGY_PAYLOAD="$(cat)"
+  if [ -z "$AGY_PAYLOAD" ] || ! agy__payload_parses; then
+    agy_emit ask \
+      "The agent-security guard could not parse this tool call payload, so the project policy could not be applied to it. Approve only if you can see what the call does."
+  fi
+}
 
 agy_get() { # <jq-path>
   if command -v jq >/dev/null 2>&1; then
