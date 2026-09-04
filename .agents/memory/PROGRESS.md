@@ -12,15 +12,15 @@
 | Campo                  | Valor                                                                  |
 | ---------------------- | ---------------------------------------------------------------------- |
 | **Fase corrente**      | F1 — Fundação                                                          |
-| **Próximo sprint**     | **F1-S05** — Núcleo: erros, app factory, server, logger                |
+| **Próximo sprint**     | **F1-S06** — Plugins de borda, health e Swagger                        |
 | **Última tag**         | — (nenhuma)                                                            |
 | **`gh` CLI**           | ✅ 2.46.0, autenticado como `Cardosofiles`, protocolo SSH (D-33)       |
 | **`pnpm install`**     | ✅ passa — `allowBuilds` decidido (D-32)                               |
 | **Repositório**        | ✅ público `Cardosofiles/cardoso-sound-api` no GitHub                  |
-| **Branch de trabalho** | `feature/f1s04-pipeline-ci` (default: `develop`)                       |
+| **Branch de trabalho** | `feature/f1s05-nucleo-erros-app-e-logger` (default: `develop`)         |
 | **CI**                 | ✅ ativo (`.github/workflows/ci.yml`) — check obrigatório nos rulesets |
 | **Banco**              | ✅ Postgres 17 ativo via Docker Compose                                |
-| **Última atualização** | 2026-09-04 — F1-S04 concluído                                          |
+| **Última atualização** | 2026-09-04 — F1-S05 concluído                                          |
 
 ### ⚠️ O scaffold está VAZIO
 
@@ -47,7 +47,7 @@ Legenda: ⬜ pendente · 🟡 em andamento · ✅ concluído · 🔴 bloqueado
 | **F1-S02** | Toolchain TypeScript e qualidade           | ✅     | #2  | 2026-09-03 |
 | **F1-S03** | Ambiente: Docker, env e constantes         | ✅     | #5  | 2026-09-04 |
 | **F1-S04** | Pipeline de CI                             | ✅     | #7  | 2026-09-04 |
-| **F1-S05** | Núcleo: erros, app factory, server, logger | ⬜     | —   | —          |
+| **F1-S05** | Núcleo: erros, app factory, server, logger | ✅     | #8  | 2026-09-04 |
 | **F1-S06** | Plugins de borda, health e Swagger         | ⬜     | —   | —          |
 
 ### F2 — Catálogo → tag `v0.2.0`
@@ -97,12 +97,16 @@ Legenda: ⬜ pendente · 🟡 em andamento · ✅ concluído · 🔴 bloqueado
 Preenchido conforme os sprints avançam — serve para o agente saber o que **já existe**
 antes de reimplementar.
 
-| Rota / Símbolo                                               | Sprint | Arquivo                          |
-| ------------------------------------------------------------ | ------ | -------------------------------- |
-| Pagination (`toOffset`, `buildPaginationMeta`)               | F1-S02 | `src/shared/utils/pagination.ts` |
-| `env`, `parseEnv`, `isProduction`, `isTest`, `isDevelopment` | F1-S03 | `src/config/env.ts`              |
-| `APP_NAME`, `API_PREFIX`, `AUTH_PREFIX`, `GENRES`, limites   | F1-S03 | `src/config/constants.ts`        |
-| Pipeline CI (`ci`), PR template, rulesets `main`/`develop`   | F1-S04 | `.github/workflows/ci.yml`       |
+| Rota / Símbolo                                                                                         | Sprint | Arquivo                               |
+| ------------------------------------------------------------------------------------------------------ | ------ | ------------------------------------- |
+| Pagination (`toOffset`, `buildPaginationMeta`)                                                         | F1-S02 | `src/shared/utils/pagination.ts`      |
+| `env`, `parseEnv`, `isProduction`, `isTest`, `isDevelopment`                                           | F1-S03 | `src/config/env.ts`                   |
+| `APP_NAME`, `API_PREFIX`, `AUTH_PREFIX`, `GENRES`, limites                                             | F1-S03 | `src/config/constants.ts`             |
+| Pipeline CI (`ci`), PR template, rulesets `main`/`develop`                                             | F1-S04 | `.github/workflows/ci.yml`            |
+| `AppError`, `NotFoundError`, `UnauthorizedError`, `ForbiddenError`, `ConflictError`, `ValidationError` | F1-S05 | `src/shared/errors/`                  |
+| `errorHandlerPlugin` (envelope RFC 7807, 404 handler)                                                  | F1-S05 | `src/plugins/error-handler.plugin.ts` |
+| `buildApp()` (factory pura Fastify, Zod type provider, Pino)                                           | F1-S05 | `src/app.ts`                          |
+| Bootstrap do servidor e graceful shutdown                                                              | F1-S05 | `src/server.ts`                       |
 
 ---
 
