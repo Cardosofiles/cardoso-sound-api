@@ -6,7 +6,13 @@ import {
 } from 'fastify-type-provider-zod';
 import { randomUUID } from 'node:crypto';
 import { env } from './config/env.js';
+import { corsPlugin } from './plugins/cors.plugin.js';
 import { errorHandlerPlugin } from './plugins/error-handler.plugin.js';
+import { healthPlugin } from './plugins/health.plugin.js';
+import { helmetPlugin } from './plugins/helmet.plugin.js';
+import { rateLimitPlugin } from './plugins/rate-limit.plugin.js';
+import { swaggerPlugin } from './plugins/swagger.plugin.js';
+import { underPressurePlugin } from './plugins/under-pressure.plugin.js';
 
 export async function buildApp(): Promise<FastifyInstance> {
   const app = Fastify({
@@ -36,15 +42,26 @@ export async function buildApp(): Promise<FastifyInstance> {
     },
     genReqId: (req) =>
       (req.headers['x-request-id'] as string | undefined) ?? randomUUID().slice(0, 8),
-    disableRequestLogging: false,
   }).withTypeProvider<ZodTypeProvider>();
 
   // Compiladores do type provider Zod devem ser registrados antes de qualquer rota
   app.setValidatorCompiler(validatorCompiler);
   app.setSerializerCompiler(serializerCompiler);
 
-  // Tratamento central de erros
+  // 1. Tratamento central de erros (primeiro, para capturar falhas dos demais)
   await app.register(errorHandlerPlugin);
+
+  // 2. Plugins de defesa e resiliência de borda
+  await app.register(helmetPlugin);
+  await app.register(corsPlugin);
+  await app.register(rateLimitPlugin);
+  await app.register(underPressurePlugin);
+
+  // 3. Documentação OpenAPI e Swagger UI
+  await app.register(swaggerPlugin);
+
+  // 4. Rotas de monitoramento de saúde (liveness e readiness)
+  await app.register(healthPlugin);
 
   return app;
 }
