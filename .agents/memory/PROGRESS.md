@@ -11,16 +11,16 @@
 
 | Campo                  | Valor                                                            |
 | ---------------------- | ---------------------------------------------------------------- |
-| **Fase corrente**      | F1 — Fundação · **concluída**                                    |
-| **Próximo sprint**     | **F2-S01** — Schema Drizzle e migração inicial                   |
+| **Fase corrente**      | F2 — Catálogo                                                    |
+| **Próximo sprint**     | **F2-S02** — Seed do catálogo e harness de integração            |
 | **Última tag**         | `v0.1.0` (preparada)                                             |
 | **`gh` CLI**           | ✅ 2.46.0, autenticado como `Cardosofiles`, protocolo SSH (D-33) |
 | **`pnpm install`**     | ✅ passa — `allowBuilds` decidido (D-32)                         |
 | **Repositório**        | ✅ público `Cardosofiles/cardoso-sound-api` no GitHub            |
-| **Branch de trabalho** | `feature/f1s06-plugins-de-borda-e-health` (default: `develop`)   |
+| **Branch de trabalho** | `feature/f2s01-schema-e-migrations` (default: `develop`)         |
 | **CI**                 | ✅ ativo (`.github/workflows/ci.yml`) — check obrigatório        |
 | **Banco**              | ✅ Postgres 17 ativo via Docker Compose                          |
-| **Última atualização** | 2026-09-04 — F1-S06 concluído (F1 encerrada)                     |
+| **Última atualização** | 2026-09-04 — F2-S01 concluído                                    |
 
 ### ⚠️ O scaffold está VAZIO
 
@@ -54,12 +54,12 @@ Legenda: ⬜ pendente · 🟡 em andamento · ✅ concluído · 🔴 bloqueado
 
 > Objetivo: catálogo público consultável, populado e testado.
 
-| Sprint     | Título                                   | Status | PR  | Data |
-| ---------- | ---------------------------------------- | ------ | --- | ---- |
-| **F2-S01** | Schema Drizzle e migração inicial        | ⬜     | —   | —    |
-| **F2-S02** | Seed do catálogo e harness de integração | ⬜     | —   | —    |
-| **F2-S03** | Módulo `artists`                         | ⬜     | —   | —    |
-| **F2-S04** | Módulo `tracks` com busca e filtros      | ⬜     | —   | —    |
+| Sprint     | Título                                   | Status | PR  | Data       |
+| ---------- | ---------------------------------------- | ------ | --- | ---------- |
+| **F2-S01** | Schema Drizzle e migração inicial        | ✅     | —   | 2026-09-04 |
+| **F2-S02** | Seed do catálogo e harness de integração | ⬜     | —   | —          |
+| **F2-S03** | Módulo `artists`                         | ⬜     | —   | —          |
+| **F2-S04** | Módulo `tracks` com busca e filtros      | ⬜     | —   | —          |
 
 ### F3 — Identidade → tag `v0.3.0`
 
@@ -113,6 +113,10 @@ antes de reimplementar.
 | R03: `GET /docs`, `GET /docs/json` (OpenAPI 3.0.3 + Swagger UI)                                        | F1-S06 | `src/plugins/swagger.plugin.ts`       |
 | Cliente Drizzle e Pool Postgres (`pool`, `db`, `checkDatabase`, `setPool`)                             | F1-S06 | `src/db/client.ts`                    |
 | Plugins de borda e defesa (`helmet`, `cors`, `rate-limit`, `under-pressure`)                           | F1-S06 | `src/plugins/`                        |
+| Schemas Drizzle (9 tabelas: `user`, `session`, `account`, `verification`, `artists`, `tracks`, etc.)   | F2-S01 | `src/db/schema/*.schema.ts`           |
+| Relações Drizzle ORM (5 relations para `db.query.*` com `with`)                                        | F2-S01 | `src/db/schema/index.ts`              |
+| Migração inicial (`0000_*.sql` com `pg_trgm` e 3 índices GIN)                                          | F2-S01 | `drizzle/`                            |
+| Runner de migração de produção (`runMigrations()`)                                                     | F2-S01 | `src/db/migrate.ts`                   |
 
 ---
 
