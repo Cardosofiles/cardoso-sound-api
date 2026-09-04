@@ -17,7 +17,7 @@ describe('Health, Border Plugins and Swagger (Unit)', () => {
     expect(json.status).toBe('ok');
     expect(typeof json.uptime).toBe('number');
     expect(json.uptime).toBeGreaterThan(0);
-    expect(json.version).toBe('1.0.0');
+    expect(json.version).toBe('0.1.0');
   });
 
   // T2: GET /health com o banco fora -> ainda 200 — liveness não depende do banco
