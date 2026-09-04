@@ -41,14 +41,14 @@ Legenda: ⬜ pendente · 🟡 em andamento · ✅ concluído · 🔴 bloqueado
 
 > Objetivo: o projeto compila, sobe, responde `/health` e tem CI verde.
 
-| Sprint     | Título                                     | Status | PR                    | Data       |
-| ---------- | ------------------------------------------ | ------ | --------------------- | ---------- |
-| **F1-S01** | Repositório e Git Flow                     | ✅     | #1                    | 2026-09-03 |
-| **F1-S02** | Toolchain TypeScript e qualidade           | ✅     | #2                    | 2026-09-03 |
-| **F1-S03** | Ambiente: Docker, env e constantes         | ✅     | (aberto nesta sessão) | 2026-09-04 |
-| **F1-S04** | Pipeline de CI                             | ⬜     | —                     | —          |
-| **F1-S05** | Núcleo: erros, app factory, server, logger | ⬜     | —                     | —          |
-| **F1-S06** | Plugins de borda, health e Swagger         | ⬜     | —                     | —          |
+| Sprint     | Título                                     | Status | PR  | Data       |
+| ---------- | ------------------------------------------ | ------ | --- | ---------- |
+| **F1-S01** | Repositório e Git Flow                     | ✅     | #1  | 2026-09-03 |
+| **F1-S02** | Toolchain TypeScript e qualidade           | ✅     | #2  | 2026-09-03 |
+| **F1-S03** | Ambiente: Docker, env e constantes         | ✅     | #5  | 2026-09-04 |
+| **F1-S04** | Pipeline de CI                             | ⬜     | —   | —          |
+| **F1-S05** | Núcleo: erros, app factory, server, logger | ⬜     | —   | —          |
+| **F1-S06** | Plugins de borda, health e Swagger         | ⬜     | —   | —          |
 
 ### F2 — Catálogo → tag `v0.2.0`
 

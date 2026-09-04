@@ -1,5 +1,6 @@
 services:
   postgres:
+    container_name: ${POSTGRES_CONTAINER_NAME}
     image: postgres:17-alpine
     restart: unless-stopped
     environment:
