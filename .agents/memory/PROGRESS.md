@@ -11,16 +11,16 @@
 
 | Campo                  | Valor                                                            |
 | ---------------------- | ---------------------------------------------------------------- |
-| **Fase corrente**      | F1 — Fundação                                                    |
-| **Próximo sprint**     | **F1-S01** — Repositório e Git Flow                              |
-| **Última tag**         | — (nenhuma)                                                      |
+| **Fase corrente**      | F1 — Fundação · **concluída**                                    |
+| **Próximo sprint**     | **F2-S01** — Schema Drizzle e migração inicial                   |
+| **Última tag**         | `v0.1.0` (preparada)                                             |
 | **`gh` CLI**           | ✅ 2.46.0, autenticado como `Cardosofiles`, protocolo SSH (D-33) |
 | **`pnpm install`**     | ✅ passa — `allowBuilds` decidido (D-32)                         |
-| **Repositório**        | ⚠️ ainda não criado no GitHub                                    |
-| **Branch de trabalho** | ⚠️ não é repositório git ainda                                   |
-| **CI**                 | ⚠️ `.github/workflows/ci.yml` está vazio                         |
-| **Banco**              | ⚠️ nenhuma migração gerada; `drizzle/` não existe                |
-| **Última atualização** | 2026-09-03 — especificação concluída                             |
+| **Repositório**        | ✅ público `Cardosofiles/cardoso-sound-api` no GitHub            |
+| **Branch de trabalho** | `feature/f1s06-plugins-de-borda-e-health` (default: `develop`)   |
+| **CI**                 | ✅ ativo (`.github/workflows/ci.yml`) — check obrigatório        |
+| **Banco**              | ✅ Postgres 17 ativo via Docker Compose                          |
+| **Última atualização** | 2026-09-04 — F1-S06 concluído (F1 encerrada)                     |
 
 ### ⚠️ O scaffold está VAZIO
 
@@ -28,13 +28,12 @@
 diretórios, o `package.json` e a documentação estão completos; o código não. Antes de
 assumir que um arquivo tem conteúdo, **verifique**.
 
-Consequência: `pnpm typecheck`, `lint`, `build` e todo `db:*` falham até que F1-S01,
-F1-S02 e F1-S03 escrevam `tsconfig.json`, `eslint.config.mjs`, `tsup.config.ts`,
-`vitest.config.ts` e `drizzle.config.ts`.
+Consequência: `pnpm typecheck`, `lint`, `format`, `test` e `build` agora passam (F1-S02).
+Comandos `db:*` falham até F1-S03 e F2-S01 configurarem `drizzle.config.ts`.
 
 ---
 
-## Roadmap — 18 sprints em 5 fases
+## Roadmap — 19 sprints em 5 fases
 
 Legenda: ⬜ pendente · 🟡 em andamento · ✅ concluído · 🔴 bloqueado
 
@@ -42,14 +41,14 @@ Legenda: ⬜ pendente · 🟡 em andamento · ✅ concluído · 🔴 bloqueado
 
 > Objetivo: o projeto compila, sobe, responde `/health` e tem CI verde.
 
-| Sprint     | Título                                     | Status | PR  | Data |
-| ---------- | ------------------------------------------ | ------ | --- | ---- |
-| **F1-S01** | Repositório e Git Flow                     | ⬜     | —   | —    |
-| **F1-S02** | Toolchain TypeScript e qualidade           | ⬜     | —   | —    |
-| **F1-S03** | Ambiente: Docker, env e constantes         | ⬜     | —   | —    |
-| **F1-S04** | Pipeline de CI                             | ⬜     | —   | —    |
-| **F1-S05** | Núcleo: erros, app factory, server, logger | ⬜     | —   | —    |
-| **F1-S06** | Plugins de borda, health e Swagger         | ⬜     | —   | —    |
+| Sprint     | Título                                     | Status | PR  | Data       |
+| ---------- | ------------------------------------------ | ------ | --- | ---------- |
+| **F1-S01** | Repositório e Git Flow                     | ✅     | #1  | 2026-09-03 |
+| **F1-S02** | Toolchain TypeScript e qualidade           | ✅     | #2  | 2026-09-03 |
+| **F1-S03** | Ambiente: Docker, env e constantes         | ✅     | #5  | 2026-09-04 |
+| **F1-S04** | Pipeline de CI                             | ✅     | #7  | 2026-09-04 |
+| **F1-S05** | Núcleo: erros, app factory, server, logger | ✅     | #8  | 2026-09-04 |
+| **F1-S06** | Plugins de borda, health e Swagger         | ✅     | #11 | 2026-09-04 |
 
 ### F2 — Catálogo → tag `v0.2.0`
 
@@ -64,12 +63,13 @@ Legenda: ⬜ pendente · 🟡 em andamento · ✅ concluído · 🔴 bloqueado
 
 ### F3 — Identidade → tag `v0.3.0`
 
-> Objetivo: cadastro, login (bearer + cookie) e perfil.
+> Objetivo: cadastro, login (bearer + cookie), perfil, login social e e-mail transacional.
 
 | Sprint     | Título                               | Status | PR  | Data |
 | ---------- | ------------------------------------ | ------ | --- | ---- |
 | **F3-S01** | Better Auth: config, plugin e guards | ⬜     | —   | —    |
 | **F3-S02** | Módulo `users` (`/me`)               | ⬜     | —   | —    |
+| **F3-S03** | OAuth social e e-mail transacional   | ⬜     | —   | —    |
 
 ### F4 — Biblioteca → tag `v0.4.0`
 
@@ -98,21 +98,34 @@ Legenda: ⬜ pendente · 🟡 em andamento · ✅ concluído · 🔴 bloqueado
 Preenchido conforme os sprints avançam — serve para o agente saber o que **já existe**
 antes de reimplementar.
 
-| Rota              | Sprint | Arquivo |
-| ----------------- | ------ | ------- |
-| _(nenhuma ainda)_ |        |         |
+| Rota / Símbolo                                                                                         | Sprint | Arquivo                               |
+| ------------------------------------------------------------------------------------------------------ | ------ | ------------------------------------- |
+| Pagination (`toOffset`, `buildPaginationMeta`)                                                         | F1-S02 | `src/shared/utils/pagination.ts`      |
+| `env`, `parseEnv`, `isProduction`, `isTest`, `isDevelopment`                                           | F1-S03 | `src/config/env.ts`                   |
+| `APP_NAME`, `API_PREFIX`, `AUTH_PREFIX`, `GENRES`, limites                                             | F1-S03 | `src/config/constants.ts`             |
+| Pipeline CI (`ci`), PR template, rulesets `main`/`develop`                                             | F1-S04 | `.github/workflows/ci.yml`            |
+| `AppError`, `NotFoundError`, `UnauthorizedError`, `ForbiddenError`, `ConflictError`, `ValidationError` | F1-S05 | `src/shared/errors/`                  |
+| `errorHandlerPlugin` (envelope RFC 7807, 404 handler)                                                  | F1-S05 | `src/plugins/error-handler.plugin.ts` |
+| `buildApp()` (factory pura Fastify, Zod type provider, Pino)                                           | F1-S05 | `src/app.ts`                          |
+| Bootstrap do servidor e graceful shutdown                                                              | F1-S05 | `src/server.ts`                       |
+| R01: `GET /health` (Liveness, não toca no banco)                                                       | F1-S06 | `src/plugins/health.plugin.ts`        |
+| R02: `GET /health/ready` (Readiness, faz `SELECT 1`)                                                   | F1-S06 | `src/plugins/health.plugin.ts`        |
+| R03: `GET /docs`, `GET /docs/json` (OpenAPI 3.0.3 + Swagger UI)                                        | F1-S06 | `src/plugins/swagger.plugin.ts`       |
+| Cliente Drizzle e Pool Postgres (`pool`, `db`, `checkDatabase`, `setPool`)                             | F1-S06 | `src/db/client.ts`                    |
+| Plugins de borda e defesa (`helmet`, `cors`, `rate-limit`, `under-pressure`)                           | F1-S06 | `src/plugins/`                        |
 
 ---
 
 ## Bloqueios e pendências
 
-| #      | Item                                                           | Bloqueia                      | Quem resolve                                                                                     |
-| ------ | -------------------------------------------------------------- | ----------------------------- | ------------------------------------------------------------------------------------------------ |
-| ~~B1~~ | ~~`gh` CLI não instalado~~                                     | —                             | ✅ **resolvido 2026-09-03** — `gh` 2.46.0, autenticado como `Cardosofiles`, protocolo SSH (D-33) |
-| ~~B4~~ | ~~`pnpm install` abortando com `ERR_PNPM_IGNORED_BUILDS`~~     | —                             | ✅ **resolvido 2026-09-03** — `allowBuilds` preenchido (D-32)                                    |
-| B2     | `.env` vazio, sem `DATABASE_URL`                               | F1-S03 em diante              | F1-S03                                                                                           |
-| B3     | `AGENTS.md` e `README.md` contradizem D-01/D-03/D-09/D-10/D-16 | Confunde toda sessão          | F1-S01                                                                                           |
-| B5     | Token do `gh` sem escopo `workflow`                            | possivelmente F1-S04 e F5-S02 | **Você**, só se um push de workflow for recusado: `gh auth refresh -h github.com -s workflow`    |
+| #      | Item                                                               | Bloqueia                      | Quem resolve                                                                                     |
+| ------ | ------------------------------------------------------------------ | ----------------------------- | ------------------------------------------------------------------------------------------------ |
+| ~~B1~~ | ~~`gh` CLI não instalado~~                                         | —                             | ✅ **resolvido 2026-09-03** — `gh` 2.46.0, autenticado como `Cardosofiles`, protocolo SSH (D-33) |
+| ~~B4~~ | ~~`pnpm install` abortando com `ERR_PNPM_IGNORED_BUILDS`~~         | —                             | ✅ **resolvido 2026-09-03** — `allowBuilds` preenchido (D-32)                                    |
+| ~~B2~~ | ~~`.env` vazio, sem `DATABASE_URL`~~                               | —                             | ✅ **resolvido 2026-09-04** em F1-S03 (`.env.example`, validação Zod e docker compose)           |
+| ~~B3~~ | ~~`AGENTS.md` e `README.md` contradizem D-01/D-03/D-09/D-10/D-16~~ | —                             | ✅ **resolvido 2026-09-03** em F1-S01                                                            |
+| B5     | Token do `gh` sem escopo `workflow`                                | possivelmente F1-S04 e F5-S02 | **Você**, só se um push de workflow for recusado: `gh auth refresh -h github.com -s workflow`    |
+| ~~P1~~ | ~~Exigir status check obrigatório `ci` nos rulesets~~              | —                             | ✅ **resolvido 2026-09-04** em F1-S04 (rulesets `protection-develop` e `protection-main`)        |
 
 ---
 

@@ -21,10 +21,6 @@
         "@modelcontextprotocol/server-postgres",
         "postgresql://postgres:sua_senha@localhost:5432/seu_banco"
       ]
-    },
-    "playwright": {
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-playwright"]
     }
   }
 }

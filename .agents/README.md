@@ -9,7 +9,15 @@ This directory contains the workspace customization configuration for **Google A
 ```
 .agents/
 ├── mcp_config.json          # Model Context Protocol servers configuration
+├── hooks.json.example       # Security hook registration template (copy to hooks.json)
 ├── README.md                # Overview of workspace agents and capabilities
+│
+├── hooks/                   # Runtime guardrails - see hooks/README.md
+│   ├── lib/adapter.sh       # Antigravity hook protocol <-> shared security policy
+│   ├── block_rm.sh          # run_command: destructive, exfiltrating, escalating commands
+│   ├── guard_file_ops.sh    # file tools: secret files, credential material, guardrails
+│   ├── guard_web_access.sh  # read_url_content / search_web: SSRF and exfiltration sinks
+│   └── inspect_tool_output.sh # PostToolUse: prompt-injection heuristics on untrusted output
 │
 ├── rules/                   # Contextual and domain rules (loaded automatically)
 │   ├── architecture.md      # Clean Architecture, layer boundaries, and Fastify patterns
@@ -69,6 +77,28 @@ Rules in `.agents/rules/` are automatically discovered and loaded by Antigravity
 - **Database integrity**: Explicit foreign keys, cascade deletes, composite primary keys on junction tables.
 - **Authentication**: Session decoration on `FastifyRequest`, route authorization guards.
 - **Testing**: Deterministic, isolated test execution with Testcontainers and Vitest.
+
+---
+
+## 🛡️ Security Hooks
+
+Registered in `.agents/hooks.json` — git-ignored and per-clone, generated from
+[`.agents/hooks.json.example`](./hooks.json.example) as described in
+[`.agents/hooks/README.md`](./hooks/README.md) — and implemented in
+[`.agents/hooks/`](./hooks/README.md). They enforce the shared policy in
+`scripts/agent-security/policy.sh`, which is also enforced for Claude Code via
+`.claude/hooks/` — one denylist, two harnesses.
+
+- **`PreToolUse`** blocks destructive shell commands, force pushes, hook bypass
+  (`--no-verify`), `curl | bash`, credential reads, secret exfiltration,
+  privilege escalation, SSRF/cloud-metadata targets and destructive SQL.
+- **`PreToolUse`** on file tools stops secrets from being written to disk and
+  routes guardrail edits through human review.
+- **`PostToolUse`** flags prompt-injection shaped content in fetched pages and
+  command output, so untrusted text is treated as data, never as instructions.
+
+Denied and flagged calls are appended to `.agent-guard.log` (gitignored).
+Run `bash scripts/agent-security/test-hooks.sh` after changing a hook.
 
 ---
 

@@ -330,3 +330,38 @@
   ambas `404 Not Found`. O isolamento é feito na cláusula `WHERE` da query, nunca em memória.
 - **Consequência:** **nenhuma rota do MVP emite 403.** `ForbiddenError` existe na hierarquia
   de erros para uso futuro. O caso E6 da suíte E2E cobre exatamente isso.
+
+### D-34 · `exactOptionalPropertyTypes: false` no TypeScript
+
+- **Data:** 2026-09-03 · **Sprint:** F1-S02 · **Status:** vigente
+- **Contexto:** com `exactOptionalPropertyTypes: true`, propriedades opcionais tipadas como `prop?: string` rejeitam explicitamente `{ prop: undefined }`, gerando atrito e incompatibilidade severa com `fastify-type-provider-zod` e schemas de validação Fastify.
+- **Decisão:** manter `exactOptionalPropertyTypes: false` no `tsconfig.json`.
+- **Consequência:** schemas e plugins Fastify convivem com campos opcionais sem type assertions redundantes.
+
+### D-35 · `bundle: false` no tsup
+
+- **Data:** 2026-09-03 · **Sprint:** F1-S02 · **Status:** vigente
+- **Contexto:** os scripts de produção (`db:migrate:deploy` apontando para `dist/db/migrate.js` e `jobs` apontando para `dist/jobs/runner.js`) exigem preservar a estrutura modular de arquivos em `dist/`. Um bundle unificado mesclaria entradas e romperia resolução relativa de imports ESM com terminação `.js`.
+- **Decisão:** `bundle: false` na configuração de empacotamento do `tsup.config.ts`.
+- **Consequência:** a árvore de módulos compilados espelha `src/` em `dist/` com integridade de caminhos e sourcemaps.
+
+### D-36 · `singleFork: true` no pool do Vitest
+
+- **Data:** 2026-09-03 · **Sprint:** F1-S02 · **Status:** vigente
+- **Contexto:** em suítes com Testcontainers (PostgreSQL efêmero a partir de F2-S02), a execução paralela indiscriminada de múltiplos processos concorre por portas/sockets e pode disparar containers demais no daemon Docker local ou nos runners de CI.
+- **Decisão:** configurar `pool: 'forks'` com `poolOptions: { forks: { singleFork: true } }` em `vitest.config.ts`.
+- **Consequência:** execução previsível e sequencial de suítes que necessitam de isolamento de infraestrutura real, prevenindo contenção de recursos.
+
+### D-37 · `src/db/client.ts` e barrel vazio antecipados para F1-S06
+
+- **Data:** 2026-09-04 · **Sprint:** F1-S06 · **Status:** vigente
+- **Contexto:** `/health/ready` e o `healthCheck` do `@fastify/under-pressure` necessitam de um `pg.Pool` real para executar `SELECT 1`. O planejamento original previa `src/db/` apenas em F2-S01.
+- **Decisão:** antecipar a criação de `src/db/client.ts` (com `pg.Pool`, instância `db` do Drizzle ORM, `checkDatabase` e `setPool`) e criar `src/db/schema/index.ts` como barrel vazio (`export {};`). A modelagem relacional de tabelas permanece em F2-S01.
+- **Consequência:** o pool de conexão é tratado como infraestrutura fundamental da fundação (F1) e schemas de banco como domínio (F2). O Drizzle é instanciado desde F1 sem quebrar tipagem ou execução.
+
+### D-38 · 503 global do `under-pressure` e bypass para sondas de `/health*`
+
+- **Data:** 2026-09-04 · **Sprint:** F1-S06 · **Status:** vigente
+- **Contexto:** quando a conectividade com o banco de dados falha, o plugin `@fastify/under-pressure` entra em estado degradado e responde 503 Service Unavailable em todas as rotas da API. Contudo, sondas de liveness (`/health`) de orquestradores (Railway, Kubernetes) não devem falhar para evitar reinicializações desnecessárias do processo Node, e `/health/ready` deve emitir seu próprio contrato de indisponibilidade (`{ status: 'unavailable', database: 'down' }`).
+- **Decisão:** configurar `pressureHandler: () => {}` no route config de `/health` e `/health/ready`.
+- **Consequência:** se o Postgres estiver inoperante, rotas de aplicação são protegidas com 503 global pelo `under-pressure`, enquanto `/health` continua respondendo 200 (processo vivo) e `/health/ready` devolve 503 com payload específico sem envelope de erro RFC 7807.

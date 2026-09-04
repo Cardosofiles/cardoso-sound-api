@@ -2,6 +2,8 @@
 
 API RESTful para gerenciamento de catálogo musical, usuários, playlists e favoritos — desenvolvida como backend de um MVP de aplicativo de streaming (consumido por um app Flutter).
 
+> 📖 **Fonte de Verdade do Escopo:** As especificações completas do produto e da arquitetura estão documentadas em [`docs/specs/`](docs/specs/) (especialmente [`00-visao-geral.md`](docs/specs/00-visao-geral.md)). O roadmap de entrega e detalhamento de cada sprint estão em [`docs/sprints/README.md`](docs/sprints/README.md).
+
 > ⚠️ Este projeto **não integra com a API oficial do Spotify**. O catálogo de músicas é mantido em banco próprio (seed local), evitando as restrições de quota do Spotify Developer Mode (Premium obrigatório, limite de 5 usuários de teste, Extended Quota restrito a organizações com 250k+ MAU).
 
 ---
@@ -10,7 +12,7 @@ API RESTful para gerenciamento de catálogo musical, usuários, playlists e favo
 
 | Camada           | Tecnologia                                          |
 | ---------------- | --------------------------------------------------- |
-| Runtime          | Node.js 22+ (TypeScript strict mode)                |
+| Runtime          | Node.js 24+ (TypeScript strict mode)                |
 | Framework Web    | Fastify 5                                           |
 | Autenticação     | Better Auth                                         |
 | Banco de Dados   | PostgreSQL (Docker)                                 |
@@ -18,7 +20,7 @@ API RESTful para gerenciamento de catálogo musical, usuários, playlists e favo
 | Validação        | Zod (via `fastify-type-provider-zod`)               |
 | Documentação     | Swagger/OpenAPI (`@fastify/swagger` + `swagger-ui`) |
 | Segurança        | Helmet, CORS, Rate Limit, Under Pressure            |
-| Testes E2E       | Playwright                                          |
+| Testes E2E       | Vitest + `app.inject()`                             |
 | Testes Unitários | Vitest + Testcontainers                             |
 | CI/CD            | GitHub Actions                                      |
 | Logging          | Pino (structured logging)                           |
@@ -42,12 +44,10 @@ API RESTful para gerenciamento de catálogo musical, usuários, playlists e favo
 | `pino`                      | ^10.3.1           | 10.x           | ✅ Atual                                           |
 | `typescript`                | ^5.7.2            | 5.7.x          | ✅ Atual                                           |
 | `vitest`                    | ^2.1.8            | 2.x            | ✅ Atual                                           |
-| `@neondatabase/serverless`  | ^1.0.1            | -              | ⚠️ Avaliar necessidade (ver nota)                  |
 
 **Notas:**
 
 - `drizzle-orm` 1.0.0 está em release candidate desde jun/2026 — **não migrar** até versão estável ser publicada.
-- `@neondatabase/serverless` só é necessário se você for hospedar o Postgres na Neon. Como o projeto usa Docker local, pode ser removido ou mantido só para produção (deploy serverless).
 - `better-auth` 1.7.x trouxe suporte a MCP (2026-07-28 spec) — não essencial para este projeto, mas traz correções de segurança relevantes.
 
 **Ação recomendada:**
@@ -76,7 +76,7 @@ cardoso-sound-api/
 │   │   ├── auth.md                            # Better Auth, decorators de sessão e guards de rotas
 │   │   ├── coding-standards.md                # Nomenclaturas, TypeScript estrito, ESM e Fastify
 │   │   ├── database.md                        # PostgreSQL, schemas Drizzle, PKs e transações
-│   │   └── testing.md                         # Vitest, Testcontainers e Playwright
+│   │   └── testing.md                         # Vitest, Testcontainers e app.inject()
 │   ├── skills/                                # Procedimentos e runbooks acionados sob demanda
 │   │   ├── code-quality/
 │   │   │   └── SKILL.md                       # Typecheck, lint, formatação e bundle tsup
@@ -89,7 +89,7 @@ cardoso-sound-api/
 │   │   │   │   └── openai.yaml                # Configuração do agente de alinhamento e entrevista
 │   │   │   └── SKILL.md                       # Entrevista interativa para alinhamento de requisitos
 │   │   └── test-runner/
-│   │       └── SKILL.md                       # Execução de Vitest, Testcontainers e Playwright
+│   │       └── SKILL.md                       # Execução de Vitest, Testcontainers e app.inject()
 │   ├── mcp_config.json                        # Integração com MCP (Docs, GitHub, PostgreSQL)
 │   └── README.md                              # Documentação do ecossistema de agentes autônomos
 │
@@ -153,9 +153,9 @@ cardoso-sound-api/
 │   │   │
 │   │   ├── tracks/
 │   │   │   ├── tracks.repository.ts           # Queries de catálogo, paginação e busca textual
-│   │   │   ├── tracks.routes.ts               # Rotas de listagem, detalhes e streaming de faixas
+│   │   │   ├── tracks.routes.ts               # Rotas de listagem e detalhes de faixas
 │   │   │   ├── tracks.schema.ts               # DTOs Zod de entrada/saída para faixas
-│   │   │   └── tracks.service.ts              # Lógica de catálogo, streams e contadores
+│   │   │   └── tracks.service.ts              # Regras de negócio e operações de catálogo
 │   │   │
 │   │   └── users/
 │   │       ├── users.repository.ts            # Acesso aos dados de usuários no PostgreSQL
@@ -188,7 +188,7 @@ cardoso-sound-api/
 ├── tests/
 │   ├── e2e/
 │   │   └── specs/
-│   │       └── .gitkeep                       # Especificações E2E de fluxos HTTP (Playwright)
+│   │       └── .gitkeep                       # Especificações E2E de fluxos HTTP (Vitest + app.inject())
 │   ├── setup/
 │   │   └── testcontainers.ts                  # Instância efêmera de PostgreSQL via Testcontainers
 │   └── unit/
@@ -200,15 +200,16 @@ cardoso-sound-api/
 ├── .env.example                               # Modelo documentado das variáveis de ambiente necessárias
 ├── .gitattributes                             # Normalização de finais de linha e atributos do repositório
 ├── .gitignore                                 # Regras de arquivos e pastas ignorados pelo Git
+├── .lintstagedrc.json                          # Automação de linters e formatação em arquivos staged
+├── .nvmrc                                     # Versão do Node.js fixada (24)
 ├── .prettierignore                            # Exclusões de arquivos da formatação automática
 ├── .prettierrc.json                           # Configurações de estilo e formatação do Prettier
 ├── AGENTS.md                                  # Diretrizes de engenharia, arquitetura e subagentes IA
 ├── commitlint.config.mjs                      # Validação de mensagens de commit (Conventional Commits)
-├── docker-compose.yml                         # Composição do container PostgreSQL 16 local
-├── Dockerfile                                 # Imagem Docker multi-stage de produção (Node.js 20 Alpine)
+├── docker-compose.yml                         # Composição do container PostgreSQL 17 local
+├── Dockerfile                                 # Imagem Docker multi-stage de produção (node:24-alpine)
 ├── drizzle.config.ts                          # Configuração do Drizzle Kit para migrations e introspecção
 ├── eslint.config.mjs                          # Configuração do ESLint v9 (Flat Config)
-├── lintstagedrc.json                          # Automação de linters e formatação em arquivos staged
 ├── package.json                               # Manifesto do projeto, scripts pnpm e dependências
 ├── railway.json                               # Definição de build e deploy na nuvem Railway
 ├── README.md                                  # Documentação central do projeto e guia de onboarding
@@ -299,23 +300,23 @@ O plugin Fastify (`auth.plugin.ts`) expõe as rotas do Better Auth (`/api/auth/*
 
 ## 🚀 Rotas Principais
 
-| Método | Rota                                 | Descrição                         | Autenticado |
-| ------ | ------------------------------------ | --------------------------------- | ----------- |
-| POST   | `/api/auth/sign-up/email`            | Cadastro de usuário               | ❌          |
-| POST   | `/api/auth/sign-in/email`            | Login                             | ❌          |
-| POST   | `/api/auth/sign-out`                 | Logout                            | ✅          |
-| GET    | `/api/tracks`                        | Lista músicas (paginado, filtros) | ❌          |
-| GET    | `/api/tracks/:id`                    | Detalhe de uma faixa              | ❌          |
-| GET    | `/api/artists`                       | Lista artistas                    | ❌          |
-| GET    | `/api/artists/:id`                   | Detalhe de artista + faixas       | ❌          |
-| GET    | `/api/playlists`                     | Playlists do usuário              | ✅          |
-| POST   | `/api/playlists`                     | Cria playlist                     | ✅          |
-| POST   | `/api/playlists/:id/tracks`          | Adiciona faixa à playlist         | ✅          |
-| DELETE | `/api/playlists/:id/tracks/:trackId` | Remove faixa da playlist          | ✅          |
-| POST   | `/api/favorites/:trackId`            | Favorita faixa                    | ✅          |
-| DELETE | `/api/favorites/:trackId`            | Remove favorito                   | ✅          |
-| GET    | `/api/favorites`                     | Lista favoritos do usuário        | ✅          |
-| GET    | `/docs`                              | Swagger UI                        | ❌          |
+| Método | Rota                                    | Descrição                         | Autenticado |
+| ------ | --------------------------------------- | --------------------------------- | ----------- |
+| POST   | `/api/auth/sign-up/email`               | Cadastro de usuário               | ❌          |
+| POST   | `/api/auth/sign-in/email`               | Login                             | ❌          |
+| POST   | `/api/auth/sign-out`                    | Logout                            | ✅          |
+| GET    | `/api/v1/tracks`                        | Lista músicas (paginado, filtros) | ❌          |
+| GET    | `/api/v1/tracks/:id`                    | Detalhe de uma faixa              | ❌          |
+| GET    | `/api/v1/artists`                       | Lista artistas                    | ❌          |
+| GET    | `/api/v1/artists/:id`                   | Detalhe de artista + faixas       | ❌          |
+| GET    | `/api/v1/playlists`                     | Playlists do usuário              | ✅          |
+| POST   | `/api/v1/playlists`                     | Cria playlist                     | ✅          |
+| POST   | `/api/v1/playlists/:id/tracks`          | Adiciona faixa à playlist         | ✅          |
+| DELETE | `/api/v1/playlists/:id/tracks/:trackId` | Remove faixa da playlist          | ✅          |
+| POST   | `/api/v1/favorites/:trackId`            | Favorita faixa                    | ✅          |
+| DELETE | `/api/v1/favorites/:trackId`            | Remove favorito                   | ✅          |
+| GET    | `/api/v1/favorites`                     | Lista favoritos do usuário        | ✅          |
+| GET    | `/docs`                                 | Swagger UI                        | ❌          |
 
 ---
 
@@ -375,8 +376,8 @@ pnpm dev
 # Testes unitários (Vitest)
 pnpm test
 
-# Testes E2E (Playwright, requer app rodando)
-pnpm playwright test
+# Testes E2E (Vitest + app.inject(), sem necessidade de servidor HTTP rodando)
+pnpm vitest run --project e2e
 
 # Watch mode
 pnpm test:watch
@@ -390,7 +391,7 @@ Os testes de integração usam **Testcontainers** para subir um Postgres efêmer
 
 Pipeline em `.github/workflows/ci.yml`:
 
-1. Checkout + setup pnpm/Node 22.
+1. Checkout + setup pnpm/Node 24.
 2. `pnpm install --frozen-lockfile`.
 3. `pnpm lint` + `pnpm typecheck`.
 4. `pnpm test` (com Testcontainers).
