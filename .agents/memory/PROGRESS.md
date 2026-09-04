@@ -48,7 +48,7 @@ Legenda: ⬜ pendente · 🟡 em andamento · ✅ concluído · 🔴 bloqueado
 | **F1-S03** | Ambiente: Docker, env e constantes         | ✅     | #5  | 2026-09-04 |
 | **F1-S04** | Pipeline de CI                             | ✅     | #7  | 2026-09-04 |
 | **F1-S05** | Núcleo: erros, app factory, server, logger | ✅     | #8  | 2026-09-04 |
-| **F1-S06** | Plugins de borda, health e Swagger         | ✅     | #10 | 2026-09-04 |
+| **F1-S06** | Plugins de borda, health e Swagger         | ✅     | #11 | 2026-09-04 |
 
 ### F2 — Catálogo → tag `v0.2.0`
 
