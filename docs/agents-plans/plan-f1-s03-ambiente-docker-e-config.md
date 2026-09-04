@@ -239,4 +239,4 @@ export const SHUTDOWN_TIMEOUT_MS = 10_000;
 - [x] `.env.example` commitado; `.env` ignorado pelo Git (`git status` limpo quanto a ele)
 - [x] Zero acessos a `process.env` fora de `src/config/env.ts` (validado pelo ESLint)
 - [x] Todos os 5 portões de qualidade passando sem avisos ou erros
-- [ ] PR criado no GitHub apontando para `develop` com memória sincronizada
+- [x] PR criado no GitHub apontando para `develop` (#5) com memória sincronizada
