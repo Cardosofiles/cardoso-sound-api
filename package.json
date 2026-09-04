@@ -57,7 +57,7 @@
     "@types/autocannon": "^7.12.7",
     "@types/node": "^24.13.3",
     "@types/pg": "^8.11.10",
-    "autocannon": "^8.0.0",
+    "autocannon": "^7.12.0",
     "drizzle-kit": "^0.31.4",
     "eslint": "^9.17.0",
     "eslint-import-resolver-typescript": "^3.7.0",
