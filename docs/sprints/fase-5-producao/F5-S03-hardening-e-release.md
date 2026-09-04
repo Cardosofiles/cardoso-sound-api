@@ -220,6 +220,9 @@ O MVP está entregue. O que ficou deliberadamente de fora está na **spec `00` �
 continua fora até uma nova rodada de especificação. Candidatos naturais a uma v1.1:
 
 `position` nas playlists · playlists públicas · histórico de reprodução · painel admin com
-RBAC · recuperação de senha · OAuth social · upload de capa e avatar.
+RBAC · troca de senha com usuário logado · 2FA · magic link · upload de capa e avatar.
+
+> OAuth social, verificação de e-mail e recuperação de senha **saíram desta lista**: foram
+> entregues em F3-S03.
 
 Nenhum deles deve ser implementado sem passar antes por spec e sprint.

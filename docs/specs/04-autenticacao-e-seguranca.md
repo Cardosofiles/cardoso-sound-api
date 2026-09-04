@@ -40,6 +40,168 @@ Pontos que não são negociáveis:
   espúrios (**D-19**).
 - Os tipos `Session` e `User` saem de `auth.$Infer` — **nunca** escritos à mão.
 
+> O bloco acima é o que **F3-S01** entrega. As seções §1.1 e §1.2 **acrescentam chaves a
+> esse mesmo objeto** e são entregues por **F3-S03** — não são um segundo `betterAuth()`,
+> não são um segundo arquivo.
+
+---
+
+## 1.1 OAuth social — Google, GitHub, Facebook (F3-S03)
+
+```ts
+socialProviders: Object.fromEntries(
+  SOCIAL_PROVIDERS.map((provider) => [provider, PROVIDER_CONFIG[provider]]),
+),
+account: {
+  accountLinking: {
+    enabled: true,
+    trustedProviders: ['google', 'github'],
+  },
+},
+```
+
+`SOCIAL_PROVIDERS` sai de `src/config/env.ts` e contém **apenas** os provedores cujo par
+`*_CLIENT_ID` + `*_CLIENT_SECRET` está presente. Provedor sem credencial não é registrado —
+o efeito é um 4xx da lib em vez de um 500 por `clientId: undefined`, e é o que permite
+rodar o projeto localmente sem as seis credenciais.
+
+### Rotas resultantes — spec `03` §5
+
+`POST /api/auth/sign-in/social` (R26) · `GET /api/auth/callback/:providerId` (R27).
+Ambas montadas pela lib na rota coringa `/api/auth/*` do `auth.plugin.ts`. **Nenhum
+handler novo é escrito.**
+
+### Escopos — mínimos, e não mais que isso
+
+| Provedor | Escopo                 | Observação                                            |
+| -------- | ---------------------- | ----------------------------------------------------- |
+| Google   | `openid email profile` | padrão da lib                                         |
+| GitHub   | `user:email`           | **obrigatório**: sem ele, e-mail privado volta `null` |
+| Facebook | `email public_profile` | `email` só é liberado após **App Review** da Meta     |
+
+### Redirect URIs
+
+Cadastradas no console de cada provedor, uma por ambiente:
+
+```
+http://localhost:3000/api/auth/callback/<provider>
+https://<dominio-de-producao>/api/auth/callback/<provider>
+```
+
+### Ligação de contas — regra de segurança
+
+`accountLinking` liga automaticamente a conta social ao usuário existente de mesmo e-mail.
+Isso só é seguro com provedor que **comprovadamente verifica** o e-mail antes de devolvê-lo.
+
+- **`trustedProviders` contém `google` e `github`.**
+- **O Facebook fica fora**, mesmo depois do App Review.
+- Provedor em dúvida fica **fora** — o usuário ainda pode ligar a conta manualmente depois
+  de autenticado.
+
+Ligar um provedor não confiável permite que alguém crie uma conta social com o e-mail da
+vítima e passe a entrar na conta dela. É sequestro de conta, não conveniência.
+
+### Cliente nativo (Flutter) — dois caminhos
+
+| Caminho                  | Como funciona                                                                                                                   |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
+| **`idToken`** (preferir) | SDK nativo autentica no aparelho; o app envia o `idToken` em `POST /sign-in/social`. Sem redirect, sem deep link, sem browser.  |
+| Redirect + deep link     | `POST /sign-in/social` devolve `{ url }`; o app abre no navegador; o retorno cai em `callbackURL`, que precisa ser o deep link. |
+
+`callbackURL` é validado contra `trustedOrigins`, que passa a incluir o deep link:
+
+```ts
+trustedOrigins: [...env.CORS_ORIGIN_LIST, env.MOBILE_DEEP_LINK].filter(Boolean),
+```
+
+**`callbackURL` aceito sem essa validação é open redirect com token na URL.** Não relaxe.
+
+---
+
+## 1.2 E-mail transacional — Resend (F3-S03)
+
+```ts
+emailAndPassword: {
+  enabled: true,
+  minPasswordLength: 8,
+  autoSignIn: true,
+  requireEmailVerification: false,
+  resetPasswordTokenExpiresIn: 60 * 60, // 1 h
+  sendResetPassword: async ({ user, url }) => {
+    await mailer.send({ to: user.email, ...resetPasswordEmail({ name: user.name, url }) });
+  },
+},
+emailVerification: {
+  sendOnSignUp: true,
+  autoSignInAfterVerification: true,
+  expiresIn: 60 * 60 * 24, // 24 h
+  sendVerificationEmail: async ({ user, url }) => {
+    await mailer.send({ to: user.email, ...verificationEmail({ name: user.name, url }) });
+  },
+},
+```
+
+### Rotas resultantes — spec `03` §5
+
+`POST /api/auth/send-verification-email` (R28) · `GET /api/auth/verify-email` (R29) ·
+`POST /api/auth/forget-password` (R30) · `POST /api/auth/reset-password` (R31).
+
+### `requireEmailVerification: false` é deliberado
+
+`true` faz o `sign-in/email` responder 403 até o clique no link, o que quebra
+`signUpAndGetToken` (spec `05` §4) — o helper de que F3-S02, F4-S01, F4-S02 e a suíte E2E
+inteira dependem. Verificar e-mail passa a ser requisito quando existir uma feature que
+dependa disso; **hoje não existe**. O estado fica visível ao cliente em `emailVerified` do
+`GET /api/auth/get-session` (R12).
+
+**`emailVerified` não entra no DTO `Me`** — §7 desta spec proíbe e a spec `03` §3 mantém as
+5 chaves.
+
+### Transporte — `src/shared/email/mailer.ts`
+
+Dois transportes, escolhidos **uma vez**, por `env.RESEND_API_KEY` existir ou não:
+
+| Transporte | Quando         | Comportamento                                             |
+| ---------- | -------------- | --------------------------------------------------------- |
+| `resend`   | chave presente | envia de verdade; **nunca loga a URL** (contém o token)   |
+| `memory`   | chave ausente  | empilha em `outbox` e loga `{to, subject, url}` em `info` |
+
+`memory` é o transporte de `test` (é o que torna os fluxos testáveis sem rede) e de
+`development` sem conta no Resend. Em `production` a chave é **obrigatória** (§6).
+
+**`mailer.send` nunca rejeita.** O Better Auth chama `sendVerificationEmail` dentro do
+fluxo de criação do usuário: propagar erro do provedor derruba o sign-up inteiro quando o
+Resend estiver fora do ar. Falha vira log `warn`; o usuário pede reenvio em R28.
+
+### Não vazar quais e-mails existem
+
+`POST /forget-password` e `POST /send-verification-email` respondem **200 idêntico** para
+e-mail existente e inexistente. A diferença é só que, no segundo caso, nenhum e-mail sai.
+Resposta diferenciada transforma a rota em oráculo de enumeração de contas.
+
+### Rate limit dedicado
+
+Estas rotas mandam e-mail e testam senha; o limite global de 10/min é frouxo para elas:
+
+```ts
+rateLimit: {
+  enabled: env.NODE_ENV === 'production', // D-19, inalterado
+  window: 60,
+  max: 10,
+  customRules: {
+    '/forget-password':         { window: 3600, max: 3 },
+    '/send-verification-email': { window: 3600, max: 3 },
+    '/reset-password':          { window: 3600, max: 5 },
+    '/sign-in/social':          { window: 60,   max: 10 },
+  },
+},
+```
+
+- As chaves são **relativas ao `basePath`** (`/forget-password`, não
+  `/api/auth/forget-password`). Escritas errado, a regra não casa e falha em silêncio — o
+  limite global assume o lugar dela.
+- `enabled` continua preso a produção (**D-19**), `customRules` inclusive.
+
 ---
 
 ## 2. Plugin Fastify
@@ -265,6 +427,34 @@ imprime as issues e chama `process.exit(1)` **antes** do servidor subir.
 
 - Derivado exportado: `CORS_ORIGIN_LIST: string[]` (split por vírgula, trim, sem vazios).
 - Em `production`, `BETTER_AUTH_SECRET` com menos de 32 chars **derruba o processo**.
+
+### Acrescentadas por F3-S03 — §1.1 e §1.2
+
+| Variável                 | Tipo Zod                     | Default                                 | Obrigatória           |
+| ------------------------ | ---------------------------- | --------------------------------------- | --------------------- |
+| `GOOGLE_CLIENT_ID`       | `string().min(1).optional()` | —                                       | par, ver abaixo       |
+| `GOOGLE_CLIENT_SECRET`   | `string().min(1).optional()` | —                                       | par                   |
+| `GITHUB_CLIENT_ID`       | `string().min(1).optional()` | —                                       | par                   |
+| `GITHUB_CLIENT_SECRET`   | `string().min(1).optional()` | —                                       | par                   |
+| `FACEBOOK_CLIENT_ID`     | `string().min(1).optional()` | —                                       | par                   |
+| `FACEBOOK_CLIENT_SECRET` | `string().min(1).optional()` | —                                       | par                   |
+| `RESEND_API_KEY`         | `string().startsWith('re_')` | —                                       | **sim em production** |
+| `EMAIL_FROM`             | `string().min(1)`            | `Cardoso Sound <onboarding@resend.dev>` | não                   |
+| `MOBILE_DEEP_LINK`       | `string().optional()`        | —                                       | não                   |
+
+- **"par"** significa: ou as duas do provedor estão presentes, ou nenhuma. Só `CLIENT_ID`
+  sem `CLIENT_SECRET` é erro de validação, não provedor meio-configurado.
+- Derivado exportado: `SOCIAL_PROVIDERS: ('google'|'github'|'facebook')[]` — só os
+  provedores com o par completo. É ele que alimenta `socialProviders` em §1.1.
+- `RESEND_API_KEY` ausente fora de `production` é **legítimo**: cai no transporte de
+  memória (§1.2). Em `production`, ausente **derruba o processo**, como `BETTER_AUTH_SECRET`.
+- `EMAIL_FROM` com o domínio padrão do Resend só entrega ao dono da conta. Produção exige
+  domínio verificado (SPF + DKIM).
+- `MOBILE_DEEP_LINK` entra em `trustedOrigins` (§1.1). Vazio = só o fluxo `idToken` funciona
+  no app.
+
+### Regras que valem para todas
+
 - **Nenhum arquivo fora de `src/config/env.ts` lê `process.env`.** Isso é regra de lint.
 - `.env` está no `.gitignore`. `.env.example` é commitado, documentado e **sem valores reais**.
 
@@ -287,6 +477,12 @@ no repositório público.
 - [ ] Toda rota protegida tem `onRequest: [fastify.requireAuth]` — conferir uma a uma
 - [ ] Todo acesso a recurso de usuário filtra por `user_id` **na query SQL**
 - [ ] Rate limit e CORS restritos com `NODE_ENV=production`
+- [ ] `customRules` do Better Auth ativas em produção; caminhos relativos ao `basePath` (§1.2)
+- [ ] `forget-password` responde **igual** para e-mail existente e inexistente
+- [ ] Nenhum token de verificação ou reset em log com o transporte `resend` (§1.2)
+- [ ] `trustedProviders` do `accountLinking` só com provedor que verifica e-mail (§1.1)
+- [ ] `callbackURL` validado contra `trustedOrigins` — sem open redirect (§1.1)
+- [ ] Nenhum `*_CLIENT_SECRET` nem `RESEND_API_KEY` no repositório ou no histórico
 - [ ] `helmet` ativo; headers conferidos com `curl -I`
 - [ ] Nenhum `any` e nenhum `@ts-expect-error` sem justificativa em comentário
 - [ ] `pnpm audit --prod` sem vulnerabilidade alta ou crítica

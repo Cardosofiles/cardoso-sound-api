@@ -49,7 +49,8 @@ nova rodada de spec.
 | Reordenar faixas dentro da playlist (`position`)                     | Ordem é `added_at` — **D-15**                         |
 | Playlists públicas ou compartilháveis                                | Toda playlist é privada do dono — **D-15**            |
 | Tabelas `albums` e `genres` normalizadas                             | `album` e `genre` são colunas em `tracks` — **D-12**  |
-| OAuth social, verificação de e-mail, recuperação de senha            | Só e-mail + senha no MVP                              |
+| ~~OAuth social, verificação de e-mail, recuperação de senha~~        | **Entrou em F3-S03** — spec `04` §1.1 e §1.2          |
+| Troca de senha com o usuário logado, 2FA, magic link                 | Fora mesmo depois de F3-S03                           |
 | Upload de arquivos (avatar, capa)                                    | URLs externas apenas                                  |
 | Playwright, testes de browser                                        | E2E é `app.inject()` — **D-03**                       |
 | Neon, driver serverless, WebSocket                                   | Postgres é Docker local e Railway — **D-04**          |

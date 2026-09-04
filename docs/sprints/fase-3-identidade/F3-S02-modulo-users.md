@@ -1,11 +1,11 @@
 # F3-S02 — Módulo `users` (`/me`)
 
-|                |                                             |
-| -------------- | ------------------------------------------- |
-| **Fase**       | F3 — Identidade · **último sprint da fase** |
-| **Branch**     | `feature/f3s02-modulo-users`                |
-| **Depende de** | F3-S01                                      |
-| **Entrega**    | R13 · R14 · R15 · tag `v0.3.0`              |
+|                |                              |
+| -------------- | ---------------------------- |
+| **Fase**       | F3 — Identidade              |
+| **Branch**     | `feature/f3s02-modulo-users` |
+| **Depende de** | F3-S01                       |
+| **Entrega**    | R13 · R14 · R15              |
 
 ---
 
@@ -242,7 +242,7 @@ curl -s -o /dev/null -w '%{http_code}\n' -X PATCH localhost:3000/api/v1/me \
 - [ ] `DELETE /me` limpa sessões por cascade (T22)
 - [ ] Nenhuma rota expõe perfil de terceiro
 - [ ] `/docs` mostra as 3 rotas em `Profile` com o cadeado de segurança
-- [ ] PR verde; `release/v0.3.0` preparada e PR para `main` aberto
+- [ ] PR verde (a tag `v0.3.0` fecha a fase em **F3-S03**, não aqui)
 - [ ] Memória atualizada
 
 ---
@@ -267,7 +267,6 @@ curl -s -o /dev/null -w '%{http_code}\n' -X PATCH localhost:3000/api/v1/me \
 
 ## 9. Registro na memória
 
-- **`PROGRESS.md`** — F3-S02 ✅, **fase F3 concluída**, tag `v0.3.0`, R13/R14/R15 nos
-  contratos, próximo = F4-S01.
+- **`PROGRESS.md`** — F3-S02 ✅, R13/R14/R15 nos contratos, próximo = **F3-S03**.
 - **`F3-S02.md`** — o padrão de rota protegida (`onRequest` + `request.user!.id`) e a
   forma do `updateMeBodySchema` com `.refine`. **F4-S01 e F4-S02 copiam daqui.**
