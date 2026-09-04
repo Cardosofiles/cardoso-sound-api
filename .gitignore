@@ -8,3 +8,7 @@ coverage/
 .idea/
 .vitest-cache/
 !.env.example
+
+# Agent security: local overrides and the guard audit trail stay off the repo
+.claude/settings.local.json
+.agent-guard.log
