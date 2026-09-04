@@ -365,3 +365,17 @@
 - **Contexto:** quando a conectividade com o banco de dados falha, o plugin `@fastify/under-pressure` entra em estado degradado e responde 503 Service Unavailable em todas as rotas da API. Contudo, sondas de liveness (`/health`) de orquestradores (Railway, Kubernetes) não devem falhar para evitar reinicializações desnecessárias do processo Node, e `/health/ready` deve emitir seu próprio contrato de indisponibilidade (`{ status: 'unavailable', database: 'down' }`).
 - **Decisão:** configurar `pressureHandler: () => {}` no route config de `/health` e `/health/ready`.
 - **Consequência:** se o Postgres estiver inoperante, rotas de aplicação são protegidas com 503 global pelo `under-pressure`, enquanto `/health` continua respondendo 200 (processo vivo) e `/health/ready` devolve 503 com payload específico sem envelope de erro RFC 7807.
+
+### D-39 · Edição manual permanente de migração para `pg_trgm` e índices GIN
+
+- **Data:** 2026-09-04 · **Sprint:** F2-S01 · **Status:** vigente
+- **Contexto:** o Drizzle Kit não gera comandos de extensões do PostgreSQL (`CREATE EXTENSION IF NOT EXISTS pg_trgm`) nem índices GIN com classes de operador customizadas (`gin_trgm_ops`) a partir de definições TypeScript.
+- **Decisão:** a migração inicial `drizzle/0000_*.sql` recebe edição manual mandatória contendo `CREATE EXTENSION IF NOT EXISTS pg_trgm;` no topo e os três `CREATE INDEX ... USING GIN (... gin_trgm_ops)` ao final.
+- **Consequência:** o arquivo SQL gerado passa a ser a fonte de verdade imutável para a extensão e índices GIN. Novas migrações via `pnpm db:generate` respeitam o estado sincronizado sem sobrescrever essas instruções.
+
+### D-40 · Schemas Better Auth v1.7.2 especificados com Drizzle ORM
+
+- **Data:** 2026-09-04 · **Sprint:** F2-S01 · **Status:** vigente
+- **Contexto:** `better-auth` v1.7.2 utiliza como chave primária identificadores em formato textual (`text('id')`) e chaves estrangeiras com deleção em cascata (`onDelete: 'cascade'`).
+- **Decisão:** os modelos de autenticação (`user`, `session`, `account`, `verification`) são declarados estritamente em `src/db/schema/users.schema.ts` com tipos `text` e constraints canônicas alinhadas à spec 02 §3 e à versão 1.7.2 instalada.
+- **Consequência:** relações de domínio que apontam para o usuário (`playlists.user_id`, `favorites.user_id`) devem impreterivelmente utilizar o tipo `text('user_id')`, prevenindo erros de incompatibilidade de tipos de foreign key no PostgreSQL.
