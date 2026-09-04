@@ -98,6 +98,12 @@ O objeto puro, **sem** wrapper `data`.
 | R23 | GET    | `/api/v1/favorites`                     | ✅   | F4-S02 |
 | R24 | POST   | `/api/v1/favorites/:trackId`            | ✅   | F4-S02 |
 | R25 | DELETE | `/api/v1/favorites/:trackId`            | ✅   | F4-S02 |
+| R26 | POST   | `/api/auth/sign-in/social`              | ❌   | F3-S03 |
+| R27 | GET    | `/api/auth/callback/:providerId`        | ❌   | F3-S03 |
+| R28 | POST   | `/api/auth/send-verification-email`     | ❌   | F3-S03 |
+| R29 | GET    | `/api/auth/verify-email`                | ❌   | F3-S03 |
+| R30 | POST   | `/api/auth/forget-password`             | ❌   | F3-S03 |
+| R31 | POST   | `/api/auth/reset-password`              | ❌   | F3-S03 |
 
 ---
 
@@ -249,6 +255,68 @@ precisa do contrato.
 
 - `Authorization: Bearer <token>` — usado pelo Flutter (`flutter_secure_storage`)
 - Cookie `better-auth.session_token` — usado pelo Swagger UI no browser
+
+### Login social — F3-S03 · configuração em spec `04` §1.1
+
+#### R26 · `POST /api/auth/sign-in/social`
+
+```json
+{ "provider": "google", "callbackURL": "cardososound://auth" }
+```
+
+- `provider`: `google` · `github` · `facebook` — **só os configurados no ambiente**.
+  Provedor sem credencial responde 4xx, nunca 500.
+- `callbackURL` é **validado contra `trustedOrigins`**; origem externa é rejeitada.
+- `200` → `{ url, redirect: true }` — o cliente abre `url` no navegador do sistema.
+- Alternativa nativa (**preferida no Flutter**): enviar `{ provider, idToken }` obtido pelo
+  SDK do aparelho. Sem redirect, sem deep link — responde `{ token, user }` direto.
+- `400` provider desconhecido ou não configurado · `429` acima de 10/min.
+
+#### R27 · `GET /api/auth/callback/:providerId`
+
+Destino do redirect do provedor. **O cliente nunca chama esta rota diretamente.**
+Conclui a sessão e redireciona para o `callbackURL`. `4xx` com `state` inválido ou
+expirado — **sem** criar usuário.
+
+Contas sociais são ligadas ao usuário de mesmo e-mail apenas para provedores confiáveis
+(`google`, `github`) — spec `04` §1.1.
+
+### Verificação de conta e senha — F3-S03 · configuração em spec `04` §1.2
+
+#### R28 · `POST /api/auth/send-verification-email`
+
+```json
+{ "email": "joao@exemplo.com", "callbackURL": "cardososound://verificado" }
+```
+
+`200` **sempre** — inclusive para e-mail inexistente, quando nenhum e-mail é enviado.
+`429` acima de **3 por hora**.
+
+#### R29 · `GET /api/auth/verify-email?token=<token>&callbackURL=<url>`
+
+Link enviado no sign-up (`sendOnSignUp: true`). Marca `user.emailVerified = true` e
+redireciona. Token de **uso único**, validade **24 h**. `4xx` inválido, expirado ou reusado.
+
+> **Verificar e-mail não é pré-requisito para login** (`requireEmailVerification: false`).
+> O cliente lê `emailVerified` em R12; o DTO `Me` (§3) **não** expõe esse campo.
+
+#### R30 · `POST /api/auth/forget-password`
+
+```json
+{ "email": "joao@exemplo.com", "redirectTo": "cardososound://reset" }
+```
+
+`200` **sempre**, com corpo idêntico para e-mail existente e inexistente — a rota não é
+oráculo de enumeração de contas. `429` acima de **3 por hora**.
+
+#### R31 · `POST /api/auth/reset-password`
+
+```json
+{ "token": "<token do e-mail>", "newPassword": "senha-de-8+" }
+```
+
+`200` senha trocada · `4xx` token inválido, expirado ou reusado, ou senha < 8 chars.
+Token de **uso único**, validade **1 h**. `429` acima de **5 por hora**.
 
 ---
 

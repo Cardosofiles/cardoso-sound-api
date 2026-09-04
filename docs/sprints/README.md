@@ -1,6 +1,6 @@
 # Sprints — Roadmap de Execução
 
-**18 sprints · 5 fases · 1 sprint = 1 sessão de agente = 1 PR** (D-23).
+**19 sprints · 5 fases · 1 sprint = 1 sessão de agente = 1 PR** (D-23).
 
 Cada arquivo é autossuficiente: traz o prompt de abertura, os contratos exatos, a lista
 fechada de arquivos que pode tocar e o critério de pronto. O agente não deve precisar de
@@ -46,12 +46,13 @@ mais nada além dele e das specs que ele indicar.
 
 ### F3 — Identidade · `v0.3.0`
 
-> Cadastro, login por bearer e cookie, perfil.
+> Cadastro, login por bearer e cookie, perfil, login social e e-mail transacional.
 
-| Sprint | Arquivo                                                    | Entrega                            |
-| ------ | ---------------------------------------------------------- | ---------------------------------- |
-| F3-S01 | [Better Auth](fase-3-identidade/F3-S01-better-auth.md)     | R09–R12, `requireAuth`, decorators |
-| F3-S02 | [Módulo `users`](fase-3-identidade/F3-S02-modulo-users.md) | R13, R14, R15                      |
+| Sprint | Arquivo                                                                   | Entrega                            |
+| ------ | ------------------------------------------------------------------------- | ---------------------------------- |
+| F3-S01 | [Better Auth](fase-3-identidade/F3-S01-better-auth.md)                    | R09–R12, `requireAuth`, decorators |
+| F3-S02 | [Módulo `users`](fase-3-identidade/F3-S02-modulo-users.md)                | R13, R14, R15                      |
+| F3-S03 | [OAuth social e e-mail](fase-3-identidade/F3-S03-oauth-social-e-email.md) | R26–R31, Resend, `v0.3.0`          |
 
 ### F4 — Biblioteca · `v0.4.0`
 
@@ -83,9 +84,9 @@ F1-S01 ─▶ F1-S02 ─▶ F1-S03 ─▶ F1-S04 ─▶ F1-S05 ─▶ F1-S06 ─
 F2-S01 ─▶ F2-S02 ─┬─▶ F2-S03 ─┐                            │
                   └─▶ F2-S04 ─┤◀───────────────────────────┘
                               │
-                     F3-S01 ─▶ F3-S02 ─┐
-                                        │
-                          F4-S01 ─┬─────┤
+                     F3-S01 ─▶ F3-S02 ─▶ F3-S03 ─┐
+                                                 │
+                          F4-S01 ─┬──────────────┘
                           F4-S02 ─┴─▶ F4-S03
                                         │
                           F5-S01 ─▶ F5-S02 ─▶ F5-S03
