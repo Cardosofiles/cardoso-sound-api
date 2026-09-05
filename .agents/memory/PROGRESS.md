@@ -75,7 +75,7 @@ Legenda: ⬜ pendente · 🟡 em andamento · ✅ concluído · 🔴 bloqueado
 
 | Sprint     | Título                               | Status | PR  | Data       |
 | ---------- | ------------------------------------ | ------ | --- | ---------- |
-| **F3-S01** | Better Auth: config, plugin e guards | ✅     | #21 | 2026-09-05 |
+| **F3-S01** | Better Auth: config, plugin e guards | ✅     | #22 | 2026-09-05 |
 | **F3-S02** | Módulo `users` (`/me`)               | ⬜     | —   | —          |
 | **F3-S03** | OAuth social e e-mail transacional   | ⬜     | —   | —          |
 
