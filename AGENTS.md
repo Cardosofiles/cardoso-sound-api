@@ -6,6 +6,23 @@ Seu objetivo é gerar código limpo, modular, altamente testável e de alta perf
 
 ---
 
+# Quem decide o quê (D-42)
+
+O projeto opera em duas camadas. Você está na camada de **execução**.
+
+| Camada                                    | Decide                                                                  | Escreve                                                                                                    |
+| ----------------------------------------- | ----------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| **Staff Engineer** — Claude Code (Opus 5) | Direção técnica: specs, sprint briefs, ADRs, convenções e revisão       | `docs/specs/**`, `docs/sprints/**`, `.agents/memory/DECISIONS.md`, `.agents/rules/**`                      |
+| **Agentes Antigravity** — você            | Execução: planeja o sprint, implementa, valida, entrega o PR e registra | `src/**`, `tests/**`, `docs/agents-plans/**`, `.agents/memory/PROGRESS.md`, `.agents/memory/F<n>-S<nn>.md` |
+
+**O protocolo de sete etapas não muda** ([`docs/specs/07-protocolo-dos-agentes.md`](docs/specs/07-protocolo-dos-agentes.md)): você lê o sprint brief, **planeja** (Etapa 2, persistindo o plano em `docs/agents-plans/`), **espera a autorização explícita do dono** (Etapa 3 ⏸), implementa, valida, entrega via `gh`, aguarda o CI verde, registra e **para** — o merge é do dono (D-06).
+
+A única mudança: o sprint brief em `docs/sprints/**` é escrito pelo Staff, não por um agente de execução. Você continua planejando a própria implementação. Se o brief for ambíguo ou faltar um contrato, **pare e pergunte** — não invente (spec `07` §3).
+
+Hierarquia de fontes quando houver divergência: `.agents/memory/DECISIONS.md` > `docs/specs/**` > `.agents/rules/**` > sprint brief > `README.md` e este arquivo (que **não são normativos**).
+
+---
+
 # Stack Tecnológico Principal
 
 - **Runtime & Linguagem:** Node.js 24 LTS com TypeScript em **Strict Mode** e ESM nativo (`"type": "module"`).
@@ -31,10 +48,10 @@ O ecossistema do assistente neste projeto está centralizado no diretório [`.ag
 │   ├── coding-standards.md  # Nomenclaturas, TypeScript estrito, ESM e rotas Fastify
 │   ├── database.md          # PostgreSQL, schemas Drizzle, chaves compostas e migrações
 │   ├── auth.md              # Better Auth, decorators de sessão e guards de rotas
-│   └── testing.md           # Vitest, Testcontainers e Playwright
+│   └── testing.md           # Vitest, Testcontainers e E2E com app.inject()
 │
 ├── agents/           # Subagentes especializados para delegação de tarefas
-│   ├── backend-architect.md # Design de domínio, interfaces, DTOs e arquitetura
+│   ├── backend-architect.md # Conformidade da implementação com os contratos decididos
 │   ├── db-specialist.md     # Modelagem Drizzle, migrations, seeds e connection pool
 │   ├── api-developer.md     # Rotas, controllers, services, repositories e plugins
 │   ├── qa-engineer.md       # Suítes de testes unitários, de integração e E2E
@@ -42,7 +59,7 @@ O ecossistema do assistente neste projeto está centralizado no diretório [`.ag
 │
 ├── skills/           # Procedimentos e runbooks acionados sob demanda
 │   ├── db-migrate/          # Geração, inspeção e aplicação de migrations Drizzle
-│   ├── db-seed/             # Povoamento do catálogo com 30+ faixas e artistas mock
+│   ├── db-seed/             # Povoamento idempotente: 8 artistas, 40 faixas, 6 gêneros
 │   ├── test-runner/         # Execução padronizada de Vitest, Testcontainers e app.inject()
 │   └── code-quality/        # Typecheck (tsc), Lint (ESLint), Format (Prettier) e Build (tsup)
 │
@@ -57,7 +74,7 @@ Quando uma tarefa exigir foco profundo ou envolver múltiplos passos de uma disc
 
 | Subagente               | Arquivo de Definição                                                         | Responsabilidade Primária                                                                                                            | Quando Invocar                                                                                     |
 | ----------------------- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------- |
-| **`backend-architect`** | [`.agents/agents/backend-architect.md`](.agents/agents/backend-architect.md) | Desenho arquitetural, validação de fronteiras Clean Architecture, padronização de DTOs e contratos de rotas.                         | Ao planejar novos módulos, definir schemas de entrada/saída Zod ou refatorar camadas de serviços.  |
+| **`backend-architect`** | [`.agents/agents/backend-architect.md`](.agents/agents/backend-architect.md) | Conferência de conformidade: verifica a implementação contra os contratos já decididos (sprint brief, specs, ADRs). **Não projeta.** | Ao revisar um módulo pronto, antes do PR. O desenho de DTOs e contratos é do Staff (D-42).         |
 | **`db-specialist`**     | [`.agents/agents/db-specialist.md`](.agents/agents/db-specialist.md)         | Modelagem relacional PostgreSQL, criação de schemas Drizzle, migrations, índices e conexão com `pg.Pool`.                            | Ao alterar ou criar tabelas, ajustar constraints, transações complexas ou preparar migrations.     |
 | **`api-developer`**     | [`.agents/agents/api-developer.md`](.agents/agents/api-developer.md)         | Implementação de rotas Fastify, Services, Repositories, Fastify plugins e rotinas em background.                                     | Para codificar endpoints, regras de negócio em serviços, repositórios de dados ou plugins Fastify. |
 | **`qa-engineer`**       | [`.agents/agents/qa-engineer.md`](.agents/agents/qa-engineer.md)             | Automação de testes unitários isolados (Vitest), integração com banco efêmero (Testcontainers) e fluxos E2E (Vitest + app.inject()). | Ao criar ou corrigir suítes de testes, aumentar cobertura ou investigar falhas em pipelines.       |
@@ -100,7 +117,7 @@ As regras em [`.agents/rules/`](.agents/rules/) definem as restrições inegoci�
 
 - **Better Auth:** Centralizado em `src/modules/auth/auth.config.ts` com `drizzleAdapter(db, { provider: 'pg' })`.
 - **Decorators:** Sessões e usuários autenticados são injetados em `request.session` e `request.user` via plugin Fastify e tipados em `src/shared/types/fastify.d.ts`.
-- **Proteção:** Endpoints protegidos validam o usuário/sessão antes da execução, emitindo `UnauthorizedError` (HTTP 401) ou `ForbiddenError` (HTTP 403).
+- **Proteção:** Endpoints protegidos validam o usuário/sessão antes da execução, emitindo `UnauthorizedError` (HTTP 401). **Recurso de outro usuário responde `NotFoundError` (HTTP 404), nunca 403** — D-31 e spec `03` §7: recurso inexistente e recurso alheio são indistinguíveis, sob pena de vazar existência por enumeração de UUID. Nenhuma rota do MVP emite 403.
 - **Plugins de Defesa:** Carregar obrigatoriamente `@fastify/helmet`, `@fastify/cors` (com origens de `env.CORS_ORIGIN`), `@fastify/rate-limit` e `@fastify/under-pressure`.
 
 ### 5. [Testes & Garantia de Qualidade](.agents/rules/testing.md) (`testing.md`)
@@ -133,12 +150,12 @@ As skills contêm os procedimentos passo a passo a serem seguidos pelo agente na
 3. **[`db-seed`](.agents/skills/db-seed/SKILL.md):**
    - Povoamento do banco com dados de teste do catálogo musical:
      - `tsx src/db/seed/seed.ts`
-     - Insere pelo menos 5-8 artistas e 30+ faixas de áudio mock com URLs funcionais (SoundHelix) de forma idempotente (`ON CONFLICT DO NOTHING`).
+     - Insere 8 artistas, 40 faixas e 6 gêneros (5 faixas por artista, ≥ 5 por gênero) com URLs de áudio mock funcionais (SoundHelix), de forma idempotente (D-28).
 
 4. **[`test-runner`](.agents/skills/test-runner/SKILL.md):**
    - Execução padronizada de testes:
      - Unitários: `pnpm test` ou `pnpm vitest run <caminho>`.
-     - Integração: `pnpm vitest run tests/setup/testcontainers.ts`.
+     - Integração: `pnpm vitest run --project integration` (`tests/setup/testcontainers.ts` é o harness, não uma suíte).
      - E2E: `pnpm vitest run --project e2e`.
 
 ---
@@ -189,4 +206,4 @@ Siga rigorosamente o modelo **Git Flow** e o padrão **Conventional Commits**:
 3. **Links e rastreabilidade:** Sempre cite caminhos de arquivos e símbolos utilizando markdown com esquema `file://`.
 4. **Análise de causa raiz:** Ao investigar erros, aponte com exatidão a camada responsável (ex: hook do Fastify, regra de negócio no Service, query no Drizzle ou constraint no PostgreSQL) e aplique a correção cirúrgica.
 5. **Verificação antes da conclusão:** Sempre valide as alterações com a pipeline de qualidade (`pnpm typecheck` e testes pertinentes) antes de declarar a tarefa concluída.
-6. **Persistência de Planos e Artefatos:** Todo plano de execução, documento de planejamento ou artefato gerado pelo assistente (armazenado nativamente em `/home/joaocardoso/.gemini/antigravity-cli/brain/**/**.md`) DEVE ser obrigatoriamente salvo e versionado também no repositório no diretório `docs/agents-plans/` (`/run/media/joaocardoso/discoF/Cardosofiles/typescript/back-end/fastify/cardoso-sound-api/docs/agents-plans/`).
+6. **Persistência de Planos e Artefatos:** Todo plano de execução, documento de planejamento ou artefato gerado pelo assistente (armazenado nativamente em `~/.gemini/antigravity-cli/brain/**/*.md`) DEVE ser obrigatoriamente salvo e versionado também no repositório, em `docs/agents-plans/`, nomeado `plan-f<n>s<nn>-<slug>.md` e commitado no PR do sprint. Cite caminhos **relativos à raiz do repositório**: caminho absoluto de uma máquina específica não sobrevive a um clone.

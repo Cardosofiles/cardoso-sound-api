@@ -386,3 +386,24 @@
 - **Contexto:** Consultas com busca textual em múltiplas tabelas (ex: `tracks.title`, `tracks.album` e `artists.name`) exigem junções relacionais. Usar `db.query.*` não permite busca por `artists.name` na raiz de forma performática, enquanto `db.select().from(tracks).innerJoin(artists, ...)` sem mapeamento devolve tuplas brutas achatadas.
 - **Decisão:** Utilizar `db.select({ ...campos, artist: { id: artists.id, name: artists.name, avatarUrl: artists.avatarUrl } }).from(tracks).innerJoin(artists, eq(tracks.artistId, artists.id))`. O Drizzle ORM preserva a hierarquia e monta o objeto aninhado nativamente, sem necessidade de pós-processamento, e a mesma cláusula `where` e `innerJoin` são reutilizados na query de contagem `count()`.
 - **Consequência:** Padrão consolidado para `tracks` e a ser replicado em `playlists` (F4-S01) e `favorites` (F4-S02).
+
+### D-42 · Claude Code (Opus 5) é o Staff Engineer; Antigravity executa
+
+- **Data:** 2026-09-05 · **Status:** vigente
+- **Contexto:** o desenho arquitetural não tinha dono declarado. `AGENTS.md`, `.agents/README.md`
+  e `.agents/agents/backend-architect.md` atribuíam ao agente de execução o desenho de DTOs,
+  contratos de rota e estrutura Fastify — as mesmas responsabilidades que o `CLAUDE.md` passou a
+  atribuir ao Claude Code. Dois donos para a mesma decisão produzem contratos divergentes entre
+  sprints.
+- **Decisão:** **Claude Code (Opus 5) é o Staff Engineer permanente** e detém a direção técnica:
+  `docs/specs/**`, os sprint briefs em `docs/sprints/**`, este arquivo, `.agents/rules/**` e os
+  revisores em `.claude/agents/**`. Os **agentes Antigravity executam**: planejam a
+  implementação, codificam, validam, entregam o PR e registram — produzindo `src/**`,
+  `tests/**`, `docs/agents-plans/**`, `PROGRESS.md` e `F<n>-S<nn>.md`.
+  `backend-architect` é rebaixado a **conferência de conformidade**: verifica a implementação
+  contra os contratos já decididos e **não projeta**.
+- **Consequência:** **o protocolo de sete etapas da spec `07` não muda.** As Etapas 2 (Planejar)
+  e 3 (Autorizar ⏸) continuam sendo do agente de execução e do dono, respectivamente — o plano
+  segue nascendo no Antigravity e sendo persistido em `docs/agents-plans/`. Muda apenas a origem
+  do sprint brief. Buraco de contrato em um brief é defeito do Staff e se corrige com ADR ou
+  emenda à spec, nunca com palpite durante a implementação.

@@ -56,4 +56,6 @@ src/
 
 ## 4. Documentation & Agent Planning Artifacts
 
-- All planning artifacts, execution plans, and agent proposals generated in `/home/joaocardoso/.gemini/antigravity-cli/brain/**/**.md` must be saved/mirrored into `docs/agents-plans/` (`/run/media/joaocardoso/discoF/Cardosofiles/typescript/back-end/fastify/cardoso-sound-api/docs/agents-plans/`).
+- All planning artifacts, execution plans, and agent proposals generated in the agent's own brain directory (`~/.gemini/antigravity-cli/brain/**/*.md`) must be saved/mirrored into `docs/agents-plans/`, named `plan-f<n>s<nn>-<slug>.md`, and committed in the sprint's PR.
+- Reference repository paths **relative to the repository root**. Absolute paths tied to one machine or user home do not survive a clone and go stale silently.
+- Architectural authority — layers, domain contracts, DTO shape, error taxonomy — belongs to the Staff Engineer and is recorded in `docs/specs/**`, the sprint brief and `.agents/memory/DECISIONS.md` (**D-42**). Execution agents plan and implement against those documents; when one is missing or ambiguous, stop and ask instead of inventing a contract.

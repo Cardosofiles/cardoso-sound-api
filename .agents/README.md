@@ -24,10 +24,10 @@ This directory contains the workspace customization configuration for **Google A
 │   ├── coding-standards.md  # TypeScript strictness, naming conventions, Zod validation
 │   ├── database.md          # PostgreSQL and Drizzle ORM conventions
 │   ├── auth.md              # Better Auth integration, decorators, route protection
-│   └── testing.md           # Vitest, Testcontainers, and Playwright protocols
+│   └── testing.md           # Vitest, Testcontainers, and app.inject() E2E protocols
 │
 ├── agents/                  # Specialized custom subagents
-│   ├── backend-architect.md # Domain design, contracts, interfaces, and architecture
+│   ├── backend-architect.md # Conformance check against the decided contracts
 │   ├── db-specialist.md     # PostgreSQL schemas, migrations, connection pool, seeds
 │   ├── api-developer.md     # Fastify routes, services, repositories, plugins, jobs
 │   ├── qa-engineer.md       # Vitest unit tests, integration tests, E2E specs
@@ -37,7 +37,7 @@ This directory contains the workspace customization configuration for **Google A
     ├── db-migrate/
     │   └── SKILL.md         # Database migration workflows
     ├── db-seed/
-    │   └── SKILL.md         # Catalog seeding procedures (30+ mock tracks)
+    │   └── SKILL.md         # Catalog seeding: 8 artists, 40 tracks, 6 genres (D-28)
     ├── test-runner/
     │   └── SKILL.md         # Execution guide for unit, integration, and E2E tests
     └── code-quality/
@@ -60,11 +60,31 @@ All subagents are configured with `model: flash` to leverage **Gemini 3.8 Flash*
 
 | Subagent                                             | Role                                                                         | Primary Skills & Tools              |
 | ---------------------------------------------------- | ---------------------------------------------------------------------------- | ----------------------------------- |
-| [`backend-architect`](./agents/backend-architect.md) | Enforces Clean Architecture, designs DTOs, validates module contracts        | Architecture rules, type validation |
+| [`backend-architect`](./agents/backend-architect.md) | Verifies the implementation against the decided contracts — does not design  | Architecture rules, type validation |
 | [`db-specialist`](./agents/db-specialist.md)         | Models Drizzle schemas, manages PostgreSQL migrations & seed data            | `db-migrate`, `db-seed`             |
 | [`api-developer`](./agents/api-developer.md)         | Implements Fastify routes, controllers, services, repositories, and plugins  | `code-quality`                      |
-| [`qa-engineer`](./agents/qa-engineer.md)             | Develops Vitest unit tests, Testcontainers, and Playwright E2E suites        | `test-runner`                       |
+| [`qa-engineer`](./agents/qa-engineer.md)             | Develops Vitest unit tests, Testcontainers, and `app.inject()` E2E suites    | `test-runner`                       |
 | [`security-reviewer`](./agents/security-reviewer.md) | Audits Better Auth, Fastify decorators, rate limiting, and defensive headers | `code-quality`, security audit      |
+
+---
+
+## 🏛️ Who decides what (D-42)
+
+This workspace is the **execution** half of a two-layer setup:
+
+| Layer                                     | Owns                                                                                      | Artifacts                                                                                                  |
+| ----------------------------------------- | ----------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| **Staff Engineer** — Claude Code (Opus 5) | Technical direction: specs, sprint briefs, ADRs, conventions, review                      | `docs/specs/**`, `docs/sprints/**`, `.agents/memory/DECISIONS.md`, `.agents/rules/**`, `.claude/agents/**` |
+| **Antigravity agents** — this directory   | Execution: plan the sprint, implement it, validate it, deliver the PR, record the outcome | `src/**`, `tests/**`, `docs/agents-plans/**`, `.agents/memory/PROGRESS.md`, `.agents/memory/F<n>-S<nn>.md` |
+
+The seven-step session protocol is unchanged (`docs/specs/07-protocolo-dos-agentes.md`): an
+agent reads the sprint brief, **plans** (Etapa 2, persisted to `docs/agents-plans/`), **waits
+for the owner's explicit authorization** (Etapa 3 ⏸), implements, validates, delivers via `gh`
+and waits for green CI, then records and **stops** — the merge is the owner's (D-06).
+
+What changed is only the source of the brief: `docs/sprints/**` is authored by the Staff
+Engineer, not by an execution agent. Agents still plan their own implementation. When a brief
+is ambiguous or a contract is missing, **stop and ask** — do not invent it (spec `07` §3).
 
 ---
 
@@ -109,11 +129,14 @@ Configured in [`.agents/mcp_config.json`](./mcp_config.json):
 - **context7**: Upstash documentation retrieval.
 - **github**: Repository, issue, and pull request management.
 - **postgres**: Direct query inspection against the PostgreSQL database.
-- **playwright**: Browser automation and end-to-end verification.
 
 ---
 
 ## 📋 Persistência de Planos dos Agentes
 
-Todos os artefatos de planejamento e execução gerados em `/home/joaocardoso/.gemini/antigravity-cli/brain/**/**.md` devem ser salvos/copiados obrigatoriamente no repositório em:
-`docs/agents-plans/` (`/run/media/joaocardoso/discoF/Cardosofiles/typescript/back-end/fastify/cardoso-sound-api/docs/agents-plans/`).
+Every planning and execution artifact an agent generates in its own brain directory
+(`~/.gemini/antigravity-cli/brain/**/*.md`) must also be saved and versioned in the
+repository, under `docs/agents-plans/`, named `plan-f<n>s<nn>-<slug>.md`.
+
+Paths are always **relative to the repository root** — never absolute paths from a particular
+machine or user home, which do not survive a clone.
