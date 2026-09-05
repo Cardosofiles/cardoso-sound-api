@@ -11,11 +11,11 @@ describe('env config', () => {
 
     expect(parsed).toEqual({
       NODE_ENV: 'development',
-      PORT: 3000,
+      PORT: 3333,
       HOST: '0.0.0.0',
       DATABASE_URL: 'postgresql://cardoso:cardoso_dev@localhost:5432/cardoso_sound',
       BETTER_AUTH_SECRET: 'a'.repeat(32),
-      BETTER_AUTH_URL: 'http://localhost:3000',
+      BETTER_AUTH_URL: 'http://localhost:3333',
       CORS_ORIGIN: '',
       CORS_ORIGIN_LIST: [],
       LOG_LEVEL: 'info',
@@ -54,10 +54,10 @@ describe('env config', () => {
     const parsed = parseEnv({
       DATABASE_URL: 'postgresql://cardoso:cardoso_dev@localhost:5432/cardoso_sound',
       BETTER_AUTH_SECRET: 'a'.repeat(32),
-      PORT: '3000',
+      PORT: '3333',
     });
 
-    expect(parsed.PORT).toBe(3000);
+    expect(parsed.PORT).toBe(3333);
     expect(typeof parsed.PORT).toBe('number');
   });
 

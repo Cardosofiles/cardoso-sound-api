@@ -47,6 +47,11 @@ Se `PROGRESS.md` apontar um sprint diferente do pedido, **pergunte antes de segu
 
 ## 3. Etapa 2 — Planejar
 
+> **De onde vem o sprint brief.** O arquivo `docs/sprints/**/F<n>-S<nn>-*.md` que você acabou
+> de ler é escrito pelo **Staff Engineer** (D-42), que também detém as specs, os ADRs e as
+> convenções. **O plano de implementação continua sendo seu** — esta etapa não muda. O Staff
+> define _o que_ e _sob quais contratos_; você decide _como_ e responde por isso.
+
 Antes de escrever a primeira linha, produza um plano que responda:
 
 - Quais arquivos serão criados e quais editados — conferir contra o **blast radius**
@@ -57,6 +62,13 @@ Antes de escrever a primeira linha, produza um plano que responda:
 
 Se o sprint exigir algo que as specs não definem: **pare aqui**, descreva o buraco, e
 pergunte. Não invente contrato — um contrato inventado no sprint 7 quebra o sprint 12.
+Um buraco no brief é defeito do Staff, e o conserto é um ADR ou uma emenda à spec, nunca um
+palpite seu no meio da implementação.
+
+**Persistência obrigatória (Regra 6 do `AGENTS.md`).** O plano produzido nesta etapa é salvo e
+versionado em `docs/agents-plans/plan-f<n>s<nn>-<slug>.md` e commitado no PR do sprint —
+inclusive quando o assistente já o mantém em seu próprio diretório de trabalho. Use caminhos
+relativos à raiz do repositório.
 
 ---
 

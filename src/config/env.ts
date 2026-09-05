@@ -3,11 +3,11 @@ import { z } from 'zod';
 
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
-  PORT: z.coerce.number().int().positive().default(3000),
+  PORT: z.coerce.number().int().positive().default(3333),
   HOST: z.string().default('0.0.0.0'),
   DATABASE_URL: z.url(),
   BETTER_AUTH_SECRET: z.string().min(32),
-  BETTER_AUTH_URL: z.url().default('http://localhost:3000'),
+  BETTER_AUTH_URL: z.url().default('http://localhost:3333'),
   CORS_ORIGIN: z.string().default(''),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
   RATE_LIMIT_MAX: z.coerce.number().int().positive().default(100),

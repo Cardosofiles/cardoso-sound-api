@@ -242,12 +242,12 @@ Todas com `onRequest: [fastify.requireAuth]`, `tags: ['Library']`, `security`,
 docker compose up -d && pnpm db:migrate && tsx src/db/seed/seed.ts
 pnpm typecheck && pnpm lint && pnpm format && pnpm test && pnpm build
 pnpm dev
-P=$(curl -s -X POST localhost:3000/api/v1/playlists -H "authorization: Bearer $TOKEN" \
+P=$(curl -s -X POST localhost:3333/api/v1/playlists -H "authorization: Bearer $TOKEN" \
   -H 'content-type: application/json' -d '{"name":"Treino"}' | jq -r .id)
-T=$(curl -s 'localhost:3000/api/v1/tracks?limit=1' | jq -r '.data[0].id')
-curl -s -X POST "localhost:3000/api/v1/playlists/$P/tracks" -H "authorization: Bearer $TOKEN" \
+T=$(curl -s 'localhost:3333/api/v1/tracks?limit=1' | jq -r '.data[0].id')
+curl -s -X POST "localhost:3333/api/v1/playlists/$P/tracks" -H "authorization: Bearer $TOKEN" \
   -H 'content-type: application/json' -d "{\"trackId\":\"$T\"}" | jq '.tracks | length'
-curl -s -o /dev/null -w '%{http_code}\n' -X POST "localhost:3000/api/v1/playlists/$P/tracks" \
+curl -s -o /dev/null -w '%{http_code}\n' -X POST "localhost:3333/api/v1/playlists/$P/tracks" \
   -H "authorization: Bearer $TOKEN" -H 'content-type: application/json' -d "{\"trackId\":\"$T\"}"  # 409
 ```
 

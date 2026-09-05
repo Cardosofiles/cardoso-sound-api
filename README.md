@@ -365,7 +365,7 @@ tsx src/db/seed/seed.ts
 pnpm dev
 
 # 7. Acessar a documentação
-# http://localhost:3000/docs
+# http://localhost:3333/docs
 ```
 
 ---

@@ -528,11 +528,11 @@ pnpm test
 pnpm build
 
 # 3. Testes Funcionais Manuais com a aplicação ativa (pnpm dev)
-curl -s 'http://localhost:3000/api/v1/artists?limit=3' | jq
-curl -s 'http://localhost:3000/api/v1/artists?search=Midnight' | jq '.meta'
-curl -s 'http://localhost:3000/api/v1/artists/<uuid-do-seed>' | jq '.tracks | length'
-curl -s -o /dev/null -w '%{http_code}\n' 'http://localhost:3000/api/v1/artists/nao-e-uuid'       # Esperado: 400
-curl -s -o /dev/null -w '%{http_code}\n' 'http://localhost:3000/api/v1/artists/00000000-0000-0000-0000-000000000000' # Esperado: 404
+curl -s 'http://localhost:3333/api/v1/artists?limit=3' | jq
+curl -s 'http://localhost:3333/api/v1/artists?search=Midnight' | jq '.meta'
+curl -s 'http://localhost:3333/api/v1/artists/<uuid-do-seed>' | jq '.tracks | length'
+curl -s -o /dev/null -w '%{http_code}\n' 'http://localhost:3333/api/v1/artists/nao-e-uuid'       # Esperado: 400
+curl -s -o /dev/null -w '%{http_code}\n' 'http://localhost:3333/api/v1/artists/00000000-0000-0000-0000-000000000000' # Esperado: 404
 ```
 
 ### Checklist de Conclusão:

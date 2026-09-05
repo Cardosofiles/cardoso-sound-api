@@ -127,8 +127,8 @@ Teste **local antes de subir**:
 
 ```bash
 docker build -t cardoso-sound-api .
-docker run --rm -e DATABASE_URL=... -e BETTER_AUTH_SECRET=... -p 3000:3000 cardoso-sound-api
-curl -s localhost:3000/health
+docker run --rm -e DATABASE_URL=... -e BETTER_AUTH_SECRET=... -p 3333:3333 cardoso-sound-api
+curl -s localhost:3333/health
 ```
 
 ### 5.2 Variáveis na Railway

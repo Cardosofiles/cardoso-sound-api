@@ -92,7 +92,7 @@ Variáveis padronizadas:
 ```dotenv
 # Ambiente: development | test | production
 NODE_ENV=development
-PORT=3000
+PORT=3333
 HOST=0.0.0.0
 
 # Postgres local (docker compose up -d)
@@ -100,10 +100,10 @@ DATABASE_URL=postgresql://cardoso:cardoso_dev@localhost:5432/cardoso_sound
 
 # Better Auth — gere com: openssl rand -base64 32
 BETTER_AUTH_SECRET=troque-por-um-segredo-de-no-minimo-32-caracteres
-BETTER_AUTH_URL=http://localhost:3000
+BETTER_AUTH_URL=http://localhost:3333
 
 # CSV de origens permitidas. Ignorado fora de produção (D-19).
-CORS_ORIGIN=http://localhost:3000
+CORS_ORIGIN=http://localhost:3333
 
 LOG_LEVEL=debug
 RATE_LIMIT_MAX=100
@@ -117,11 +117,11 @@ Para o `.env` local, será injetado um segredo real gerado com `openssl rand -ba
 - **Importação:** `import 'dotenv/config';` no topo.
 - **Validação com Zod 4:**
   - `NODE_ENV`: `z.enum(['development', 'test', 'production']).default('development')`
-  - `PORT`: `z.coerce.number().int().positive().default(3000)`
+  - `PORT`: `z.coerce.number().int().positive().default(3333)`
   - `HOST`: `z.string().default('0.0.0.0')`
   - `DATABASE_URL`: `z.url()` (obrigatória, sem default)
   - `BETTER_AUTH_SECRET`: `z.string().min(32)` (obrigatória, sem default)
-  - `BETTER_AUTH_URL`: `z.url().default('http://localhost:3000')`
+  - `BETTER_AUTH_URL`: `z.url().default('http://localhost:3333')`
   - `CORS_ORIGIN`: `z.string().default('')`
   - `LOG_LEVEL`: `z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info')`
   - `RATE_LIMIT_MAX`: `z.coerce.number().int().positive().default(100)`
@@ -175,7 +175,7 @@ export const SHUTDOWN_TIMEOUT_MS = 10_000;
 | **T2** | `DATABASE_URL` ausente           | Sem `DATABASE_URL`                                | Lança erro de validação Zod               |
 | **T3** | `DATABASE_URL` inválida          | `DATABASE_URL="invalido"`                         | Lança erro Zod (url inválida)             |
 | **T4** | `BETTER_AUTH_SECRET` curto       | `BETTER_AUTH_SECRET="1234567890"` (10 chars)      | Lança erro Zod (min 32)                   |
-| **T5** | Coerção de porta numérica        | `PORT="3000"` (string)                            | Coagido para `number` 3000                |
+| **T5** | Coerção de porta numérica        | `PORT="3333"` (string)                            | Coagido para `number` 3333                |
 | **T6** | `NODE_ENV` inválido              | `NODE_ENV="staging"`                              | Lança erro Zod (enum inválido)            |
 | **T7** | CSV com espaços e trailing comma | `CORS_ORIGIN="a.com, b.com ,"`                    | `CORS_ORIGIN_LIST === ['a.com', 'b.com']` |
 | **T8** | CSV vazio                        | `CORS_ORIGIN=""`                                  | `CORS_ORIGIN_LIST === []`                 |

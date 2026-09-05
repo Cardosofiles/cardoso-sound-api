@@ -22,14 +22,22 @@
 | **Banco**              | ✅ Postgres 17 ativo via Docker Compose                          |
 | **Última atualização** | 2026-09-04 — F2-S04 concluído                                    |
 
-### ⚠️ O scaffold está VAZIO
+### O que já tem código e o que ainda está vazio
 
-**Todo `.ts`, todo arquivo de config e ambos os workflows têm 0 bytes.** A árvore de
-diretórios, o `package.json` e a documentação estão completos; o código não. Antes de
-assumir que um arquivo tem conteúdo, **verifique**.
+O scaffold **não** está mais vazio: F1 e F2 estão mergeadas e os cinco portões
+(`typecheck`, `lint`, `format`, `test`, `build`) passam. Ainda assim, **verifique que um
+arquivo tem conteúdo antes de assumir que tem** — vários continuam com 0 bytes.
 
-Consequência: `pnpm typecheck`, `lint`, `format`, `test` e `build` agora passam (F1-S02).
-Comandos `db:*` falham até F1-S03 e F2-S01 configurarem `drizzle.config.ts`.
+**Implementado:** toolchain e portões · Docker Compose e `src/config/env.ts` · CI ·
+hierarquia `AppError`, app factory, logger · plugins de borda, `/health`, Swagger ·
+schema Drizzle completo com índices GIN `pg_trgm` · seed idempotente · harness
+Testcontainers · módulos `artists` e `tracks`.
+
+**Ainda com 0 bytes, aguardando seus sprints:** `src/modules/auth/*` (F3-S01) ·
+`src/modules/users/*` (F3-S02) · `src/modules/playlists/*` (F4-S01) ·
+`src/modules/favorites/*` (F4-S02) · `src/shared/types/fastify.d.ts` (F3-S01) ·
+`tests/e2e/specs/` (F4-S03) · `Dockerfile`, `railway.json`,
+`.github/workflows/deploy.yml` (F5-S02).
 
 ---
 

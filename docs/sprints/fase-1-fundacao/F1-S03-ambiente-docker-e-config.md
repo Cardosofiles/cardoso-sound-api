@@ -142,7 +142,7 @@ docker compose ps        # deve mostrar (healthy)
 ```dotenv
 # Ambiente: development | test | production
 NODE_ENV=development
-PORT=3000
+PORT=3333
 HOST=0.0.0.0
 
 # Postgres local (docker compose up -d)
@@ -150,10 +150,10 @@ DATABASE_URL=postgresql://cardoso:cardoso_dev@localhost:5432/cardoso_sound
 
 # Better Auth — gere com: openssl rand -base64 32
 BETTER_AUTH_SECRET=troque-por-um-segredo-de-no-minimo-32-caracteres
-BETTER_AUTH_URL=http://localhost:3000
+BETTER_AUTH_URL=http://localhost:3333
 
 # CSV de origens permitidas. Ignorado fora de produção (D-19).
-CORS_ORIGIN=http://localhost:3000
+CORS_ORIGIN=http://localhost:3333
 
 LOG_LEVEL=debug
 RATE_LIMIT_MAX=100
@@ -198,7 +198,7 @@ Conforme §3. Nada de valor mágico espalhado pelo código a partir daqui.
 | T2  | `DATABASE_URL` ausente                                           | lança / falha a validação                |
 | T3  | `DATABASE_URL` não é URL                                         | falha                                    |
 | T4  | `BETTER_AUTH_SECRET` com 10 chars                                | falha                                    |
-| T5  | `PORT="3000"` (string)                                           | vira `number` 3000                       |
+| T5  | `PORT="3333"` (string)                                           | vira `number` 3333                       |
 | T6  | `NODE_ENV` fora do enum                                          | falha                                    |
 | T7  | `CORS_ORIGIN="a.com, b.com ,"`                                   | `CORS_ORIGIN_LIST === ['a.com','b.com']` |
 | T8  | `CORS_ORIGIN=""`                                                 | `CORS_ORIGIN_LIST === []`                |

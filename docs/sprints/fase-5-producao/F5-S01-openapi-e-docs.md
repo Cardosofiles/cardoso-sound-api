@@ -142,7 +142,7 @@ openapi: {
   info: { title: 'Cardoso Sound API', version: pkg.version,
           description: 'API de catálogo musical para o app Flutter.' },
   servers: [
-    { url: 'http://localhost:3000', description: 'Local' },
+    { url: 'http://localhost:3333', description: 'Local' },
     { url: env.BETTER_AUTH_URL,     description: 'Produção' },
   ],
   tags: [
@@ -208,7 +208,7 @@ pnpm openapi:export
 git diff --exit-code docs/openapi.json      # 2ª execução: sem diff
 pnpm openapi:export -- --check              # sai 0
 pnpm typecheck && pnpm lint && pnpm format && pnpm test && pnpm build
-pnpm dev && open http://localhost:3000/docs
+pnpm dev && open http://localhost:3333/docs
 ```
 
 - [ ] T1–T12 verdes

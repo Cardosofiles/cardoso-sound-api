@@ -220,12 +220,12 @@ Depois do merge do PR em `develop`, siga o procedimento da **spec `06` §6** par
 docker compose up -d
 pnpm typecheck && pnpm lint && pnpm format && pnpm test && pnpm build
 pnpm dev
-curl -s localhost:3000/health        | jq
-curl -s localhost:3000/health/ready  | jq
-curl -sI localhost:3000/health       | grep -i x-frame-options
-open http://localhost:3000/docs      # Swagger UI carrega sem erro de CSP
+curl -s localhost:3333/health        | jq
+curl -s localhost:3333/health/ready  | jq
+curl -sI localhost:3333/health       | grep -i x-frame-options
+open http://localhost:3333/docs      # Swagger UI carrega sem erro de CSP
 docker compose stop postgres
-curl -s -o /dev/null -w '%{http_code}\n' localhost:3000/health/ready   # 503
+curl -s -o /dev/null -w '%{http_code}\n' localhost:3333/health/ready   # 503
 docker compose start postgres
 ```
 

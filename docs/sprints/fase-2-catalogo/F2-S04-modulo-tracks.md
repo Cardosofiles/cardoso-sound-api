@@ -230,13 +230,13 @@ correto**. O que importa é o índice existir e a query estar certa. Cole o `EXP
 docker compose up -d && pnpm db:migrate && tsx src/db/seed/seed.ts
 pnpm typecheck && pnpm lint && pnpm format && pnpm test && pnpm build
 pnpm dev
-curl -s 'localhost:3000/api/v1/tracks?limit=2' | jq '.data[0], .meta'
-curl -s 'localhost:3000/api/v1/tracks?genre=rock&limit=100' | jq '.meta.total'
-curl -s 'localhost:3000/api/v1/tracks?search=lo' | jq '.meta.total'
-curl -s 'localhost:3000/api/v1/tracks?sort=duration&limit=3' | jq '.data[].durationSeconds'
-curl -s localhost:3000/api/v1/genres | jq
-curl -s -o /dev/null -w '%{http_code}\n' 'localhost:3000/api/v1/tracks?genre=funk'   # 400
-curl -s -o /dev/null -w '%{http_code}\n' 'localhost:3000/api/v1/tracks?limit=101'    # 400
+curl -s 'localhost:3333/api/v1/tracks?limit=2' | jq '.data[0], .meta'
+curl -s 'localhost:3333/api/v1/tracks?genre=rock&limit=100' | jq '.meta.total'
+curl -s 'localhost:3333/api/v1/tracks?search=lo' | jq '.meta.total'
+curl -s 'localhost:3333/api/v1/tracks?sort=duration&limit=3' | jq '.data[].durationSeconds'
+curl -s localhost:3333/api/v1/genres | jq
+curl -s -o /dev/null -w '%{http_code}\n' 'localhost:3333/api/v1/tracks?genre=funk'   # 400
+curl -s -o /dev/null -w '%{http_code}\n' 'localhost:3333/api/v1/tracks?limit=101'    # 400
 ```
 
 - [ ] T1–T22 verdes

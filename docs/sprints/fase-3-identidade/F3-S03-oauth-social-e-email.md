@@ -34,7 +34,7 @@ providencia, ou remove o provedor correspondente do escopo deste sprint.
 Redirect URIs a cadastrar em cada provedor (as três, em cada um):
 
 ```
-http://localhost:3000/api/auth/callback/<provider>
+http://localhost:3333/api/auth/callback/<provider>
 https://<dominio-railway>/api/auth/callback/<provider>
 ```
 
@@ -449,7 +449,7 @@ pnpm dev
 **Verificação de e-mail** (dev, transporte de memória — o link sai no log):
 
 ```bash
-curl -s -X POST localhost:3000/api/auth/sign-up/email \
+curl -s -X POST localhost:3333/api/auth/sign-up/email \
   -H 'content-type: application/json' \
   -d '{"name":"Joao","email":"joao+verif@teste.com","password":"senha-de-teste-123"}' | jq
 # copie a URL do stdout do servidor e:
@@ -461,16 +461,16 @@ docker compose exec -T postgres psql -U postgres -d cardoso_sound \
 **Recuperação de senha:**
 
 ```bash
-curl -s -o /dev/null -w '%{http_code}\n' -X POST localhost:3000/api/auth/forget-password \
+curl -s -o /dev/null -w '%{http_code}\n' -X POST localhost:3333/api/auth/forget-password \
   -H 'content-type: application/json' -d '{"email":"joao+verif@teste.com"}'   # 200
-curl -s -o /dev/null -w '%{http_code}\n' -X POST localhost:3000/api/auth/forget-password \
+curl -s -o /dev/null -w '%{http_code}\n' -X POST localhost:3333/api/auth/forget-password \
   -H 'content-type: application/json' -d '{"email":"nao-existe@teste.com"}'   # 200 idêntico
 ```
 
 **Social** (manual, com browser):
 
 ```bash
-curl -s -X POST localhost:3000/api/auth/sign-in/social \
+curl -s -X POST localhost:3333/api/auth/sign-in/social \
   -H 'content-type: application/json' -d '{"provider":"google"}' | jq -r .url
 # abra a URL no browser, conclua o login, confirme o redirect de volta
 docker compose exec -T postgres psql -U postgres -d cardoso_sound \

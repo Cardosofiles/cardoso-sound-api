@@ -16,9 +16,10 @@ Guidelines for user authentication using **Better Auth** and Fastify security pl
 
 ## 3. Route Protection
 
-- Protected endpoints (such as `/api/playlists`, `/api/favorites`) must verify `request.user` / `request.session` before execution.
+- Protected endpoints (such as `/api/v1/playlists`, `/api/v1/favorites`) must verify `request.user` / `request.session` before execution.
 - If unauthenticated, throw `UnauthorizedError` (HTTP 401).
-- If accessing a resource owned by another user, throw `ForbiddenError` (HTTP 403).
+- **If the resource is owned by another user, throw `NotFoundError` (HTTP 404) — never `ForbiddenError` (403).** Per **D-31** and `docs/specs/03-contrato-da-api.md` §7, a resource that does not exist and a resource belonging to someone else must be indistinguishable; a 403 confirms existence and turns UUID enumeration into an information leak. **No MVP route emits 403.** `ForbiddenError` stays in the hierarchy for a future case where the resource is provably visible to the user but the action is not permitted.
+- Authenticated ≠ owner. Every route with an `:id` needs an ownership check on the row actually loaded, never inferred from a client-supplied field. Nested resources (`playlist_tracks`, `favorites`) inherit the parent's check.
 
 ## 4. Security Plugins
 
