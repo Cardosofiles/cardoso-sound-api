@@ -10,6 +10,7 @@ import { API_PREFIX } from './config/constants.js';
 import { artistsRoutes } from './modules/artists/artists.routes.js';
 import { authPlugin } from './modules/auth/auth.plugin.js';
 import { tracksRoutes } from './modules/tracks/tracks.routes.js';
+import { usersRoutes } from './modules/users/users.routes.js';
 import { corsPlugin } from './plugins/cors.plugin.js';
 import { errorHandlerPlugin } from './plugins/error-handler.plugin.js';
 import { healthPlugin } from './plugins/health.plugin.js';
@@ -73,6 +74,7 @@ export async function buildApp(): Promise<FastifyInstance> {
   // 6. Rotas de catálogo e domínio (/api/v1)
   await app.register(artistsRoutes, { prefix: API_PREFIX });
   await app.register(tracksRoutes, { prefix: API_PREFIX });
+  await app.register(usersRoutes, { prefix: API_PREFIX });
 
   return app;
 }
