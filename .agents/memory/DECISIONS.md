@@ -407,3 +407,24 @@
   segue nascendo no Antigravity e sendo persistido em `docs/agents-plans/`. Muda apenas a origem
   do sprint brief. Buraco de contrato em um brief é defeito do Staff e se corrige com ADR ou
   emenda à spec, nunca com palpite durante a implementação.
+
+### D-43 · Adição da coluna issuer na tabela account do Better Auth v1.7.2
+
+- **Data:** 2026-09-05 · **Sprint:** F3-S01 · **Status:** vigente
+- **Contexto:** o Better Auth v1.7.2 exige obrigatoriamente a coluna `issuer` na tabela `account` (alimentada internamente com `"credential"` via `createLocalAccountIssuer("credential")` no cadastro de e-mail e senha). O `@better-auth/drizzle-adapter` valida a existência de todas as propriedades no schema Drizzle; a ausência de `issuer` gerava exceção em runtime interrompendo o sign-up.
+- **Decisão:** adicionar `issuer: text('issuer').notNull().default('credential')` na tabela `account` em `src/db/schema/users.schema.ts` e gerar a migração `drizzle/0001_early_blazing_skull.sql` com `ALTER TABLE "account" ADD COLUMN "issuer" text DEFAULT 'credential' NOT NULL;`.
+- **Consequência:** schema perfeitamente sincronizado com o Better Auth v1.7.2. Aplicação automática garantida em produção e no harness do Testcontainers.
+
+### D-44 · Repasse de múltiplos cabeçalhos Set-Cookie via getSetCookie() na ponte Fastify↔Fetch
+
+- **Data:** 2026-09-05 · **Sprint:** F3-S01 · **Status:** vigente
+- **Contexto:** o Fastify e o Better Auth operam sobre contratos HTTP distintos (Node.js IncomingMessage vs Fetch API Request/Response). Ao converter a resposta de `auth.handler(req)`, o método tradicional `res.headers.forEach()` pode colapsar múltiplos cabeçalhos `Set-Cookie` em uma única string concatenada com vírgulas, corrompendo a leitura de cookies e sessions em browsers e Swagger UI.
+- **Decisão:** utilizar `res.headers.getSetCookie()` no handler de `auth.plugin.ts` e despachar explicitamente o array para o Fastify via `reply.header('set-cookie', setCookies)`. Os demais headers são repassados iterativamente excluindo `set-cookie`.
+- **Consequência:** múltiplos cookies emitidos pelo Better Auth (ex: session token e CSRF/state) são repassados de forma íntegra e atômica para o cliente HTTP.
+
+### D-45 · Centralização da rota coringa /api/auth/* no auth.plugin.ts por regras de boundary
+
+- **Data:** 2026-09-05 · **Sprint:** F3-S01 · **Status:** vigente
+- **Contexto:** o sprint §5.5 apresentava duas opções para `src/modules/auth/auth.routes.ts`: (a) reexport documentado com `export {}` ou (b) mover a rota coringa para `auth.routes.ts`. Contudo, as regras de arquitetura em `eslint.config.mjs` classificam `auth.plugin.ts` como `plugin` e `auth.routes.ts` como `routes`. A regra de boundaries proíbe estritamente que elementos `plugin` importem elementos `routes` (`from: 'plugin' allow: ['shared', 'config', 'dto', 'db']`).
+- **Decisão:** adotar a Opção (a): a rota coringa `['GET', 'POST', 'OPTIONS'] /api/auth/*` e a ponte Fetch API vivem integralmente no `auth.plugin.ts`. O arquivo `auth.routes.ts` permanece como documentação estrutural canônica com `export {};`.
+- **Consequência:** isolamento estrito de boundaries sem necessidade de violar regras do ESLint ou estender permissões desnecessariamente.

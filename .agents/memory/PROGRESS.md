@@ -11,16 +11,16 @@
 
 | Campo                  | Valor                                                            |
 | ---------------------- | ---------------------------------------------------------------- |
-| **Fase corrente**      | F3 — Identidade (F2 Catálogo concluída)                          |
-| **Próximo sprint**     | **F3-S01** — Better Auth: config, plugin e guards                |
+| **Fase corrente**      | F3 — Identidade                                                  |
+| **Próximo sprint**     | **F3-S02** — Módulo `users` (`/me`)                              |
 | **Última tag**         | `v0.2.0` (preparada)                                             |
 | **`gh` CLI**           | ✅ 2.46.0, autenticado como `Cardosofiles`, protocolo SSH (D-33) |
 | **`pnpm install`**     | ✅ passa — `allowBuilds` decidido (D-32)                         |
 | **Repositório**        | ✅ público `Cardosofiles/cardoso-sound-api` no GitHub            |
-| **Branch de trabalho** | `feature/f2s04-modulo-tracks` (default: `develop`)               |
+| **Branch de trabalho** | `feature/f3s01-better-auth` (default: `develop`)                 |
 | **CI**                 | ✅ ativo (`.github/workflows/ci.yml`) — check obrigatório        |
 | **Banco**              | ✅ Postgres 17 ativo via Docker Compose                          |
-| **Última atualização** | 2026-09-04 — F2-S04 concluído                                    |
+| **Última atualização** | 2026-09-05 — F3-S01 concluído                                    |
 
 ### O que já tem código e o que ainda está vazio
 
@@ -73,11 +73,11 @@ Legenda: ⬜ pendente · 🟡 em andamento · ✅ concluído · 🔴 bloqueado
 
 > Objetivo: cadastro, login (bearer + cookie), perfil, login social e e-mail transacional.
 
-| Sprint     | Título                               | Status | PR  | Data |
-| ---------- | ------------------------------------ | ------ | --- | ---- |
-| **F3-S01** | Better Auth: config, plugin e guards | ⬜     | —   | —    |
-| **F3-S02** | Módulo `users` (`/me`)               | ⬜     | —   | —    |
-| **F3-S03** | OAuth social e e-mail transacional   | ⬜     | —   | —    |
+| Sprint     | Título                               | Status | PR  | Data       |
+| ---------- | ------------------------------------ | ------ | --- | ---------- |
+| **F3-S01** | Better Auth: config, plugin e guards | ✅     | #22 | 2026-09-05 |
+| **F3-S02** | Módulo `users` (`/me`)               | ⬜     | —   | —          |
+| **F3-S03** | OAuth social e e-mail transacional   | ⬜     | —   | —          |
 
 ### F4 — Biblioteca → tag `v0.4.0`
 
@@ -132,6 +132,13 @@ antes de reimplementar.
 | R06: `GET /api/v1/tracks` (lista paginada com busca e filtros)                                         | F2-S04 | `src/modules/tracks/`                 |
 | R07: `GET /api/v1/tracks/:id` (detalhe da faixa com `artist` embutido)                                 | F2-S04 | `src/modules/tracks/`                 |
 | R08: `GET /api/v1/genres` (lista agregada dos 6 gêneros com `trackCount`)                              | F2-S04 | `src/modules/tracks/`                 |
+| R09: `POST /api/auth/sign-up/email` (cadastro com e-mail/senha, bearer token e cookie)                 | F3-S01 | `src/modules/auth/`                   |
+| R10: `POST /api/auth/sign-in/email` (autenticação por e-mail/senha)                                    | F3-S01 | `src/modules/auth/`                   |
+| R11: `POST /api/auth/sign-out` (invalidação de sessão)                                                 | F3-S01 | `src/modules/auth/`                   |
+| R12: `GET /api/auth/get-session` (resolução de sessão ativa por bearer token ou cookie)                | F3-S01 | `src/modules/auth/`                   |
+| Decorators `request.user` / `request.session` e guard `fastify.requireAuth`                            | F3-S01 | `src/modules/auth/auth.plugin.ts`     |
+| Helper E2E `signUpAndGetToken` (registro de usuário e extração de Bearer token)                        | F3-S01 | `tests/e2e/helpers/auth.ts`           |
+| Migração `0001_early_blazing_skull.sql` (adição de `account.issuer` para Better Auth v1.7.2)           | F3-S01 | `drizzle/`                            |
 
 ---
 
