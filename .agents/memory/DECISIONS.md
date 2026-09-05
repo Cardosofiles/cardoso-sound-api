@@ -379,3 +379,10 @@
 - **Contexto:** `better-auth` v1.7.2 utiliza como chave primária identificadores em formato textual (`text('id')`) e chaves estrangeiras com deleção em cascata (`onDelete: 'cascade'`).
 - **Decisão:** os modelos de autenticação (`user`, `session`, `account`, `verification`) são declarados estritamente em `src/db/schema/users.schema.ts` com tipos `text` e constraints canônicas alinhadas à spec 02 §3 e à versão 1.7.2 instalada.
 - **Consequência:** relações de domínio que apontam para o usuário (`playlists.user_id`, `favorites.user_id`) devem impreterivelmente utilizar o tipo `text('user_id')`, prevenindo erros de incompatibilidade de tipos de foreign key no PostgreSQL.
+
+### D-41 · Projeção estruturada com innerJoin e select explícito para queries com filtros relacionais
+
+- **Data:** 2026-09-04 · **Sprint:** F2-S04 · **Status:** vigente
+- **Contexto:** Consultas com busca textual em múltiplas tabelas (ex: `tracks.title`, `tracks.album` e `artists.name`) exigem junções relacionais. Usar `db.query.*` não permite busca por `artists.name` na raiz de forma performática, enquanto `db.select().from(tracks).innerJoin(artists, ...)` sem mapeamento devolve tuplas brutas achatadas.
+- **Decisão:** Utilizar `db.select({ ...campos, artist: { id: artists.id, name: artists.name, avatarUrl: artists.avatarUrl } }).from(tracks).innerJoin(artists, eq(tracks.artistId, artists.id))`. O Drizzle ORM preserva a hierarquia e monta o objeto aninhado nativamente, sem necessidade de pós-processamento, e a mesma cláusula `where` e `innerJoin` são reutilizados na query de contagem `count()`.
+- **Consequência:** Padrão consolidado para `tracks` e a ser replicado em `playlists` (F4-S01) e `favorites` (F4-S02).
