@@ -12,15 +12,15 @@
 | Campo                  | Valor                                                            |
 | ---------------------- | ---------------------------------------------------------------- |
 | **Fase corrente**      | F3 — Identidade                                                  |
-| **Próximo sprint**     | **F3-S02** — Módulo `users` (`/me`)                              |
+| **Próximo sprint**     | **F3-S03** — OAuth social e e-mail transacional                  |
 | **Última tag**         | `v0.2.0` (preparada)                                             |
 | **`gh` CLI**           | ✅ 2.46.0, autenticado como `Cardosofiles`, protocolo SSH (D-33) |
 | **`pnpm install`**     | ✅ passa — `allowBuilds` decidido (D-32)                         |
 | **Repositório**        | ✅ público `Cardosofiles/cardoso-sound-api` no GitHub            |
-| **Branch de trabalho** | `feature/f3s01-better-auth` (default: `develop`)                 |
+| **Branch de trabalho** | `feature/f3s02-modulo-users` (default: `develop`)                |
 | **CI**                 | ✅ ativo (`.github/workflows/ci.yml`) — check obrigatório        |
 | **Banco**              | ✅ Postgres 17 ativo via Docker Compose                          |
-| **Última atualização** | 2026-09-05 — F3-S01 concluído                                    |
+| **Última atualização** | 2026-09-05 — F3-S02 concluído                                    |
 
 ### O que já tem código e o que ainda está vazio
 
@@ -31,13 +31,11 @@ arquivo tem conteúdo antes de assumir que tem** — vários continuam com 0 byt
 **Implementado:** toolchain e portões · Docker Compose e `src/config/env.ts` · CI ·
 hierarquia `AppError`, app factory, logger · plugins de borda, `/health`, Swagger ·
 schema Drizzle completo com índices GIN `pg_trgm` · seed idempotente · harness
-Testcontainers · módulos `artists` e `tracks`.
+Testcontainers · módulos `artists`, `tracks`, `auth` e `users`.
 
-**Ainda com 0 bytes, aguardando seus sprints:** `src/modules/auth/*` (F3-S01) ·
-`src/modules/users/*` (F3-S02) · `src/modules/playlists/*` (F4-S01) ·
-`src/modules/favorites/*` (F4-S02) · `src/shared/types/fastify.d.ts` (F3-S01) ·
-`tests/e2e/specs/` (F4-S03) · `Dockerfile`, `railway.json`,
-`.github/workflows/deploy.yml` (F5-S02).
+**Ainda com 0 bytes, aguardando seus sprints:** `src/modules/playlists/*` (F4-S01) ·
+`src/modules/favorites/*` (F4-S02) · `tests/e2e/specs/` (F4-S03) ·
+`Dockerfile`, `railway.json`, `.github/workflows/deploy.yml` (F5-S02).
 
 ---
 
@@ -76,7 +74,7 @@ Legenda: ⬜ pendente · 🟡 em andamento · ✅ concluído · 🔴 bloqueado
 | Sprint     | Título                               | Status | PR  | Data       |
 | ---------- | ------------------------------------ | ------ | --- | ---------- |
 | **F3-S01** | Better Auth: config, plugin e guards | ✅     | #22 | 2026-09-05 |
-| **F3-S02** | Módulo `users` (`/me`)               | ⬜     | —   | —          |
+| **F3-S02** | Módulo `users` (`/me`)               | ✅     | #23 | 2026-09-05 |
 | **F3-S03** | OAuth social e e-mail transacional   | ⬜     | —   | —          |
 
 ### F4 — Biblioteca → tag `v0.4.0`
@@ -139,6 +137,9 @@ antes de reimplementar.
 | Decorators `request.user` / `request.session` e guard `fastify.requireAuth`                            | F3-S01 | `src/modules/auth/auth.plugin.ts`     |
 | Helper E2E `signUpAndGetToken` (registro de usuário e extração de Bearer token)                        | F3-S01 | `tests/e2e/helpers/auth.ts`           |
 | Migração `0001_early_blazing_skull.sql` (adição de `account.issuer` para Better Auth v1.7.2)           | F3-S01 | `drizzle/`                            |
+| R13: `GET /api/v1/me` (perfil do usuário autenticado com 5 chaves estritas)                            | F3-S02 | `src/modules/users/`                  |
+| R14: `PATCH /api/v1/me` (atualização de nome/avatar com rejeição de corpo vazio)                       | F3-S02 | `src/modules/users/`                  |
+| R15: `DELETE /api/v1/me` (exclusão transacional da conta com expurgo em cascata)                       | F3-S02 | `src/modules/users/`                  |
 
 ---
 
