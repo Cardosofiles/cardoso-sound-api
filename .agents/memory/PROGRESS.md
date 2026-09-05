@@ -9,18 +9,18 @@
 
 ## Estado atual
 
-| Campo                  | Valor                                                             |
-| ---------------------- | ----------------------------------------------------------------- |
-| **Fase corrente**      | F2 — Catálogo                                                     |
-| **Próximo sprint**     | **F2-S03** — Módulo `artists`                                     |
-| **Última tag**         | `v0.1.0` (preparada)                                              |
-| **`gh` CLI**           | ✅ 2.46.0, autenticado como `Cardosofiles`, protocolo SSH (D-33)  |
-| **`pnpm install`**     | ✅ passa — `allowBuilds` decidido (D-32)                          |
-| **Repositório**        | ✅ público `Cardosofiles/cardoso-sound-api` no GitHub             |
-| **Branch de trabalho** | `feature/f2s02-seed-e-harness-de-integracao` (default: `develop`) |
-| **CI**                 | ✅ ativo (`.github/workflows/ci.yml`) — check obrigatório         |
-| **Banco**              | ✅ Postgres 17 ativo via Docker Compose                           |
-| **Última atualização** | 2026-09-04 — F2-S02 concluído                                     |
+| Campo                  | Valor                                                            |
+| ---------------------- | ---------------------------------------------------------------- |
+| **Fase corrente**      | F2 — Catálogo                                                    |
+| **Próximo sprint**     | **F2-S04** — Módulo `tracks` com busca e filtros                 |
+| **Última tag**         | `v0.1.0` (preparada)                                             |
+| **`gh` CLI**           | ✅ 2.46.0, autenticado como `Cardosofiles`, protocolo SSH (D-33) |
+| **`pnpm install`**     | ✅ passa — `allowBuilds` decidido (D-32)                         |
+| **Repositório**        | ✅ público `Cardosofiles/cardoso-sound-api` no GitHub            |
+| **Branch de trabalho** | `feature/f2s03-modulo-artists` (default: `develop`)              |
+| **CI**                 | ✅ ativo (`.github/workflows/ci.yml`) — check obrigatório        |
+| **Banco**              | ✅ Postgres 17 ativo via Docker Compose                          |
+| **Última atualização** | 2026-09-04 — F2-S03 concluído                                    |
 
 ### ⚠️ O scaffold está VAZIO
 
@@ -58,7 +58,7 @@ Legenda: ⬜ pendente · 🟡 em andamento · ✅ concluído · 🔴 bloqueado
 | ---------- | ---------------------------------------- | ------ | --- | ---------- |
 | **F2-S01** | Schema Drizzle e migração inicial        | ✅     | #16 | 2026-09-04 |
 | **F2-S02** | Seed do catálogo e harness de integração | ✅     | #17 | 2026-09-04 |
-| **F2-S03** | Módulo `artists`                         | ⬜     | —   | —          |
+| **F2-S03** | Módulo `artists`                         | ✅     | #19 | 2026-09-04 |
 | **F2-S04** | Módulo `tracks` com busca e filtros      | ⬜     | —   | —          |
 
 ### F3 — Identidade → tag `v0.3.0`
@@ -119,6 +119,8 @@ antes de reimplementar.
 | Runner de migração de produção (`runMigrations()`)                                                     | F2-S01 | `src/db/migrate.ts`                   |
 | Harness de integração Testcontainers (`startTestDatabase`, `truncateAll`)                              | F2-S02 | `tests/setup/testcontainers.ts`       |
 | Seed idempotente do catálogo musical (`seed`, `SEED_ARTISTS`, `SEED_TRACKS`)                           | F2-S02 | `src/db/seed/`                        |
+| R04: `GET /api/v1/artists` (lista paginada com busca e `trackCount`)                                   | F2-S03 | `src/modules/artists/`                |
+| R05: `GET /api/v1/artists/:id` (detalhe do artista com faixas `title ASC`)                             | F2-S03 | `src/modules/artists/`                |
 
 ---
 
