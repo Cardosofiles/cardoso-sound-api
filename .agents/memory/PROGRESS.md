@@ -59,7 +59,7 @@ Legenda: ⬜ pendente · 🟡 em andamento · ✅ concluído · 🔴 bloqueado
 | **F2-S01** | Schema Drizzle e migração inicial        | ✅     | #16 | 2026-09-04 |
 | **F2-S02** | Seed do catálogo e harness de integração | ✅     | #17 | 2026-09-04 |
 | **F2-S03** | Módulo `artists`                         | ✅     | #19 | 2026-09-04 |
-| **F2-S04** | Módulo `tracks` com busca e filtros      | ✅     | #21 | 2026-09-04 |
+| **F2-S04** | Módulo `tracks` com busca e filtros      | ✅     | #20 | 2026-09-04 |
 
 ### F3 — Identidade → tag `v0.3.0`
 
