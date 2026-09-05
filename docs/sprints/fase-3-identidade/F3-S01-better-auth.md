@@ -268,12 +268,12 @@ docker compose up -d && pnpm db:migrate
 pnpm typecheck && pnpm lint && pnpm format && pnpm test && pnpm build
 pnpm dev
 
-TOKEN=$(curl -s -X POST localhost:3000/api/auth/sign-up/email \
+TOKEN=$(curl -s -X POST localhost:3333/api/auth/sign-up/email \
   -H 'content-type: application/json' \
   -d '{"name":"Joao","email":"joao@teste.com","password":"senha-de-teste-123"}' \
   -D - -o /dev/null | grep -i '^set-auth-token:' | cut -d' ' -f2 | tr -d '\r')
 echo "$TOKEN"
-curl -s localhost:3000/api/auth/get-session -H "authorization: Bearer $TOKEN" | jq
+curl -s localhost:3333/api/auth/get-session -H "authorization: Bearer $TOKEN" | jq
 ```
 
 - [ ] T1–T19 verdes

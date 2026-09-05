@@ -224,10 +224,10 @@ Depois dos plugins de borda, antes de nada mais.
 docker compose up -d && pnpm db:migrate && tsx src/db/seed/seed.ts
 pnpm typecheck && pnpm lint && pnpm format && pnpm test && pnpm build
 pnpm dev
-curl -s 'localhost:3000/api/v1/artists?limit=3' | jq
-curl -s 'localhost:3000/api/v1/artists?search=xxx' | jq '.meta'
-curl -s localhost:3000/api/v1/artists/<uuid-do-seed> | jq '.tracks | length'
-curl -s -o /dev/null -w '%{http_code}\n' localhost:3000/api/v1/artists/nao-e-uuid   # 400
+curl -s 'localhost:3333/api/v1/artists?limit=3' | jq
+curl -s 'localhost:3333/api/v1/artists?search=xxx' | jq '.meta'
+curl -s localhost:3333/api/v1/artists/<uuid-do-seed> | jq '.tracks | length'
+curl -s -o /dev/null -w '%{http_code}\n' localhost:3333/api/v1/artists/nao-e-uuid   # 400
 ```
 
 - [ ] T1–T16 verdes

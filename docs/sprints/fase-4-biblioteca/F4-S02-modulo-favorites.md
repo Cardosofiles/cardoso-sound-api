@@ -185,12 +185,12 @@ response schema de todos os status.
 docker compose up -d && pnpm db:migrate && tsx src/db/seed/seed.ts
 pnpm typecheck && pnpm lint && pnpm format && pnpm test && pnpm build
 pnpm dev
-T=$(curl -s 'localhost:3000/api/v1/tracks?limit=1' | jq -r '.data[0].id')
-curl -s -X POST "localhost:3000/api/v1/favorites/$T" -H "authorization: Bearer $TOKEN" | jq
-curl -s -o /dev/null -w '%{http_code}\n' -X POST "localhost:3000/api/v1/favorites/$T" \
+T=$(curl -s 'localhost:3333/api/v1/tracks?limit=1' | jq -r '.data[0].id')
+curl -s -X POST "localhost:3333/api/v1/favorites/$T" -H "authorization: Bearer $TOKEN" | jq
+curl -s -o /dev/null -w '%{http_code}\n' -X POST "localhost:3333/api/v1/favorites/$T" \
   -H "authorization: Bearer $TOKEN"                                              # 409
-curl -s localhost:3000/api/v1/favorites -H "authorization: Bearer $TOKEN" | jq '.meta'
-curl -s -o /dev/null -w '%{http_code}\n' -X DELETE "localhost:3000/api/v1/favorites/$T" \
+curl -s localhost:3333/api/v1/favorites -H "authorization: Bearer $TOKEN" | jq '.meta'
+curl -s -o /dev/null -w '%{http_code}\n' -X DELETE "localhost:3333/api/v1/favorites/$T" \
   -H "authorization: Bearer $TOKEN"                                              # 204
 ```
 

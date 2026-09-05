@@ -84,7 +84,7 @@ handler novo é escrito.**
 Cadastradas no console de cada provedor, uma por ambiente:
 
 ```
-http://localhost:3000/api/auth/callback/<provider>
+http://localhost:3333/api/auth/callback/<provider>
 https://<dominio-de-producao>/api/auth/callback/<provider>
 ```
 
@@ -415,11 +415,11 @@ imprime as issues e chama `process.exit(1)` **antes** do servidor subir.
 | Variável             | Tipo Zod                                                         | Default                 | Obrigatória |
 | -------------------- | ---------------------------------------------------------------- | ----------------------- | ----------- |
 | `NODE_ENV`           | `enum(['development','test','production'])`                      | `development`           | não         |
-| `PORT`               | `coerce.number().int().positive()`                               | `3000`                  | não         |
+| `PORT`               | `coerce.number().int().positive()`                               | `3333`                  | não         |
 | `HOST`               | `string()`                                                       | `0.0.0.0`               | não         |
 | `DATABASE_URL`       | `string().url()`                                                 | —                       | **sim**     |
 | `BETTER_AUTH_SECRET` | `string().min(32)`                                               | —                       | **sim**     |
-| `BETTER_AUTH_URL`    | `string().url()`                                                 | `http://localhost:3000` | não         |
+| `BETTER_AUTH_URL`    | `string().url()`                                                 | `http://localhost:3333` | não         |
 | `CORS_ORIGIN`        | `string()` (CSV)                                                 | `""`                    | não         |
 | `LOG_LEVEL`          | `enum(['fatal','error','warn','info','debug','trace','silent'])` | `info`                  | não         |
 | `RATE_LIMIT_MAX`     | `coerce.number().int().positive()`                               | `100`                   | não         |

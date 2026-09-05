@@ -229,11 +229,11 @@ docker compose up -d && pnpm db:migrate
 pnpm typecheck && pnpm lint && pnpm format && pnpm test && pnpm build
 pnpm dev
 # use o $TOKEN do fluxo de F3-S01
-curl -s localhost:3000/api/v1/me -H "authorization: Bearer $TOKEN" | jq
-curl -s -o /dev/null -w '%{http_code}\n' localhost:3000/api/v1/me            # 401
-curl -s -X PATCH localhost:3000/api/v1/me -H "authorization: Bearer $TOKEN" \
+curl -s localhost:3333/api/v1/me -H "authorization: Bearer $TOKEN" | jq
+curl -s -o /dev/null -w '%{http_code}\n' localhost:3333/api/v1/me            # 401
+curl -s -X PATCH localhost:3333/api/v1/me -H "authorization: Bearer $TOKEN" \
   -H 'content-type: application/json' -d '{"name":"Outro"}' | jq
-curl -s -o /dev/null -w '%{http_code}\n' -X PATCH localhost:3000/api/v1/me \
+curl -s -o /dev/null -w '%{http_code}\n' -X PATCH localhost:3333/api/v1/me \
   -H "authorization: Bearer $TOKEN" -H 'content-type: application/json' -d '{}'   # 400
 ```
 
