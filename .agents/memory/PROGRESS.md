@@ -11,27 +11,28 @@
 
 | Campo                  | Valor                                                            |
 | ---------------------- | ---------------------------------------------------------------- |
-| **Fase corrente**      | F3 — Identidade                                                  |
-| **Próximo sprint**     | **F3-S03** — OAuth social e e-mail transacional                  |
-| **Última tag**         | `v0.2.0` (preparada)                                             |
+| **Fase corrente**      | F4 — Biblioteca (F3 finalizada)                                  |
+| **Próximo sprint**     | **F4-S01** — Módulo `playlists`                                  |
+| **Última tag**         | `v0.3.0` (preparada)                                             |
 | **`gh` CLI**           | ✅ 2.46.0, autenticado como `Cardosofiles`, protocolo SSH (D-33) |
 | **`pnpm install`**     | ✅ passa — `allowBuilds` decidido (D-32)                         |
 | **Repositório**        | ✅ público `Cardosofiles/cardoso-sound-api` no GitHub            |
-| **Branch de trabalho** | `feature/f3s02-modulo-users` (default: `develop`)                |
+| **Branch de trabalho** | `feature/f3s03-oauth-social-e-email` (default: `develop`)        |
 | **CI**                 | ✅ ativo (`.github/workflows/ci.yml`) — check obrigatório        |
 | **Banco**              | ✅ Postgres 17 ativo via Docker Compose                          |
-| **Última atualização** | 2026-09-05 — F3-S02 concluído                                    |
+| **Última atualização** | 2026-09-05 — F3-S03 concluído (F3 finalizada)                    |
 
 ### O que já tem código e o que ainda está vazio
 
-O scaffold **não** está mais vazio: F1 e F2 estão mergeadas e os cinco portões
-(`typecheck`, `lint`, `format`, `test`, `build`) passam. Ainda assim, **verifique que um
+O scaffold **não** está mais vazio: F1, F2 e F3 estão implementadas e os cinco portões
+(`typecheck`, `lint`, `format`, `test`, `build`) passam com 180 testes verdes. Ainda assim, **verifique que um
 arquivo tem conteúdo antes de assumir que tem** — vários continuam com 0 bytes.
 
 **Implementado:** toolchain e portões · Docker Compose e `src/config/env.ts` · CI ·
 hierarquia `AppError`, app factory, logger · plugins de borda, `/health`, Swagger ·
 schema Drizzle completo com índices GIN `pg_trgm` · seed idempotente · harness
-Testcontainers · módulos `artists`, `tracks`, `auth` e `users`.
+Testcontainers · módulos `artists`, `tracks`, `auth` (Better Auth, e-mail e social),
+`users` (`/me`), templates de e-mail e transporte de mensageria Resend/Memory.
 
 **Ainda com 0 bytes, aguardando seus sprints:** `src/modules/playlists/*` (F4-S01) ·
 `src/modules/favorites/*` (F4-S02) · `tests/e2e/specs/` (F4-S03) ·
@@ -75,7 +76,7 @@ Legenda: ⬜ pendente · 🟡 em andamento · ✅ concluído · 🔴 bloqueado
 | ---------- | ------------------------------------ | ------ | --- | ---------- |
 | **F3-S01** | Better Auth: config, plugin e guards | ✅     | #22 | 2026-09-05 |
 | **F3-S02** | Módulo `users` (`/me`)               | ✅     | #23 | 2026-09-05 |
-| **F3-S03** | OAuth social e e-mail transacional   | ⬜     | —   | —          |
+| **F3-S03** | OAuth social e e-mail transacional   | ✅     | #24 | 2026-09-05 |
 
 ### F4 — Biblioteca → tag `v0.4.0`
 
@@ -140,6 +141,13 @@ antes de reimplementar.
 | R13: `GET /api/v1/me` (perfil do usuário autenticado com 5 chaves estritas)                            | F3-S02 | `src/modules/users/`                  |
 | R14: `PATCH /api/v1/me` (atualização de nome/avatar com rejeição de corpo vazio)                       | F3-S02 | `src/modules/users/`                  |
 | R15: `DELETE /api/v1/me` (exclusão transacional da conta com expurgo em cascata)                       | F3-S02 | `src/modules/users/`                  |
+| R26: `POST /api/auth/sign-in/social` (início de fluxo OAuth com Google, GitHub ou Facebook)            | F3-S03 | `src/modules/auth/`                   |
+| R27: `GET /api/auth/callback/:provider` (retorno do provedor OAuth com geração de sessão/tokens)       | F3-S03 | `src/modules/auth/`                   |
+| R28: `POST /api/auth/send-verification-email` (disparo idempotente de e-mail de verificação)           | F3-S03 | `src/modules/auth/`                   |
+| R29: `GET /api/auth/verify-email` (consumo de token descartável e marcação de titularidade de e-mail)  | F3-S03 | `src/modules/auth/`                   |
+| R30: `POST /api/auth/forget-password` (solicitação segura de link de recuperação de senha)             | F3-S03 | `src/modules/auth/`                   |
+| R31: `POST /api/auth/reset-password` (redefinição de senha com token temporário descartável)           | F3-S03 | `src/modules/auth/`                   |
+| Mailer e Templates (`memoryMailer`, `resendMailer`, `verificationEmail`, `resetPasswordEmail`)         | F3-S03 | `src/shared/email/`                   |
 
 ---
 
