@@ -12,20 +12,20 @@
 | Campo                  | Valor                                                            |
 | ---------------------- | ---------------------------------------------------------------- |
 | **Fase corrente**      | F4 — Biblioteca                                                  |
-| **Próximo sprint**     | **F4-S02** — Módulo `favorites`                                  |
+| **Próximo sprint**     | **F4-S03** — Suíte E2E dos fluxos completos                      |
 | **Última tag**         | `v0.3.0` (preparada)                                             |
 | **`gh` CLI**           | ✅ 2.46.0, autenticado como `Cardosofiles`, protocolo SSH (D-33) |
 | **`pnpm install`**     | ✅ passa — `allowBuilds` decidido (D-32)                         |
 | **Repositório**        | ✅ público `Cardosofiles/cardoso-sound-api` no GitHub            |
-| **Branch de trabalho** | `feature/f4s01-modulo-playlists` (default: `develop`)            |
+| **Branch de trabalho** | `feature/f4s02-modulo-favorites` (default: `develop`)            |
 | **CI**                 | ✅ ativo (`.github/workflows/ci.yml`) — check obrigatório        |
 | **Banco**              | ✅ Postgres 17 ativo via Docker Compose                          |
-| **Última atualização** | 2026-09-06 — F4-S01 concluído (R16–R22 entregues)                |
+| **Última atualização** | 2026-09-06 — F4-S02 concluído (R23–R25 entregues)                |
 
 ### O que já tem código e o que ainda está vazio
 
-O scaffold **não** está mais vazio: F1, F2, F3 e F4-S01 estão implementadas e os cinco portões
-(`typecheck`, `lint`, `format`, `test`, `build`) passam com 226 testes verdes. Ainda assim, **verifique que um
+O scaffold **não** está mais vazio: F1, F2, F3, F4-S01 e F4-S02 estão implementadas e os cinco portões
+(`typecheck`, `lint`, `format`, `test`, `build`) passam com 253 testes verdes. Ainda assim, **verifique que um
 arquivo tem conteúdo antes de assumir que tem** — vários continuam com 0 bytes.
 
 **Implementado:** toolchain e portões · Docker Compose e `src/config/env.ts` · CI ·
@@ -33,10 +33,11 @@ hierarquia `AppError`, app factory, logger · plugins de borda, `/health`, Swagg
 schema Drizzle completo com índices GIN `pg_trgm` · seed idempotente · harness
 Testcontainers · módulos `artists`, `tracks`, `auth` (Better Auth, e-mail e social),
 `users` (`/me`), templates de e-mail e transporte de mensageria Resend/Memory,
-`playlists` (CRUD privado com isolamento por WHERE, R16–R22).
+`playlists` (CRUD privado com isolamento por WHERE, R16–R22),
+`favorites` (favoritar faixas com PK composta e isolamento por WHERE, R23–R25).
 
-**Ainda com 0 bytes, aguardando seus sprints:** `src/modules/favorites/*` (F4-S02) ·
-`tests/e2e/specs/` (F4-S03) · `Dockerfile`, `railway.json`, `.github/workflows/deploy.yml` (F5-S02).
+**Ainda com 0 bytes, aguardando seus sprints:** `tests/e2e/specs/` (F4-S03) ·
+`Dockerfile`, `railway.json`, `.github/workflows/deploy.yml` (F5-S02).
 
 ---
 
@@ -85,7 +86,7 @@ Legenda: ⬜ pendente · 🟡 em andamento · ✅ concluído · 🔴 bloqueado
 | Sprint     | Título                         | Status | PR  | Data       |
 | ---------- | ------------------------------ | ------ | --- | ---------- |
 | **F4-S01** | Módulo `playlists`             | ✅     | #25 | 2026-09-06 |
-| **F4-S02** | Módulo `favorites`             | ⬜     | —   | —          |
+| **F4-S02** | Módulo `favorites`             | ✅     | #26 | 2026-09-06 |
 | **F4-S03** | Suíte E2E dos fluxos completos | ⬜     | —   | —          |
 
 ### F5 — Produção → tag `v1.0.0`
@@ -155,6 +156,9 @@ antes de reimplementar.
 | R20: `DELETE /api/v1/playlists/:id` (exclusão transacional com expurgo em cascata)                     | F4-S01 | `src/modules/playlists/`              |
 | R21: `POST /api/v1/playlists/:id/tracks` (adição idempotente com limite de 500 faixas)                 | F4-S01 | `src/modules/playlists/`              |
 | R22: `DELETE /api/v1/playlists/:id/tracks/:trackId` (remoção de faixa da playlist)                     | F4-S01 | `src/modules/playlists/`              |
+| R23: `GET /api/v1/favorites` (listagem paginada de favoritos ordenados por `favoritedAt DESC`)         | F4-S02 | `src/modules/favorites/`              |
+| R24: `POST /api/v1/favorites/:trackId` (adição aos favoritos com `FavoriteItem` e 409 em duplicidade)  | F4-S02 | `src/modules/favorites/`              |
+| R25: `DELETE /api/v1/favorites/:trackId` (remoção de favorito com isolamento por usuário no WHERE)     | F4-S02 | `src/modules/favorites/`              |
 
 ---
 
