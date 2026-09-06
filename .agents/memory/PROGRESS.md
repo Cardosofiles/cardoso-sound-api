@@ -11,32 +11,32 @@
 
 | Campo                  | Valor                                                            |
 | ---------------------- | ---------------------------------------------------------------- |
-| **Fase corrente**      | F4 — Biblioteca (F3 finalizada)                                  |
-| **Próximo sprint**     | **F4-S01** — Módulo `playlists`                                  |
+| **Fase corrente**      | F4 — Biblioteca                                                  |
+| **Próximo sprint**     | **F4-S02** — Módulo `favorites`                                  |
 | **Última tag**         | `v0.3.0` (preparada)                                             |
 | **`gh` CLI**           | ✅ 2.46.0, autenticado como `Cardosofiles`, protocolo SSH (D-33) |
 | **`pnpm install`**     | ✅ passa — `allowBuilds` decidido (D-32)                         |
 | **Repositório**        | ✅ público `Cardosofiles/cardoso-sound-api` no GitHub            |
-| **Branch de trabalho** | `feature/f3s03-oauth-social-e-email` (default: `develop`)        |
+| **Branch de trabalho** | `feature/f4s01-modulo-playlists` (default: `develop`)            |
 | **CI**                 | ✅ ativo (`.github/workflows/ci.yml`) — check obrigatório        |
 | **Banco**              | ✅ Postgres 17 ativo via Docker Compose                          |
-| **Última atualização** | 2026-09-05 — F3-S03 concluído (F3 finalizada)                    |
+| **Última atualização** | 2026-09-06 — F4-S01 concluído (R16–R22 entregues)                |
 
 ### O que já tem código e o que ainda está vazio
 
-O scaffold **não** está mais vazio: F1, F2 e F3 estão implementadas e os cinco portões
-(`typecheck`, `lint`, `format`, `test`, `build`) passam com 180 testes verdes. Ainda assim, **verifique que um
+O scaffold **não** está mais vazio: F1, F2, F3 e F4-S01 estão implementadas e os cinco portões
+(`typecheck`, `lint`, `format`, `test`, `build`) passam com 226 testes verdes. Ainda assim, **verifique que um
 arquivo tem conteúdo antes de assumir que tem** — vários continuam com 0 bytes.
 
 **Implementado:** toolchain e portões · Docker Compose e `src/config/env.ts` · CI ·
 hierarquia `AppError`, app factory, logger · plugins de borda, `/health`, Swagger ·
 schema Drizzle completo com índices GIN `pg_trgm` · seed idempotente · harness
 Testcontainers · módulos `artists`, `tracks`, `auth` (Better Auth, e-mail e social),
-`users` (`/me`), templates de e-mail e transporte de mensageria Resend/Memory.
+`users` (`/me`), templates de e-mail e transporte de mensageria Resend/Memory,
+`playlists` (CRUD privado com isolamento por WHERE, R16–R22).
 
-**Ainda com 0 bytes, aguardando seus sprints:** `src/modules/playlists/*` (F4-S01) ·
-`src/modules/favorites/*` (F4-S02) · `tests/e2e/specs/` (F4-S03) ·
-`Dockerfile`, `railway.json`, `.github/workflows/deploy.yml` (F5-S02).
+**Ainda com 0 bytes, aguardando seus sprints:** `src/modules/favorites/*` (F4-S02) ·
+`tests/e2e/specs/` (F4-S03) · `Dockerfile`, `railway.json`, `.github/workflows/deploy.yml` (F5-S02).
 
 ---
 
@@ -82,11 +82,11 @@ Legenda: ⬜ pendente · 🟡 em andamento · ✅ concluído · 🔴 bloqueado
 
 > Objetivo: playlists, favoritos e suíte E2E completa.
 
-| Sprint     | Título                         | Status | PR  | Data |
-| ---------- | ------------------------------ | ------ | --- | ---- |
-| **F4-S01** | Módulo `playlists`             | ⬜     | —   | —    |
-| **F4-S02** | Módulo `favorites`             | ⬜     | —   | —    |
-| **F4-S03** | Suíte E2E dos fluxos completos | ⬜     | —   | —    |
+| Sprint     | Título                         | Status | PR  | Data       |
+| ---------- | ------------------------------ | ------ | --- | ---------- |
+| **F4-S01** | Módulo `playlists`             | ✅     | #25 | 2026-09-06 |
+| **F4-S02** | Módulo `favorites`             | ⬜     | —   | —          |
+| **F4-S03** | Suíte E2E dos fluxos completos | ⬜     | —   | —          |
 
 ### F5 — Produção → tag `v1.0.0`
 
@@ -148,6 +148,13 @@ antes de reimplementar.
 | R30: `POST /api/auth/forget-password` (solicitação segura de link de recuperação de senha)             | F3-S03 | `src/modules/auth/`                   |
 | R31: `POST /api/auth/reset-password` (redefinição de senha com token temporário descartável)           | F3-S03 | `src/modules/auth/`                   |
 | Mailer e Templates (`memoryMailer`, `resendMailer`, `verificationEmail`, `resetPasswordEmail`)         | F3-S03 | `src/shared/email/`                   |
+| R16: `POST /api/v1/playlists` (criação de playlist privada com limite de 50)                           | F4-S01 | `src/modules/playlists/`              |
+| R17: `GET /api/v1/playlists` (listagem paginada de playlists do usuário com `trackCount`)              | F4-S01 | `src/modules/playlists/`              |
+| R18: `GET /api/v1/playlists/:id` (detalhe da playlist com faixas `addedAt ASC`, isolamento por WHERE)  | F4-S01 | `src/modules/playlists/`              |
+| R19: `PATCH /api/v1/playlists/:id` (atualização de nome/descrição, rejeita corpo vazio)                | F4-S01 | `src/modules/playlists/`              |
+| R20: `DELETE /api/v1/playlists/:id` (exclusão transacional com expurgo em cascata)                     | F4-S01 | `src/modules/playlists/`              |
+| R21: `POST /api/v1/playlists/:id/tracks` (adição idempotente com limite de 500 faixas)                 | F4-S01 | `src/modules/playlists/`              |
+| R22: `DELETE /api/v1/playlists/:id/tracks/:trackId` (remoção de faixa da playlist)                     | F4-S01 | `src/modules/playlists/`              |
 
 ---
 

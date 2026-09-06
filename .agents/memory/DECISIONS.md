@@ -440,3 +440,14 @@
   (e) Comportamento de sessões ativas pós-reset de senha: no Better Auth v1.7.2 padrão (sem `revokeSessionsOnPasswordReset: true`), sessões ativas prévias persistem na base de dados PostgreSQL e continuam válidas após a redefinição de senha (comportamento inspecionado e verificado no caso T20).
 - **Decisão:** registrar as diretrizes acima como política canônica de autenticação social e e-mail transacional do projeto.
 - **Consequência:** conformidade integral com os requisitos R26–R31, preservação dos testes determinísticos em ambiente local/CI e proteção estrita contra open redirect (`trustedOrigins` e `disableOriginCheck: false`).
+
+### D-47 · Autocontenção de repositórios e mitigação de concorrência em associações de biblioteca
+
+- **Data:** 2026-09-06 · **Sprint:** F4-S01 · **Status:** vigente
+- **Contexto:**
+  1. A inclusão de faixas em playlists (`POST /api/v1/playlists/:id/tracks`) exige a verificação de existência da faixa no catálogo (`tracks`). Duas opções foram consideradas no sprint §5.3: (a) consulta direta `trackExists` dentro de `PlaylistsRepository` ou (b) injetar `TracksRepository` no `PlaylistsService`.
+  2. Em tabelas associativas com chave primária composta (`playlist_tracks`), inserções concorrentes simultâneas de uma mesma faixa podem ultrapassar a checagem prévia (`hasTrack`) e gerar colisão de PK com erro `23505` (unique_violation) no PostgreSQL, que resultaria em HTTP 500 caso não tratado.
+- **Decisão:**
+  1. Adotar a Opção (a): `PlaylistsRepository.trackExists(trackId)` com query direta (`SELECT id FROM tracks WHERE id = $1 LIMIT 1`). Repositórios não importam outros repositórios (Spec 01 §1 e regras de boundary em `eslint.config.mjs`). A duplicação controlada de um `select` simples de existência preserva o desacoplamento e a autocontenção modular.
+  2. Aplicar verificação explícita prévia (`hasTrack`) para garantia determinística de HTTP 409 Conflict combinada com `.onConflictDoNothing().returning()` na inserção: caso o retorno seja vazio decorrente de uma corrida concorrente entre requisições simultâneas, o serviço intercepta o resultado e responde HTTP 409 Conflict.
+- **Consequência:** o módulo `playlists` opera de forma completamente autocontida, com isolamento estrito de boundaries, sem acoplamento entre repositórios e com proteção determinística contra colisões concorrentes. Este mesmo padrão será replicado no módulo `favorites` (F4-S02).
