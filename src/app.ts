@@ -9,6 +9,7 @@ import { env } from './config/env.js';
 import { API_PREFIX } from './config/constants.js';
 import { artistsRoutes } from './modules/artists/artists.routes.js';
 import { authPlugin } from './modules/auth/auth.plugin.js';
+import { playlistsRoutes } from './modules/playlists/playlists.routes.js';
 import { tracksRoutes } from './modules/tracks/tracks.routes.js';
 import { usersRoutes } from './modules/users/users.routes.js';
 import { corsPlugin } from './plugins/cors.plugin.js';
@@ -75,6 +76,7 @@ export async function buildApp(): Promise<FastifyInstance> {
   await app.register(artistsRoutes, { prefix: API_PREFIX });
   await app.register(tracksRoutes, { prefix: API_PREFIX });
   await app.register(usersRoutes, { prefix: API_PREFIX });
+  await app.register(playlistsRoutes, { prefix: API_PREFIX });
 
   return app;
 }
