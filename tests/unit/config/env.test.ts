@@ -21,6 +21,8 @@ describe('env config', () => {
       LOG_LEVEL: 'info',
       RATE_LIMIT_MAX: 100,
       RATE_LIMIT_WINDOW: '1 minute',
+      EMAIL_FROM: 'Cardoso Sound <onboarding@resend.dev>',
+      SOCIAL_PROVIDERS: [],
     });
   });
 
@@ -98,5 +100,48 @@ describe('env config', () => {
     });
 
     expect(parsed.LOG_LEVEL).toBe('info');
+  });
+
+  it('T10: populates SOCIAL_PROVIDERS when complete OAuth pairs are present', () => {
+    const parsed = parseEnv({
+      DATABASE_URL: 'postgresql://cardoso:cardoso_dev@localhost:5432/cardoso_sound',
+      BETTER_AUTH_SECRET: 'a'.repeat(32),
+      GOOGLE_CLIENT_ID: 'google-id',
+      GOOGLE_CLIENT_SECRET: 'google-secret',
+      GITHUB_CLIENT_ID: 'github-id',
+      GITHUB_CLIENT_SECRET: 'github-secret',
+    });
+
+    expect(parsed.SOCIAL_PROVIDERS).toEqual(['google', 'github']);
+  });
+
+  it('T11: throws validation error when only half of OAuth pair is provided', () => {
+    expect(() =>
+      parseEnv({
+        DATABASE_URL: 'postgresql://cardoso:cardoso_dev@localhost:5432/cardoso_sound',
+        BETTER_AUTH_SECRET: 'a'.repeat(32),
+        GOOGLE_CLIENT_ID: 'google-id',
+      }),
+    ).toThrow(ZodError);
+  });
+
+  it('T12: throws validation error when RESEND_API_KEY is missing in production', () => {
+    expect(() =>
+      parseEnv({
+        DATABASE_URL: 'postgresql://cardoso:cardoso_dev@localhost:5432/cardoso_sound',
+        BETTER_AUTH_SECRET: 'a'.repeat(32),
+        NODE_ENV: 'production',
+      }),
+    ).toThrow(ZodError);
+  });
+
+  it('T13: allows missing RESEND_API_KEY outside of production', () => {
+    const parsed = parseEnv({
+      DATABASE_URL: 'postgresql://cardoso:cardoso_dev@localhost:5432/cardoso_sound',
+      BETTER_AUTH_SECRET: 'a'.repeat(32),
+      NODE_ENV: 'development',
+    });
+
+    expect(parsed.RESEND_API_KEY).toBeUndefined();
   });
 });

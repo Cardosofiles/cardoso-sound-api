@@ -47,6 +47,7 @@
     "fastify-type-provider-zod": "^6.1.0",
     "pg": "^8.13.0",
     "pino": "^10.3.1",
+    "resend": "^6.26.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {

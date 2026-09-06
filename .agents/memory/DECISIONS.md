@@ -428,3 +428,15 @@
 - **Contexto:** o sprint §5.5 apresentava duas opções para `src/modules/auth/auth.routes.ts`: (a) reexport documentado com `export {}` ou (b) mover a rota coringa para `auth.routes.ts`. Contudo, as regras de arquitetura em `eslint.config.mjs` classificam `auth.plugin.ts` como `plugin` e `auth.routes.ts` como `routes`. A regra de boundaries proíbe estritamente que elementos `plugin` importem elementos `routes` (`from: 'plugin' allow: ['shared', 'config', 'dto', 'db']`).
 - **Decisão:** adotar a Opção (a): a rota coringa `['GET', 'POST', 'OPTIONS'] /api/auth/*` e a ponte Fetch API vivem integralmente no `auth.plugin.ts`. O arquivo `auth.routes.ts` permanece como documentação estrutural canônica com `export {};`.
 - **Consequência:** isolamento estrito de boundaries sem necessidade de violar regras do ESLint ou estender permissões desnecessariamente.
+
+### D-46 · Verificação de e-mail não-bloqueante, provedores OAuth confiáveis, rate limit e sessões pós-reset
+
+- **Data:** 2026-09-05 · **Sprint:** F3-S03 · **Status:** vigente
+- **Contexto:** a conclusão da Fase 3 entrega autenticação social (Google, GitHub, Facebook), verificação de e-mail transacional e recuperação de senha. Várias definições de segurança e arquitetura foram consolidadas:
+  (a) `requireEmailVerification: false`: habilitar bloqueio prévio exigiria fluxo obrigatório de confirmação por clique antes de qualquer sign-in, quebrando o helper `signUpAndGetToken` do qual dependem os testes E2E e as suítes das Fases 3, 4 e 5. A verificação ocorre via token enviado por e-mail, mas o sign-in não é bloqueado preventivamente;
+  (b) Provedores sociais e `accountLinking`: Google e GitHub realizam verificação mandante de e-mail (com escopo obrigatório `user:email` no GitHub), sendo classificados como `trustedProviders`. O Facebook foi deliberadamente excluído de `trustedProviders` para mitigar ataques de sequestro de conta em virtude de dependência de App Review da Meta e inconsistência de garantia de verificação de e-mail;
+  (c) Proteção de Rate Limit (`customRules`): limites rigorosos foram configurados em `auth.config.ts`: `/forget-password` (3/h), `/send-verification-email` (3/h), `/reset-password` (5/h), `/sign-in/social` (10/min), mantendo a ativação condicionada a produção (`isProduction`), conforme D-19;
+  (d) Versões exatas validadas: `better-auth@1.7.2` e `resend@6.26.0`;
+  (e) Comportamento de sessões ativas pós-reset de senha: no Better Auth v1.7.2 padrão (sem `revokeSessionsOnPasswordReset: true`), sessões ativas prévias persistem na base de dados PostgreSQL e continuam válidas após a redefinição de senha (comportamento inspecionado e verificado no caso T20).
+- **Decisão:** registrar as diretrizes acima como política canônica de autenticação social e e-mail transacional do projeto.
+- **Consequência:** conformidade integral com os requisitos R26–R31, preservação dos testes determinísticos em ambiente local/CI e proteção estrita contra open redirect (`trustedOrigins` e `disableOriginCheck: false`).
