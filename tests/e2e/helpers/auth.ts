@@ -4,10 +4,12 @@ import { randomUUID } from 'node:crypto';
 export interface SignUpAndGetTokenResult {
   token: string;
   userId: string;
+  cookie: string;
+  email: string;
 }
 
 /**
- * Cria um usuário de teste único via POST /api/auth/sign-up/email e extrai o Bearer token.
+ * Cria um usuário de teste único via POST /api/auth/sign-up/email e extrai o Bearer token e cookie.
  * Utilizado para viabilizar testes E2E e de integração em rotas autenticadas.
  */
 export async function signUpAndGetToken(
@@ -47,5 +49,11 @@ export async function signUpAndGetToken(
     );
   }
 
-  return { token, userId };
+  const raw = res.headers['set-cookie'];
+  const cookie = (Array.isArray(raw) ? raw : [raw])
+    .filter((c): c is string => typeof c === 'string')
+    .map((c) => c.split(';')[0])
+    .join('; ');
+
+  return { token, userId, cookie, email: userEmail };
 }

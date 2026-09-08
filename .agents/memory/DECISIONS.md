@@ -451,3 +451,15 @@
   1. Adotar a Opção (a): `PlaylistsRepository.trackExists(trackId)` com query direta (`SELECT id FROM tracks WHERE id = $1 LIMIT 1`). Repositórios não importam outros repositórios (Spec 01 §1 e regras de boundary em `eslint.config.mjs`). A duplicação controlada de um `select` simples de existência preserva o desacoplamento e a autocontenção modular.
   2. Aplicar verificação explícita prévia (`hasTrack`) para garantia determinística de HTTP 409 Conflict combinada com `.onConflictDoNothing().returning()` na inserção: caso o retorno seja vazio decorrente de uma corrida concorrente entre requisições simultâneas, o serviço intercepta o resultado e responde HTTP 409 Conflict.
 - **Consequência:** o módulo `playlists` opera de forma completamente autocontida, com isolamento estrito de boundaries, sem acoplamento entre repositórios e com proteção determinística contra colisões concorrentes. Este mesmo padrão será replicado no módulo `favorites` (F4-S02).
+
+### D-48 · Container Singleton no Harness E2E para Suíte de Fluxos Completos
+
+- **Data:** 2026-09-08 · **Sprint:** F4-S03 · **Status:** vigente
+- **Contexto:**
+  1. `src/db/client.ts` inicializa o pool no import lendo `env.DATABASE_URL`. A suíte E2E necessita que a aplicação Fastify aponte para o PostgreSQL efêmero do Testcontainers sem alterar código de produção (`src/`).
+  2. Subir um container Testcontainers por arquivo de spec multiplicaria o tempo por 5 (~25-30s adicionais de setup Docker), correndo o risco de estourar a meta estrita de < 45s da Spec 05 §1.
+  3. Configurar `globalSetup` no Vitest exigiria modificar `vitest.workspace.ts` e adicionar arquivo de setup global, estendendo o blast radius fechado do sprint.
+- **Decisão:**
+  Implementar a estratégia de Container Singleton em `tests/e2e/helpers/app.ts`. Respaldado pela decisão D-36 (`singleFork: true` para o project `e2e` no Vitest), o container PostgreSQL 17 sobe uma única vez para toda a suíte E2E no primeiro teste que invocar `buildTestApp()`. O pool de conexões é sincronizado transparentemente via `setPool(sharedTestDb.pool)` e `process.env.DATABASE_URL = sharedTestDb.connectionString`. O isolamento estrito entre testes é garantido compulsoriamente por `truncateAll(db)` seguido de `seed(db)` no `beforeEach` de cada spec.
+- **Consequência:**
+  A suíte E2E executa os 5 arquivos de fluxo em ~20-28s (metade do teto de 45s), preserva o blast radius estritamente fechado, garante determinismo total inclusive sob `--sequence.shuffle` e dispensa qualquer refatoração em `src/db/client.ts`.
