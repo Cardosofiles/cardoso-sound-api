@@ -1,11 +1,11 @@
 # F5-S04 — Endurecimento de Sessão, Schema e Contrato
 
-|                |                                                          |
-| -------------- | -------------------------------------------------------- |
-| **Fase**       | F5 — Produção · **3º dos 6 sprints de blindagem** (D-49) |
-| **Branch**     | `feature/f5s04-sessao-schema-e-contrato`                 |
-| **Depende de** | F5-S03                                                   |
-| **Entrega**    | GAP-13, GAP-16, GAP-19, GAP-20, GAP-23, GAP-26           |
+|                |                                                                  |
+| -------------- | ---------------------------------------------------------------- |
+| **Fase**       | F5 — Produção · **3º dos 6 sprints de blindagem** (D-49)         |
+| **Branch**     | `feature/f5s04-sessao-schema-e-contrato`                         |
+| **Depende de** | F5-S03                                                           |
+| **Entrega**    | GAP-13, GAP-16, GAP-19, GAP-20, GAP-23, GAP-26 · **achado R-01** |
 
 > **Primeiro sprint da blindagem que gera migração.** Ela é pequena — três índices e uma
 > restrição única — mas é a base de que F5-S05 e F5-S06 dependem: as tabelas de 2FA e Passkey
@@ -14,6 +14,18 @@
 > Também é o sprint que fecha a última dívida de **contrato** do projeto: erros de `/api/auth/*`
 > passam a trazer o envelope RFC 7807 do resto da API **sem perder** as chaves nativas do
 > Better Auth.
+
+> **Emenda de 2026-09-09 — o achado R-01 entra neste sprint.** A revisão de segurança pós-merge de
+> F5-S02 (`docs/agents-reviews/review-f5-s02-validacao-ponta-a-ponta.md`) mediu que a ponte
+> `auth.plugin.ts` repassa o `x-forwarded-for` **cru do cliente** ao Better Auth, que resolve o IP
+> só por header. Consequência medida: as 8 regras de `AUTH_RATE_LIMIT_RULES` são contornáveis e
+> `session.ip_address` é falsificável por quem alcançar a aplicação fora da borda.
+>
+> R-01 vem para cá, e não para F5-S07, por uma razão objetiva: **`auth.plugin.ts` já está na lista
+> `Editar` deste sprint e está na lista `Não toque em` do F5-S07.** A correção é a terceira mudança
+> cirúrgica da §3.3, detalhada na **§5.7**, com os casos **T29–T33** e as **Armadilhas 11–14**.
+> Não é GAP da auditoria — é achado de revisão — e por isso aparece na linha **Entrega** com nome
+> próprio.
 
 ---
 
@@ -28,11 +40,13 @@ Nenhum trabalho humano. Docker rodando (a suíte de integração usa Testcontain
 ```
 Leia .agents/memory/PROGRESS.md e .agents/memory/DECISIONS.md para se contextualizar.
 Leia D-22 (redaction), D-39 (edição manual de migração), D-40 (schemas Better Auth),
-D-44 (ponte Set-Cookie) e D-47 (corridas em tabelas associativas) — as cinco decidem
-partes deste sprint.
+D-44 (ponte Set-Cookie), D-47 (corridas em tabelas associativas) e D-60 (trustProxy
+por profundidade E validação do peer) — as seis decidem partes deste sprint.
 Leia .agents/memory/F2-S01.md (entregou o schema e a migração inicial que você vai
 estender) e .agents/memory/F3-S01.md (entregou a ponte Fastify↔Fetch que você vai
 alterar com MUITO cuidado).
+Leia .agents/memory/F5-S02.md §5 e docs/agents-reviews/review-f5-s02-validacao-ponta-a-ponta.md
+(achado R-01) — descrevem, com medições, o defeito que a §5.7 deste sprint corrige.
 
 Sprint alvo: docs/sprints/fase-5-producao/F5-S04-sessao-schema-e-contrato.md
 Specs obrigatórias: docs/specs/08-blindagem-de-seguranca.md (§6.1, §8.4, §8.5, §9),
@@ -43,6 +57,11 @@ ANTES de escrever qualquer código, execute a §5.1: confirme a assinatura de
 session.cookieCache e de `logger` nas opções de betterAuth() na versão instalada,
 e rode `pnpm dlx @better-auth/cli@latest generate` para ver se o schema atual acusa
 diferença ANTES de qualquer alteração sua. Reporte as duas coisas.
+
+A §5.7 (achado R-01) NÃO tem etapa de confirmação: as assinaturas e os comportamentos
+do Better Auth de que ela depende já foram medidos e estão transcritos no próprio
+sprint. Se algum deles não bater com o pacote instalado, PARE e reporte — não adapte
+por conta própria. Foi exatamente essa adaptação silenciosa que reprovou F5-S02.
 
 A migração é gerada por `pnpm db:generate`, REVISADA por você linha a linha, e só então
 aplicada por `pnpm db:migrate`. `pnpm db:push` é proibido.
@@ -62,7 +81,9 @@ Tirar do caminho quente da aplicação uma consulta ao banco por requisição, d
 índices que os fluxos de autenticação já assumem que existem, e fechar duas divergências de
 contrato que o cliente Flutter paga.
 
-Seis correções, agrupadas por afinidade de arquivo:
+E tirar do cliente a capacidade de escolher o próprio IP nas rotas de autenticação.
+
+Sete correções, agrupadas por afinidade de arquivo:
 
 1. **Sessão resolvida do banco em toda requisição** (GAP-13). O hook `onRequest` do
    `auth.plugin.ts` é global: roda em `/health` — que está no `allowList` do rate limit por D-20 e
@@ -77,9 +98,15 @@ Seis correções, agrupadas por afinidade de arquivo:
    partir do spec enviam um cookie que em produção não existe.
 5. **Logger do Better Auth despejando e-mails em stdout** (GAP-23).
 6. **Erros de `/api/auth/*` fora do envelope RFC 7807** (GAP-26).
+7. **IP do Better Auth escolhido pelo cliente** (**R-01**). A ponte repassa o `x-forwarded-for` cru;
+   o Better Auth resolve o IP só por header, sem socket. Quem alcança a aplicação fora da borda
+   escolhe a própria chave de rate limit **e** o próprio `session.ip_address`. Mesma família dos
+   itens 1 e 6 — tudo em `auth.plugin.ts`.
 
 **Não faz parte deste sprint:** tabelas de 2FA (F5-S05) · tabela de Passkey (F5-S06) · tabela
-`rate_limit` (F5-S07) · qualquer alteração de `emailAndPassword`.
+`rate_limit` (F5-S07) · a dimensão de sessão no `keyGenerator` do Fastify (F5-S07, D-55) ·
+qualquer alteração de `emailAndPassword` · qualquer alteração em `advanced.ipAddress` de
+`auth.config.ts`, que a revisão de F5-S02 **aprovou** e a §5.7 explica por que fica como está.
 
 ---
 
@@ -114,15 +141,24 @@ session: {
 logger: { level: 'error' },                          // novo — GAP-23
 ```
 
-### 3.3 `auth.plugin.ts` — duas mudanças cirúrgicas
+### 3.3 `auth.plugin.ts` — três mudanças cirúrgicas
 
 ```ts
 export function shouldResolveSession(url: string): boolean; // exportada para teste
 export function toRfc7807(status: number, rawBody: string): string; // exportada para teste
+
+/**
+ * R-01 — quando `clientIp` é passado, o `x-forwarded-for` do cliente é
+ * SOBRESCRITO por ele. Sem `clientIp`, o comportamento atual é preservado.
+ */
+export function toFetchHeaders(incoming: IncomingHttpHeaders, clientIp?: string): Headers;
 ```
 
-A ponte em si — método, `getSetCookie()`, repasse de headers — **não muda**. D-44 continua
-valendo integralmente.
+`toFetchHeaders` **já existe e já é exportada**; ganha um segundo parâmetro **opcional**, o que
+mantém as chamadas atuais válidas. Os dois call sites da ponte passam a informar `request.ip`.
+
+A ponte em si — método, `getSetCookie()`, repasse de headers de **resposta** — **não muda**. D-44
+continua valendo integralmente.
 
 ### 3.4 `swagger.plugin.ts` — nome do cookie derivado
 
@@ -161,6 +197,7 @@ tests/unit/modules/auth/auth.plugin.test.ts
 tests/unit/plugins/swagger-cookie.test.ts
 tests/integration/auth-error-envelope.test.ts
 tests/integration/schema-auth-indexes.test.ts
+tests/integration/auth-client-ip.test.ts          # R-01 — T32/T33
 ```
 
 ### Editar
@@ -168,7 +205,7 @@ tests/integration/schema-auth-indexes.test.ts
 ```
 src/db/schema/users.schema.ts        # só índices e uniqueIndex (§3.1)
 src/modules/auth/auth.config.ts      # session.cookieCache + logger.level
-src/modules/auth/auth.plugin.ts      # shouldResolveSession + toRfc7807
+src/modules/auth/auth.plugin.ts      # shouldResolveSession + toRfc7807 + clientIp em toFetchHeaders
 src/plugins/swagger.plugin.ts        # sessionCookieName no securityScheme
 docs/openapi.json                    # regenerado — o securityScheme MUDA
 .agents/memory/PROGRESS.md
@@ -180,8 +217,15 @@ docs/openapi.json                    # regenerado — o securityScheme MUDA
 `drizzle/0000_*.sql` e `drizzle/0001_*.sql` (**migração aplicada nunca se edita** — D-39 autoriza
 edição manual da migração **nova**, não das antigas) · `tests/e2e/**`.
 
-> **`DECISIONS.md` não está na lista.** Nenhuma decisão nova é esperada. Se a §5.1 revelar que
-> `cookieCache` ou `logger` não existem com essa forma, **pare e reporte**.
+> **`DECISIONS.md` não está na lista.** Nenhuma decisão nova é esperada — **R-01 incluído**. A
+> correção da §5.7 é o **D-60 aplicado a um segundo consumidor**, não uma decisão nova: D-60 já
+> declarou que `req.ip` é confiável, e a §5.7 apenas o entrega ao Better Auth em vez do header cru.
+> Se a §5.1 revelar que `cookieCache` ou `logger` não existem com essa forma, **pare e reporte**.
+
+> **Escopo dentro de `auth.config.ts`:** só `session.cookieCache` e `logger`. O bloco
+> `advanced.ipAddress` (`ipAddressHeaders` + `trustedProxies`) foi **auditado e aprovado** na
+> revisão de F5-S02 e **fica exatamente como está** — a §5.7 explica por que mantê-lo é
+> deliberado, e não redundância.
 
 > **`docs/openapi.json` ESTÁ na lista, e é o único sprint da blindagem em que está.** O
 > `securityScheme` do cookie muda de nome. Regenere com `pnpm openapi:export` e confira que a
@@ -330,6 +374,72 @@ Em produção o Better Auth prefixa o cookie: `__Secure-better-auth.session_toke
 
 Derive do **mesmo predicado** que a lib usa (§3.4), regenere o `openapi.json` e confira o diff.
 
+### 5.7 O IP que o Better Auth enxerga (R-01)
+
+**Não precisa confirmar nada no pacote antes de codar** — a revisão de F5-S02 já mediu tudo o que
+segue, em `@better-auth/core@1.7.2`. Os números estão aqui para você **não** precisar adivinhar. Se
+algum deles não bater com a versão instalada quando você rodar, **pare e reporte**.
+
+O que a ponte faz hoje (`auth.plugin.ts:43` e `:78`): monta um `Request` da Fetch API **só com
+headers**, sem socket. O Better Auth então resolve o IP exclusivamente por header
+(`dist/utils/ip.mjs:196-214`), e `getIPFromHeader` (`:171-197`) confia **incondicionalmente** no
+salto mais à direita quando ele não pertence a `trustedProxies`. Medido: 12 `POST /sign-in/email`
+girando o salto da direita devolvem **401 doze vezes, nenhum 429**; e um sign-up com
+`X-Forwarded-For: 6.6.6.6` a partir de `127.0.0.1` grava `session.ip_address = 6.6.6.6`.
+
+A correção é entregar ao Better Auth o `request.ip` que o Fastify **já validou** com o predicado do
+D-60, em vez do header cru:
+
+```ts
+export function toFetchHeaders(incoming: IncomingHttpHeaders, clientIp?: string): Headers {
+  const headers = new Headers();
+  // ... loop atual, inalterado ...
+  if (clientIp) headers.set('x-forwarded-for', clientIp); // set, NUNCA append
+  return headers;
+}
+```
+
+E os **dois** call sites passam a informar o IP:
+
+```ts
+const headers = toFetchHeaders(request.headers, request.ip); // rota coringa (:43)
+// ...
+await auth.api.getSession({ headers: toFetchHeaders(request.headers, request.ip) }); // hook (:78)
+```
+
+O hook já não roda em `/api/auth` depois da §5.3, mas passe o IP nele do mesmo jeito: sai mais
+barato que descobrir a assimetria seis meses depois.
+
+**Por que `advanced.ipAddress.trustedProxies` continua em `auth.config.ts`.** Ele fica **redundante**
+no caminho feliz — com um header de valor único e já confiável, a varredura simplesmente o devolve.
+Considerei removê-lo e rejeitei: se alguém remover o `clientIp` de um dos call sites no futuro, o
+`trustedProxies` volta a ser a única defesa e o comportamento degrada para o de F5-S02, não para
+"cliente escolhe o IP". Redundância que falha para o lado seguro **fica**.
+
+**O preço dessa escolha, medido — e é a Armadilha 13.** Se `request.ip` cair **dentro** de
+`TRUSTED_PROXIES`, a varredura considera todos os saltos confiáveis e devolve `null`; o limitador de
+autenticação inteiro colapsa na chave compartilhada `no-trusted-ip|<path>`:
+
+```
+getIPFromHeader('203.0.113.7', { trustedProxies: ['10.0.0.0/8'] })  ->  '203.0.113.7'   ✅
+getIPFromHeader('10.0.0.5',    { trustedProxies: ['10.0.0.0/8'] })  ->  null            ⚠️
+```
+
+Isso **só** acontece com `TRUST_PROXY_HOPS` subestimado — a mesma má configuração que já colapsaria
+o limitador global do Fastify. Não é regressão nova; é uma razão a mais para o valor estar certo, e
+está registrado na pendência **P3** do `PROGRESS.md`. **T33 existe para prender esse comportamento.**
+
+**Formatos de `request.ip` — os três já foram verificados, não reabra:**
+
+| Entrada              | O que o Better Auth faz               | Resultado                           |
+| -------------------- | ------------------------------------- | ----------------------------------- |
+| `127.0.0.1`          | aceita                                | `127.0.0.1`                         |
+| `::ffff:203.0.113.7` | normaliza IPv4-mapped                 | `203.0.113.7`                       |
+| `2001:db8:a:b::1`    | agrupa por `/64` (`ipv6Subnet ?? 64`) | `2001:0db8:000a:000b:0000:...:0000` |
+
+O agrupamento IPv6 por `/64` é **intencional** na lib (um `/64` por assinante) — não é defeito e não
+se corrige aqui.
+
 ---
 
 ## 6. Casos de teste obrigatórios
@@ -392,6 +502,34 @@ Derive do **mesmo predicado** que a lib usa (§3.4), regenere o `openapi.json` e
 > **degrade para asserção indireta** (o hook não é chamado / `shouldResolveSession` retorna false)
 > e **diga isso em `F5-S04.md`** — asserção fraca declarada vale mais que asserção forte fingida.
 
+### Unit — `tests/unit/modules/auth/auth.plugin.test.ts` (R-01)
+
+| #   | Caso                                                                  | Esperado                                    |
+| --- | --------------------------------------------------------------------- | ------------------------------------------- |
+| T29 | `toFetchHeaders({ 'x-forwarded-for': '6.6.6.6' }, '198.51.100.9')`    | `get('x-forwarded-for') === '198.51.100.9'` |
+| T30 | O mesmo caso, contando as ocorrências do header                       | **uma só** — foi `set`, não `append`        |
+| T31 | `toFetchHeaders({ 'x-forwarded-for': '6.6.6.6' })` **sem** `clientIp` | `'6.6.6.6'` — retrocompatível               |
+
+> T30 é o que separa `set` de `append`. Com `append`, o valor forjado sobrevive **à esquerda** e a
+> varredura da direita para a esquerda ainda o ignoraria — mas a defesa passaria a depender da ordem
+> dos valores em vez de ser incondicional. Asseverar a contagem prende o contrato.
+
+### Integração — `tests/integration/auth-client-ip.test.ts` (R-01)
+
+| #   | Caso                                                                                                                                            | Esperado                                                            |
+| --- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| T32 | Sign-up via `app.inject({ remoteAddress: '198.51.100.9', headers: { 'x-forwarded-for': '6.6.6.6' } })`, depois `SELECT ip_address FROM session` | **`'198.51.100.9'`**, nunca `'6.6.6.6'` — o achado provado no banco |
+| T33 | `getIPFromHeader('10.0.0.5', { trustedProxies: ['10.0.0.0/8'] })` importado da lib instalada                                                    | `null` — prende o colapso descrito na §5.7 e na Armadilha 13        |
+
+> **T32 é o teste que reprova ou aprova R-01.** Antes da correção ele grava `6.6.6.6`. Em ambiente
+> de teste `TRUSTED_PROXY_LIST` é vazia, então `buildTrustProxy` devolve `false` e `request.ip` é o
+> `remoteAddress` do `inject` — o que torna a asserção determinística **sem** forçar
+> `NODE_ENV=production` (D-19). É o mesmo princípio do T40 de F5-S02.
+>
+> T33 não testa código nosso: testa uma premissa da lib de que a nossa correção depende. Se um
+> upgrade do Better Auth mudar isso, o teste vermelho é o aviso — que é exatamente o que faltou
+> quando `fastify` mudou o `trustProxy` numérico por baixo do D-50.
+
 ---
 
 ## 7. Definition of Done
@@ -421,7 +559,25 @@ curl -s -X POST localhost:3333/api/auth/sign-in/email -H 'content-type: applicat
 # esperado: code, message, statusCode, error, details — os cinco
 ```
 
-- [ ] T1–T28 verdes
+**Verificação manual de R-01** — precisa de socket real, `app.inject()` não serve. Use o artefato
+compilado, como na §7 de F5-S02:
+
+```bash
+pnpm build
+NODE_ENV=production TRUST_PROXY_HOPS=1 TRUSTED_PROXIES=10.0.0.0/8 \
+  RESEND_API_KEY=re_fake_para_boot CORS_ORIGIN=http://localhost:3333 node dist/server.js &
+
+for i in $(seq 1 12); do curl -s -o /dev/null -w '%{http_code} ' -X POST \
+  -H "X-Forwarded-For: 198.51.100.$i" -H 'content-type: application/json' \
+  -d '{"email":"a@b.com","password":"xxxxxxxx"}' localhost:3333/api/auth/sign-in/email; done; echo
+# ANTES da correção: 401 ×12
+# DEPOIS: 401 ×5 e depois 429 — a rotação do salto à direita deixou de criar bucket
+```
+
+- [ ] T1–T33 verdes
+- [ ] `grep -n "toFetchHeaders(request.headers)" src/modules/auth/auth.plugin.ts` **vazio** — os dois call sites passam `request.ip`
+- [ ] A verificação manual de R-01 acima devolve **429 a partir da 6ª**, com a saída real colada em `F5-S04.md`
+- [ ] `advanced.ipAddress` de `auth.config.ts` **inalterado** (`git diff` não o toca)
 - [ ] Migração revisada linha a linha antes de aplicar; **4 comandos**, nada além
 - [ ] `pnpm db:push` **não** foi usado em nenhum momento
 - [ ] `@better-auth/cli generate` sem diferença de schema, antes e depois
@@ -460,6 +616,19 @@ curl -s -X POST localhost:3333/api/auth/sign-in/email -H 'content-type: applicat
    `logger: { level: 'error' }` e pronto.
 10. **Regenerar o `openapi.json` sem olhar o diff.** Se aparecer mais que o nome do cookie, algo
     fora do escopo mudou.
+11. **Usar `append` em vez de `set` no `x-forwarded-for` (R-01).** Com `append`, o valor forjado do
+    cliente continua na cadeia e a defesa passa a depender da ordem dos valores. É `set`, e **T30**
+    existe só para prender isso.
+12. **Sobrescrever o IP em apenas um dos dois call sites.** São dois: a rota coringa
+    (`auth.plugin.ts:43`) e o hook `onRequest` (`:78`). O curto-circuito da §5.3 já tira o hook do
+    caminho de `/api/auth`, o que torna fácil "concluir" que ele não precisa — passe mesmo assim.
+13. **Achar que R-01 dispensa `TRUST_PROXY_HOPS` correto — é o contrário.** Depois desta correção,
+    um `HOPS` subestimado faz `request.ip` cair dentro de `TRUSTED_PROXIES`, o resolvedor devolver
+    `null` e **todo** o rate limit de autenticação colapsar na chave `no-trusted-ip|<path>`.
+    Medido na §5.7; preso por **T33**; registrado na pendência **P3** do `PROGRESS.md`.
+14. **"Melhorar" R-01 removendo `advanced.ipAddress.trustedProxies`.** Ele fica redundante no
+    caminho feliz, e é redundância deliberada: se o `clientIp` sumir de um call site no futuro, é
+    ela que segura. A §5.7 registra a escolha. **Não remova.**
 
 ---
 
@@ -467,11 +636,13 @@ curl -s -X POST localhost:3333/api/auth/sign-in/email -H 'content-type: applicat
 
 - **`DECISIONS.md`** — **nada a acrescentar.** Se você precisou decidir algo, **pare e reporte**.
 - **`PROGRESS.md`** — F5-S04 ✅, próximo = F5-S05. Acrescente a migração nova em **Contratos já
-  entregues**.
+  entregues**. Marque a pendência **P6** (achado R-01) como resolvida, com a data.
 - **`F5-S04.md`** — (a) o SQL exato da migração e por que são quatro comandos; (b) como o
   `toRfc7807` trata cada caso, com exemplo de corpo antes e depois — **o time do Flutter lê**;
   (c) se `content-length` estava sendo repassado e o que foi feito; (d) como T24 e T27 foram
-  medidos, ou por que a asserção precisou ser degradada.
+  medidos, ou por que a asserção precisou ser degradada; (e) **a saída real da verificação manual
+  de R-01** da §7, e a nota de que `advanced.ipAddress.trustedProxies` foi mantido de propósito —
+  sem isso a próxima sessão remove por "redundância", que é a Armadilha 14.
 
 ---
 
