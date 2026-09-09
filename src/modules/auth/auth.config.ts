@@ -2,7 +2,7 @@ import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { createAuthEndpoint, requestPasswordReset } from 'better-auth/api';
 import { bearer } from 'better-auth/plugins';
-import { env, isProduction, SOCIAL_PROVIDERS } from '../../config/env.js';
+import { env, isProduction, SOCIAL_PROVIDERS, TRUSTED_PROXY_LIST } from '../../config/env.js';
 import { db, type Database } from '../../db/client.js';
 import * as schema from '../../db/schema/index.js';
 import { mailer } from '../../shared/email/mailer.js';
@@ -52,6 +52,17 @@ const PROVIDER_CONFIG = {
   },
 };
 
+export const AUTH_RATE_LIMIT_RULES = {
+  '/forget-password': { window: 3600, max: 3 },
+  '/request-password-reset': { window: 3600, max: 3 },
+  '/send-verification-email': { window: 3600, max: 3 },
+  '/reset-password': { window: 3600, max: 5 },
+  '/sign-in/email': { window: 60, max: 5 },
+  '/sign-up/email': { window: 3600, max: 10 },
+  '/change-password': { window: 3600, max: 10 },
+  '/sign-in/social': { window: 60, max: 10 },
+} as const;
+
 export interface CreateAuthOptions {
   overrideSocialProviders?: Parameters<typeof betterAuth>[0]['socialProviders'];
 }
@@ -99,12 +110,7 @@ export function createAuth(options?: CreateAuthOptions) {
       enabled: isProduction,
       window: 60,
       max: 10,
-      customRules: {
-        '/forget-password': { window: 3600, max: 3 },
-        '/send-verification-email': { window: 3600, max: 3 },
-        '/reset-password': { window: 3600, max: 5 },
-        '/sign-in/social': { window: 60, max: 10 },
-      },
+      customRules: AUTH_RATE_LIMIT_RULES,
     },
     trustedOrigins: [
       ...env.CORS_ORIGIN_LIST,
@@ -112,6 +118,10 @@ export function createAuth(options?: CreateAuthOptions) {
     ],
     advanced: {
       disableOriginCheck: false,
+      ipAddress: {
+        ipAddressHeaders: ['x-forwarded-for'],
+        trustedProxies: TRUSTED_PROXY_LIST,
+      },
     },
     plugins: [bearer(), forgetPasswordPlugin()],
   });

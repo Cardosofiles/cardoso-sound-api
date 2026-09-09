@@ -15,6 +15,8 @@ const envSchema = z
       .default('info'),
     RATE_LIMIT_MAX: z.coerce.number().int().positive().default(100),
     RATE_LIMIT_WINDOW: z.string().default('1 minute'),
+    TRUST_PROXY_HOPS: z.coerce.number().int().min(0).default(0),
+    TRUSTED_PROXIES: z.string().default(''),
     GOOGLE_CLIENT_ID: z.string().min(1).optional(),
     GOOGLE_CLIENT_SECRET: z.string().min(1).optional(),
     GITHUB_CLIENT_ID: z.string().min(1).optional(),
@@ -26,12 +28,30 @@ const envSchema = z
     MOBILE_DEEP_LINK: z.string().optional(),
   })
   .superRefine((v, ctx) => {
-    if (v.NODE_ENV === 'production' && !v.RESEND_API_KEY) {
-      ctx.addIssue({
-        code: 'custom',
-        path: ['RESEND_API_KEY'],
-        message: 'RESEND_API_KEY is required in production',
-      });
+    if (v.NODE_ENV === 'production') {
+      if (!v.RESEND_API_KEY) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['RESEND_API_KEY'],
+          message: 'RESEND_API_KEY is required in production',
+        });
+      }
+
+      if (v.TRUST_PROXY_HOPS < 1) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['TRUST_PROXY_HOPS'],
+          message: 'TRUST_PROXY_HOPS must be >= 1 in production (D-50)',
+        });
+      }
+
+      if (!v.TRUSTED_PROXIES.trim()) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['TRUSTED_PROXIES'],
+          message: 'TRUSTED_PROXIES must list the edge CIDRs in production (D-50)',
+        });
+      }
     }
 
     if (Boolean(v.GOOGLE_CLIENT_ID) !== Boolean(v.GOOGLE_CLIENT_SECRET)) {
@@ -71,6 +91,9 @@ export interface Env {
   LOG_LEVEL: 'fatal' | 'error' | 'warn' | 'info' | 'debug' | 'trace' | 'silent';
   RATE_LIMIT_MAX: number;
   RATE_LIMIT_WINDOW: string;
+  TRUST_PROXY_HOPS: number;
+  TRUSTED_PROXIES: string;
+  TRUSTED_PROXY_LIST: string[];
   GOOGLE_CLIENT_ID?: string;
   GOOGLE_CLIENT_SECRET?: string;
   GITHUB_CLIENT_ID?: string;
@@ -89,6 +112,10 @@ export function parseEnv(source: NodeJS.ProcessEnv): Env {
     .map((origin) => origin.trim())
     .filter(Boolean);
 
+  const trustedProxyList = parsed.TRUSTED_PROXIES.split(',')
+    .map((cidr) => cidr.trim())
+    .filter(Boolean);
+
   const socialProviders: Array<'google' | 'github' | 'facebook'> = [];
   if (parsed.GOOGLE_CLIENT_ID && parsed.GOOGLE_CLIENT_SECRET) {
     socialProviders.push('google');
@@ -103,6 +130,7 @@ export function parseEnv(source: NodeJS.ProcessEnv): Env {
   return {
     ...parsed,
     CORS_ORIGIN_LIST: corsOriginList,
+    TRUSTED_PROXY_LIST: trustedProxyList,
     SOCIAL_PROVIDERS: socialProviders,
   };
 }
@@ -127,5 +155,6 @@ export const env = loadEnv();
 export const isProduction = env.NODE_ENV === 'production';
 export const isTest = env.NODE_ENV === 'test';
 export const isDevelopment = env.NODE_ENV === 'development';
+export const TRUSTED_PROXY_LIST: string[] = env.TRUSTED_PROXY_LIST;
 export const SOCIAL_PROVIDERS: ReadonlyArray<'google' | 'github' | 'facebook'> =
   env.SOCIAL_PROVIDERS;

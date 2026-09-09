@@ -20,7 +20,6 @@ jobs:
     env:
       NODE_ENV: test
       DATABASE_URL: postgresql://cardoso:cardoso_dev@localhost:5432/cardoso_sound
-      BETTER_AUTH_SECRET: troque-por-um-segredo-de-no-minimo-32-caracteres
       BETTER_AUTH_URL: http://localhost:3333
     steps:
       - name: Checkout repository
@@ -34,6 +33,9 @@ jobs:
         with:
           node-version: 24
           cache: pnpm
+
+      - name: Generate ephemeral auth secret
+        run: echo "BETTER_AUTH_SECRET=$(openssl rand -base64 32)" >> "$GITHUB_ENV"
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile

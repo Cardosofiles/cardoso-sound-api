@@ -21,6 +21,9 @@ describe('env config', () => {
       LOG_LEVEL: 'info',
       RATE_LIMIT_MAX: 100,
       RATE_LIMIT_WINDOW: '1 minute',
+      TRUST_PROXY_HOPS: 0,
+      TRUSTED_PROXIES: '',
+      TRUSTED_PROXY_LIST: [],
       EMAIL_FROM: 'Cardoso Sound <onboarding@resend.dev>',
       SOCIAL_PROVIDERS: [],
     });
@@ -143,5 +146,67 @@ describe('env config', () => {
     });
 
     expect(parsed.RESEND_API_KEY).toBeUndefined();
+  });
+
+  it('T19: throws validation error in production when TRUST_PROXY_HOPS is missing or 0', () => {
+    expect(() =>
+      parseEnv({
+        DATABASE_URL: 'postgresql://cardoso:cardoso_dev@localhost:5432/cardoso_sound',
+        BETTER_AUTH_SECRET: 'a'.repeat(32),
+        RESEND_API_KEY: 're_12345678',
+        NODE_ENV: 'production',
+        TRUST_PROXY_HOPS: '0',
+        TRUSTED_PROXIES: '10.0.0.0/8',
+      }),
+    ).toThrowError(/TRUST_PROXY_HOPS/);
+  });
+
+  it('T20: throws validation error in production when TRUSTED_PROXIES is empty', () => {
+    expect(() =>
+      parseEnv({
+        DATABASE_URL: 'postgresql://cardoso:cardoso_dev@localhost:5432/cardoso_sound',
+        BETTER_AUTH_SECRET: 'a'.repeat(32),
+        RESEND_API_KEY: 're_12345678',
+        NODE_ENV: 'production',
+        TRUST_PROXY_HOPS: '1',
+        TRUSTED_PROXIES: '',
+      }),
+    ).toThrowError(/TRUSTED_PROXIES/);
+  });
+
+  it('T21: parses valid production environment with both proxy variables set', () => {
+    const parsed = parseEnv({
+      DATABASE_URL: 'postgresql://cardoso:cardoso_dev@localhost:5432/cardoso_sound',
+      BETTER_AUTH_SECRET: 'a'.repeat(32),
+      RESEND_API_KEY: 're_12345678',
+      NODE_ENV: 'production',
+      TRUST_PROXY_HOPS: '2',
+      TRUSTED_PROXIES: '10.0.0.0/8, 172.16.0.0/12',
+    });
+
+    expect(parsed.TRUST_PROXY_HOPS).toBe(2);
+    expect(parsed.TRUSTED_PROXY_LIST).toEqual(['10.0.0.0/8', '172.16.0.0/12']);
+  });
+
+  it('T22: parses valid development environment without proxy variables applying defaults', () => {
+    const parsed = parseEnv({
+      DATABASE_URL: 'postgresql://cardoso:cardoso_dev@localhost:5432/cardoso_sound',
+      BETTER_AUTH_SECRET: 'a'.repeat(32),
+      NODE_ENV: 'development',
+    });
+
+    expect(parsed.TRUST_PROXY_HOPS).toBe(0);
+    expect(parsed.TRUSTED_PROXIES).toBe('');
+    expect(parsed.TRUSTED_PROXY_LIST).toEqual([]);
+  });
+
+  it('T23: splits, trims and filters empty items from TRUSTED_PROXIES', () => {
+    const parsed = parseEnv({
+      DATABASE_URL: 'postgresql://cardoso:cardoso_dev@localhost:5432/cardoso_sound',
+      BETTER_AUTH_SECRET: 'a'.repeat(32),
+      TRUSTED_PROXIES: ' 10.0.0.0/8 , ,172.16.0.0/12 ',
+    });
+
+    expect(parsed.TRUSTED_PROXY_LIST).toEqual(['10.0.0.0/8', '172.16.0.0/12']);
   });
 });
