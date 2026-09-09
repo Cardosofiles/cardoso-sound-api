@@ -111,4 +111,78 @@ describe('mailer', () => {
     clearOutbox();
     expect(outbox).toHaveLength(0);
   });
+
+  it('T20: createMemoryMailer(fakeLogger) with NODE_ENV=test does not log url', async () => {
+    const fakeLogger = {
+      info: vi.fn(),
+      warn: vi.fn(),
+      error: vi.fn(),
+    };
+
+    const memoryMailer = createMemoryMailer(fakeLogger);
+    await memoryMailer.send({
+      to: 'secret@example.com',
+      subject: 'Redefinição de senha',
+      html: '<p><a href="http://localhost:3333/api/auth/reset-password?token=secret-token-xyz">Reset</a></p>',
+    });
+
+    expect(fakeLogger.info).toHaveBeenCalledTimes(1);
+    const logCallArg = fakeLogger.info.mock.calls[0]?.[0] as Record<string, unknown>;
+    expect(logCallArg).toBeDefined();
+    expect(logCallArg.url).toBeUndefined();
+    expect(JSON.stringify(logCallArg)).not.toContain('secret-token-xyz');
+  });
+
+  it('T21: resend transport on failure resolves and logs warn without "to" or raw error object', async () => {
+    const fakeLogger = {
+      info: vi.fn(),
+      warn: vi.fn(),
+      error: vi.fn(),
+    };
+    const rawErrorObj = {
+      message: 'Internal provider failure',
+      name: 'internal_error',
+      secretKey: 'sensível',
+    };
+    const sendMock = vi.fn().mockResolvedValue({
+      data: null,
+      error: rawErrorObj,
+    });
+    const mockResend = {
+      emails: { send: sendMock },
+    } as unknown as Resend;
+
+    const resendMailer = createResendMailer(mockResend, 'from@test.com', fakeLogger);
+
+    await expect(
+      resendMailer.send({
+        to: 'target-user@example.com',
+        subject: 'Confirmação',
+        html: '<p>corpo</p>',
+      }),
+    ).resolves.toBeUndefined();
+
+    expect(fakeLogger.warn).toHaveBeenCalledTimes(1);
+    const warnCallArg = fakeLogger.warn.mock.calls[0]?.[0] as Record<string, unknown>;
+    expect(warnCallArg).toBeDefined();
+    expect(warnCallArg.to).toBeUndefined();
+    expect(warnCallArg.error).toBeUndefined();
+    expect(warnCallArg.provider).toBe('resend');
+    expect(JSON.stringify(warnCallArg)).not.toContain('target-user@example.com');
+    expect(JSON.stringify(warnCallArg)).not.toContain('sensível');
+  });
+
+  it('T22: static check verifies no pino() calls exist in src/ outside app.ts (proves D-57)', async () => {
+    const { execSync } = await import('node:child_process');
+    let output = '';
+    try {
+      output = execSync('grep -rn "pino(" src/ | grep -v "app.ts" || true', {
+        encoding: 'utf-8',
+      }).trim();
+    } catch {
+      output = '';
+    }
+
+    expect(output).toBe('');
+  });
 });

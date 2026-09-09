@@ -4,6 +4,7 @@ import { buildApp } from '../../src/app.js';
 import { pool, setPool } from '../../src/db/client.js';
 import { AUTH_RATE_LIMIT_RULES } from '../../src/modules/auth/auth.config.js';
 import { clearOutbox, outbox } from '../../src/shared/email/mailer.js';
+import { signUpAndGetToken } from '../e2e/helpers/auth.js';
 import { startTestDatabase, truncateAll, type TestDatabase } from '../setup/testcontainers.js';
 
 describe('Auth Rate Limit & Security Integration Tests', () => {
@@ -132,23 +133,8 @@ describe('Auth Rate Limit & Security Integration Tests', () => {
 
   it('T32: GET /api/auth/get-session succeeds with 200 when presented with valid bearer token', async () => {
     const email = 'bearer-test@example.com';
-    const password = 'Password123!';
-
-    const signUpRes = await app.inject({
-      method: 'POST',
-      url: '/api/auth/sign-up/email',
-      headers: { 'content-type': 'application/json' },
-      payload: {
-        name: 'Bearer Tester',
-        email,
-        password,
-      },
-    });
-    expect(signUpRes.statusCode).toBe(200);
-    const signUpBody = JSON.parse(signUpRes.body) as { token?: string };
-    const token = signUpBody.token;
+    const { token } = await signUpAndGetToken(app, email);
     expect(token).toBeDefined();
-    if (!token) throw new Error('Bearer session token is missing');
 
     const sessionRes = await app.inject({
       method: 'GET',

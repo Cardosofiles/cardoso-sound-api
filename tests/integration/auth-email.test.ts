@@ -7,6 +7,8 @@ import { session, user } from '../../src/db/schema/index.js';
 import { clearOutbox, outbox } from '../../src/shared/email/mailer.js';
 import { startTestDatabase, truncateAll, type TestDatabase } from '../setup/testcontainers.js';
 
+import { signUpAndGetToken } from '../e2e/helpers/auth.js';
+
 describe('Auth Email Integration Tests (Verification & Password Reset)', () => {
   let testDb: TestDatabase;
   let app: FastifyInstance;
@@ -16,6 +18,17 @@ describe('Auth Email Integration Tests (Verification & Password Reset)', () => {
     testDb = await startTestDatabase();
     setPool(testDb.pool);
     app = await buildApp();
+
+    app.get(
+      '/test-protected-email',
+      {
+        onRequest: [app.requireAuth],
+      },
+      (request) => {
+        return { ok: true, userId: request.user?.id };
+      },
+    );
+
     await app.ready();
   }, 120_000);
 
@@ -30,7 +43,7 @@ describe('Auth Email Integration Tests (Verification & Password Reset)', () => {
     await truncateAll(testDb.db);
   });
 
-  it('T7: sign-up triggers email verification enqueueing 1 email with token in outbox', async () => {
+  it('T7_orig: sign-up triggers email verification enqueueing 1 email with token in outbox', async () => {
     const res = await app.inject({
       method: 'POST',
       url: '/api/auth/sign-up/email',
@@ -49,7 +62,8 @@ describe('Auth Email Integration Tests (Verification & Password Reset)', () => {
     expect(outbox[0]?.html).toContain('token=');
   });
 
-  it('T8: sign-in succeeds without verifying email (requireEmailVerification: false)', async () => {
+  // T5: POST /sign-in/email antes de verificar -> 403 (GAP-14 / D-51 — substitui T8 de F3)
+  it('T5: POST /api/auth/sign-in/email before email verification returns 403 (GAP-14 / D-51)', async () => {
     await app.inject({
       method: 'POST',
       url: '/api/auth/sign-up/email',
@@ -71,9 +85,67 @@ describe('Auth Email Integration Tests (Verification & Password Reset)', () => {
       },
     });
 
+    expect(signInRes.statusCode).toBe(403);
+  });
+
+  // T6: GET /verify-email com token válido -> POST /sign-in/email -> 200 com set-auth-token
+  it('T6: GET /verify-email with valid token allows subsequent POST /sign-in/email returning 200 and set-auth-token', async () => {
+    await app.inject({
+      method: 'POST',
+      url: '/api/auth/sign-up/email',
+      headers: { 'content-type': 'application/json' },
+      payload: {
+        name: 'Carlos Teste',
+        email: 'carlos@teste.com',
+        password: 'senha-valida-123',
+      },
+    });
+
+    const emailHtml = outbox[0]?.html ?? '';
+    const urlMatch = /href="([^"]+)"/.exec(emailHtml);
+    const rawUrl = (urlMatch?.[1] ?? '').replace(/&amp;/g, '&');
+    const token = new URL(rawUrl).searchParams.get('token') ?? '';
+    expect(token).toBeTruthy();
+
+    const verifyRes = await app.inject({
+      method: 'GET',
+      url: `/api/auth/verify-email?token=${token}`,
+    });
+    expect(verifyRes.statusCode).toBe(200);
+
+    const signInRes = await app.inject({
+      method: 'POST',
+      url: '/api/auth/sign-in/email',
+      headers: { 'content-type': 'application/json' },
+      payload: {
+        email: 'carlos@teste.com',
+        password: 'senha-valida-123',
+      },
+    });
+
     expect(signInRes.statusCode).toBe(200);
-    const body = signInRes.json<{ user: { emailVerified: boolean } }>();
+    expect(signInRes.headers['set-auth-token']).toBeDefined();
+  });
+
+  // T7: Token devolvido no sign-up de usuário não verificado -> null e sem set-auth-token
+  it('T7: POST /api/auth/sign-up/email returns token null and no session headers for unverified user (GAP-08 / D-51)', async () => {
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/auth/sign-up/email',
+      headers: { 'content-type': 'application/json' },
+      payload: {
+        name: 'Carlos Não Verificado',
+        email: 'naoverificado@teste.com',
+        password: 'senha-valida-123',
+      },
+    });
+
+    expect(res.statusCode).toBe(200);
+    const body = res.json<{ token: string | null; user: { emailVerified: boolean } }>();
+    expect(body.token).toBeNull();
     expect(body.user.emailVerified).toBe(false);
+    expect(res.headers['set-auth-token']).toBeUndefined();
+    expect(res.headers['set-cookie']).toBeUndefined();
   });
 
   it('T9: GET /api/auth/verify-email with valid token sets user.emailVerified to true in database', async () => {
@@ -279,6 +351,12 @@ describe('Auth Email Integration Tests (Verification & Password Reset)', () => {
       },
     });
 
+    // Garante que o e-mail está verificado para permitir sign-in
+    await testDb.db
+      .update(user)
+      .set({ emailVerified: true })
+      .where(eq(user.email, 'reset@teste.com'));
+
     clearOutbox();
 
     await app.inject({
@@ -331,6 +409,11 @@ describe('Auth Email Integration Tests (Verification & Password Reset)', () => {
         password: 'senha-antiga-123',
       },
     });
+
+    await testDb.db
+      .update(user)
+      .set({ emailVerified: true })
+      .where(eq(user.email, 'reset@teste.com'));
 
     clearOutbox();
 
@@ -435,6 +518,11 @@ describe('Auth Email Integration Tests (Verification & Password Reset)', () => {
       },
     });
 
+    await testDb.db
+      .update(user)
+      .set({ emailVerified: true })
+      .where(eq(user.email, 'reset@teste.com'));
+
     clearOutbox();
 
     await app.inject({
@@ -477,36 +565,32 @@ describe('Auth Email Integration Tests (Verification & Password Reset)', () => {
     expect(oldSignInRes.statusCode).toBe(200);
   });
 
-  it('T20: documents and asserts previous active sessions behavior after password reset', async () => {
-    // 1. Cria usuário
-    const signUpRes = await app.inject({
-      method: 'POST',
-      url: '/api/auth/sign-up/email',
-      headers: { 'content-type': 'application/json' },
-      payload: {
-        name: 'Carlos Session',
-        email: 'session@teste.com',
-        password: 'senha-antiga-123',
-      },
-    });
-    const token = signUpRes.headers['set-auth-token'];
-    expect(token).toBeDefined();
+  // T8: Reset de senha revoga Bearer token anterior (GAP-07 / D-52 — substitui T20 de F3)
+  it('T8: password reset revokes previous Bearer token so protected routes return 401 (GAP-07 / D-52)', async () => {
+    const { token, email } = await signUpAndGetToken(app, 'session-reset-bearer@teste.com');
 
-    // 2. Dispara reset de senha
+    // Valida que o token funciona antes do reset
+    const checkBefore = await app.inject({
+      method: 'GET',
+      url: '/test-protected-email',
+      headers: { authorization: `Bearer ${token}` },
+    });
+    expect(checkBefore.statusCode).toBe(200);
+
+    // Dispara reset de senha
     clearOutbox();
     await app.inject({
       method: 'POST',
       url: '/api/auth/forget-password',
       headers: { 'content-type': 'application/json' },
       payload: {
-        email: 'session@teste.com',
+        email,
         redirectTo: 'http://localhost:3333/reset-password',
       },
     });
 
     const resetToken = extractResetToken(outbox[0]?.html);
 
-    // 3. Executa reset de senha
     const resetRes = await app.inject({
       method: 'POST',
       url: '/api/auth/reset-password',
@@ -518,19 +602,194 @@ describe('Auth Email Integration Tests (Verification & Password Reset)', () => {
     });
     expect(resetRes.statusCode).toBe(200);
 
-    // 4. Inspeciona se a sessão anterior persiste na base PostgreSQL
-    // No Better Auth v1.7.2 padrão (sem revokeSessionsOnPasswordReset: true), sessões ativas são preservadas
-    const dbSessions = await testDb.db.select().from(session);
-    expect(dbSessions.length).toBeGreaterThanOrEqual(1);
-
-    // Sessão anterior continua válida na resolução de get-session
-    const sessionRes = await app.inject({
+    // Bearer token anterior ao reset é invalidado: get-session retorna null e rota protegida retorna 401
+    const getSessionRes = await app.inject({
       method: 'GET',
       url: '/api/auth/get-session',
-      headers: {
-        authorization: `Bearer ${String(token)}`,
+      headers: { authorization: `Bearer ${token}` },
+    });
+    expect(getSessionRes.json()).toBeNull();
+
+    const protectedRes = await app.inject({
+      method: 'GET',
+      url: '/test-protected-email',
+      headers: { authorization: `Bearer ${token}` },
+    });
+    expect(protectedRes.statusCode).toBe(401);
+  });
+
+  // T9: Reset de senha revoga Cookie de sessão anterior (GAP-07 / D-52)
+  it('T9: password reset revokes previous session cookie so protected routes return 401 (GAP-07 / D-52)', async () => {
+    const { cookie, email } = await signUpAndGetToken(app, 'session-reset-cookie@teste.com');
+
+    // Valida que o cookie funciona antes do reset
+    const checkBefore = await app.inject({
+      method: 'GET',
+      url: '/test-protected-email',
+      headers: { cookie },
+    });
+    expect(checkBefore.statusCode).toBe(200);
+
+    // Dispara reset de senha
+    clearOutbox();
+    await app.inject({
+      method: 'POST',
+      url: '/api/auth/forget-password',
+      headers: { 'content-type': 'application/json' },
+      payload: {
+        email,
+        redirectTo: 'http://localhost:3333/reset-password',
       },
     });
-    expect(sessionRes.statusCode).toBe(200);
+
+    const resetToken = extractResetToken(outbox[0]?.html);
+
+    const resetRes = await app.inject({
+      method: 'POST',
+      url: '/api/auth/reset-password',
+      headers: { 'content-type': 'application/json' },
+      payload: {
+        token: resetToken,
+        newPassword: 'nova-senha-segura-456',
+      },
+    });
+    expect(resetRes.statusCode).toBe(200);
+
+    // Cookie anterior ao reset é invalidado
+    const getSessionRes = await app.inject({
+      method: 'GET',
+      url: '/api/auth/get-session',
+      headers: { cookie },
+    });
+    expect(getSessionRes.json()).toBeNull();
+
+    const protectedRes = await app.inject({
+      method: 'GET',
+      url: '/test-protected-email',
+      headers: { cookie },
+    });
+    expect(protectedRes.statusCode).toBe(401);
+  });
+
+  // T10: Reset de senha -> sign-in com a senha nova funciona (200)
+  it('T10: POST /api/auth/sign-in/email with new password succeeds after reset (200)', async () => {
+    const { email } = await signUpAndGetToken(app, 'session-reset-signin@teste.com');
+
+    clearOutbox();
+    await app.inject({
+      method: 'POST',
+      url: '/api/auth/forget-password',
+      headers: { 'content-type': 'application/json' },
+      payload: {
+        email,
+        redirectTo: 'http://localhost:3333/reset-password',
+      },
+    });
+
+    const resetToken = extractResetToken(outbox[0]?.html);
+
+    await app.inject({
+      method: 'POST',
+      url: '/api/auth/reset-password',
+      headers: { 'content-type': 'application/json' },
+      payload: {
+        token: resetToken,
+        newPassword: 'nova-senha-segura-456',
+      },
+    });
+
+    const signInRes = await app.inject({
+      method: 'POST',
+      url: '/api/auth/sign-in/email',
+      headers: { 'content-type': 'application/json' },
+      payload: {
+        email,
+        password: 'nova-senha-segura-456',
+      },
+    });
+
+    expect(signInRes.statusCode).toBe(200);
+    expect(signInRes.headers['set-auth-token']).toBeDefined();
+  });
+
+  // T11: SELECT count(*) FROM session WHERE user_id = ... após o reset -> somente a sessão nova
+  it('T11: verifies only the newly created session exists in database after reset', async () => {
+    const { userId, email } = await signUpAndGetToken(app, 'session-reset-count@teste.com');
+
+    clearOutbox();
+    await app.inject({
+      method: 'POST',
+      url: '/api/auth/forget-password',
+      headers: { 'content-type': 'application/json' },
+      payload: {
+        email,
+        redirectTo: 'http://localhost:3333/reset-password',
+      },
+    });
+
+    const resetToken = extractResetToken(outbox[0]?.html);
+
+    await app.inject({
+      method: 'POST',
+      url: '/api/auth/reset-password',
+      headers: { 'content-type': 'application/json' },
+      payload: {
+        token: resetToken,
+        newPassword: 'nova-senha-segura-456',
+      },
+    });
+
+    // Após o reset, todas as sessões anteriores foram revogadas
+    const sessionsAfterReset = await testDb.db
+      .select()
+      .from(session)
+      .where(eq(session.userId, userId));
+    expect(sessionsAfterReset).toHaveLength(0);
+
+    // Novo login cria exatamente 1 sessão
+    await app.inject({
+      method: 'POST',
+      url: '/api/auth/sign-in/email',
+      headers: { 'content-type': 'application/json' },
+      payload: {
+        email,
+        password: 'nova-senha-segura-456',
+      },
+    });
+
+    const sessionsAfterNewLogin = await testDb.db
+      .select()
+      .from(session)
+      .where(eq(session.userId, userId));
+    expect(sessionsAfterNewLogin).toHaveLength(1);
+  });
+
+  // T13: Nenhum e-mail do outbox tem o token fora do href
+  it('T13: asserts no email in outbox contains tokens outside the href attribute', async () => {
+    await app.inject({
+      method: 'POST',
+      url: '/api/auth/sign-up/email',
+      headers: { 'content-type': 'application/json' },
+      payload: {
+        name: 'Carlos Substring',
+        email: 'substring@teste.com',
+        password: 'senha-valida-123',
+      },
+    });
+
+    expect(outbox.length).toBeGreaterThanOrEqual(1);
+    for (const emailItem of outbox) {
+      const urlMatch = /href="([^"]+)"/.exec(emailItem.html);
+      expect(urlMatch).not.toBeNull();
+      const rawHref = urlMatch?.[1] ?? '';
+      const tokenMatch = /token=([^&"'>]+)/.exec(rawHref);
+      if (tokenMatch?.[1]) {
+        const token = tokenMatch[1];
+        // Remove todo o atributo href="..."
+        const htmlWithoutHref = emailItem.html.replace(/href="[^"]*"/g, '');
+        expect(htmlWithoutHref).not.toContain(token);
+        expect(emailItem.subject).not.toContain(token);
+      }
+    }
   });
 });

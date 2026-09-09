@@ -69,14 +69,28 @@ describe('Auth Integration Tests (Better Auth & Fastify Bridge)', () => {
     expect(typeof body.user.id).toBe('string');
   });
 
-  // T2: Sign-up devolve header set-auth-token -> header presente e não vazio
-  it('T2: sign-up response contains non-empty set-auth-token header', async () => {
-    const res = await app.inject({
+  // Bridge: Sign-in devolve header set-auth-token -> header presente e não vazio
+  it('Bridge: sign-in response contains non-empty set-auth-token header', async () => {
+    await app.inject({
       method: 'POST',
       url: '/api/auth/sign-up/email',
       headers: { 'content-type': 'application/json' },
       payload: {
         name: 'João Token',
+        email: 'token@teste.com',
+        password: 'senha-de-teste-123',
+      },
+    });
+    await testDb.db
+      .update(user)
+      .set({ emailVerified: true })
+      .where(eq(user.email, 'token@teste.com'));
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/auth/sign-in/email',
+      headers: { 'content-type': 'application/json' },
+      payload: {
         email: 'token@teste.com',
         password: 'senha-de-teste-123',
       },
@@ -89,14 +103,28 @@ describe('Auth Integration Tests (Better Auth & Fastify Bridge)', () => {
     expect(token).not.toBe('');
   });
 
-  // T3: Sign-up devolve Set-Cookie de sessão -> header presente
-  it('T3: sign-up response contains Set-Cookie header with session token', async () => {
-    const res = await app.inject({
+  // Bridge: Sign-in devolve Set-Cookie de sessão -> header presente
+  it('Bridge: sign-in response contains Set-Cookie header with session token', async () => {
+    await app.inject({
       method: 'POST',
       url: '/api/auth/sign-up/email',
       headers: { 'content-type': 'application/json' },
       payload: {
         name: 'João Cookie',
+        email: 'cookie@teste.com',
+        password: 'senha-de-teste-123',
+      },
+    });
+    await testDb.db
+      .update(user)
+      .set({ emailVerified: true })
+      .where(eq(user.email, 'cookie@teste.com'));
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/auth/sign-in/email',
+      headers: { 'content-type': 'application/json' },
+      payload: {
         email: 'cookie@teste.com',
         password: 'senha-de-teste-123',
       },
@@ -110,8 +138,8 @@ describe('Auth Integration Tests (Better Auth & Fastify Bridge)', () => {
     expect(cookieStr).toContain('better-auth.session_token');
   });
 
-  // T4: Sign-up com senha de 5 chars -> erro (4xx), usuário não criado
-  it('T4: sign-up with password < 8 chars returns 400 and does not create user', async () => {
+  // T4 (F3): Sign-up com senha de 5 chars -> erro (4xx), usuário não criado
+  it('sign-up with password < 8 chars returns 400 and does not create user', async () => {
     const res = await app.inject({
       method: 'POST',
       url: '/api/auth/sign-up/email',
@@ -130,14 +158,28 @@ describe('Auth Integration Tests (Better Auth & Fastify Bridge)', () => {
     expect(users).toHaveLength(0);
   });
 
-  // T5: Múltiplos Set-Cookie são todos repassados -> conferir a contagem contra array de cookies
-  it('T5: forwards all Set-Cookie headers without collapsing or truncating', async () => {
-    const res = await app.inject({
+  // Bridge: Múltiplos Set-Cookie são todos repassados -> conferir a contagem contra array de cookies
+  it('Bridge: forwards all Set-Cookie headers without collapsing or truncating', async () => {
+    await app.inject({
       method: 'POST',
       url: '/api/auth/sign-up/email',
       headers: { 'content-type': 'application/json' },
       payload: {
         name: 'Multi Cookie',
+        email: 'multicookie@teste.com',
+        password: 'senha-de-teste-123',
+      },
+    });
+    await testDb.db
+      .update(user)
+      .set({ emailVerified: true })
+      .where(eq(user.email, 'multicookie@teste.com'));
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/auth/sign-in/email',
+      headers: { 'content-type': 'application/json' },
+      payload: {
         email: 'multicookie@teste.com',
         password: 'senha-de-teste-123',
       },
@@ -158,8 +200,8 @@ describe('Auth Integration Tests (Better Auth & Fastify Bridge)', () => {
     }
   });
 
-  // T6: Sign-up com e-mail já usado -> erro (4xx), sem duplicar linha em "user"
-  it('T6: sign-up with duplicate email returns 4xx and does not duplicate user row', async () => {
+  // T2: POST /sign-up/email com e-mail já cadastrado -> status e corpo idênticos ao T1 (GAP-08)
+  it('T2: POST /api/auth/sign-up/email with duplicate email returns 200 identical to fresh sign-up (GAP-08)', async () => {
     const payload = {
       name: 'Duplicado',
       email: 'dup@teste.com',
@@ -180,10 +222,67 @@ describe('Auth Integration Tests (Better Auth & Fastify Bridge)', () => {
       headers: { 'content-type': 'application/json' },
       payload,
     });
-    expect(res2.statusCode).toBeGreaterThanOrEqual(400);
-    expect(res2.statusCode).toBeLessThan(500);
+    expect(res2.statusCode).toBe(200);
+    const body2 = res2.json<{ user: { email: string; name: string }; token: string | null }>();
+    expect(body2.user).toBeDefined();
+    expect(body2.user.email).toBe('dup@teste.com');
+  });
 
-    const users = await testDb.db.select().from(user).where(eq(user.email, 'dup@teste.com'));
+  // T3: T1 vs T2: nenhuma diferença de statusCode, code ou message (asserção de igualdade estrita)
+  it('T3: duplicate sign-up has no difference in statusCode, code, or message compared to fresh sign-up', async () => {
+    const payloadFresh = {
+      name: 'User One',
+      email: 'user-one@teste.com',
+      password: 'senha-de-teste-123',
+    };
+    const resFresh = await app.inject({
+      method: 'POST',
+      url: '/api/auth/sign-up/email',
+      headers: { 'content-type': 'application/json' },
+      payload: payloadFresh,
+    });
+
+    const resDuplicate = await app.inject({
+      method: 'POST',
+      url: '/api/auth/sign-up/email',
+      headers: { 'content-type': 'application/json' },
+      payload: payloadFresh,
+    });
+
+    expect(resDuplicate.statusCode).toBe(resFresh.statusCode);
+    const freshBody = resFresh.json<Record<string, unknown>>();
+    const dupBody = resDuplicate.json<Record<string, unknown>>();
+
+    expect(dupBody.token).toBe(freshBody.token);
+    expect(dupBody.code).toBe(freshBody.code);
+    expect(dupBody.message).toBe(freshBody.message);
+    expect(Object.keys(dupBody).sort()).toEqual(Object.keys(freshBody).sort());
+  });
+
+  // T4: Depois de T2, SELECT count(*) FROM "user" WHERE email = ... continua 1
+  it('T4: after duplicate sign-up, count(*) from user table remains exactly 1', async () => {
+    const emailToTest = 'count-test@teste.com';
+    const payload = {
+      name: 'Count Test',
+      email: emailToTest,
+      password: 'senha-de-teste-123',
+    };
+
+    await app.inject({
+      method: 'POST',
+      url: '/api/auth/sign-up/email',
+      headers: { 'content-type': 'application/json' },
+      payload,
+    });
+
+    await app.inject({
+      method: 'POST',
+      url: '/api/auth/sign-up/email',
+      headers: { 'content-type': 'application/json' },
+      payload,
+    });
+
+    const users = await testDb.db.select().from(user).where(eq(user.email, emailToTest));
     expect(users).toHaveLength(1);
   });
 
@@ -199,6 +298,10 @@ describe('Auth Integration Tests (Better Auth & Fastify Bridge)', () => {
         password: 'senha-correta-123',
       },
     });
+    await testDb.db
+      .update(user)
+      .set({ emailVerified: true })
+      .where(eq(user.email, 'login@teste.com'));
 
     const res = await app.inject({
       method: 'POST',
@@ -229,6 +332,10 @@ describe('Auth Integration Tests (Better Auth & Fastify Bridge)', () => {
         password: 'senha-correta-123',
       },
     });
+    await testDb.db
+      .update(user)
+      .set({ emailVerified: true })
+      .where(eq(user.email, 'wrong@teste.com'));
 
     const res = await app.inject({
       method: 'POST',
@@ -245,18 +352,7 @@ describe('Auth Integration Tests (Better Auth & Fastify Bridge)', () => {
 
   // T9: GET /get-session com Bearer -> 200 com user e session
   it('T9: GET /api/auth/get-session with Bearer token returns 200 with user and session', async () => {
-    const signUpRes = await app.inject({
-      method: 'POST',
-      url: '/api/auth/sign-up/email',
-      headers: { 'content-type': 'application/json' },
-      payload: {
-        name: 'Bearer User',
-        email: 'bearer@teste.com',
-        password: 'senha-de-teste-123',
-      },
-    });
-
-    const token = signUpRes.headers['set-auth-token'] as string;
+    const { token } = await signUpAndGetToken(app, 'bearer@teste.com');
     expect(token).toBeDefined();
 
     const res = await app.inject({
@@ -275,28 +371,13 @@ describe('Auth Integration Tests (Better Auth & Fastify Bridge)', () => {
 
   // T10: GET /get-session com cookie -> 200 — prova o D-13
   it('T10: GET /api/auth/get-session with session cookie returns 200 (proves D-13)', async () => {
-    const signUpRes = await app.inject({
-      method: 'POST',
-      url: '/api/auth/sign-up/email',
-      headers: { 'content-type': 'application/json' },
-      payload: {
-        name: 'Cookie User',
-        email: 'cookieauth@teste.com',
-        password: 'senha-de-teste-123',
-      },
-    });
-
-    const rawCookies = signUpRes.headers['set-cookie'];
-    expect(rawCookies).toBeDefined();
-
-    const cookieHeader = Array.isArray(rawCookies)
-      ? rawCookies.map((c) => c.split(';')[0]).join('; ')
-      : String(rawCookies).split(';')[0];
+    const { cookie } = await signUpAndGetToken(app, 'cookieauth@teste.com');
+    expect(cookie).toBeDefined();
 
     const res = await app.inject({
       method: 'GET',
       url: '/api/auth/get-session',
-      headers: { cookie: cookieHeader },
+      headers: { cookie },
     });
 
     expect(res.statusCode).toBe(200);
@@ -320,19 +401,7 @@ describe('Auth Integration Tests (Better Auth & Fastify Bridge)', () => {
 
   // T12: request.user populado em rota qualquer com Bearer -> rota de teste devolve o id
   it('T12: populates request.user in any route with valid Bearer token', async () => {
-    const signUpRes = await app.inject({
-      method: 'POST',
-      url: '/api/auth/sign-up/email',
-      headers: { 'content-type': 'application/json' },
-      payload: {
-        name: 'Passive User',
-        email: 'passive@teste.com',
-        password: 'senha-de-teste-123',
-      },
-    });
-
-    const token = signUpRes.headers['set-auth-token'] as string;
-    const expectedUserId = signUpRes.json<{ user: { id: string } }>().user.id;
+    const { token, userId } = await signUpAndGetToken(app, 'passive@teste.com');
 
     const res = await app.inject({
       method: 'GET',
@@ -341,7 +410,7 @@ describe('Auth Integration Tests (Better Auth & Fastify Bridge)', () => {
     });
 
     expect(res.statusCode).toBe(200);
-    expect(res.json()).toEqual({ userId: expectedUserId });
+    expect(res.json()).toEqual({ userId });
   });
 
   // T13: request.user === null sem credencial -> rota de teste devolve null, sem lançar
@@ -392,19 +461,7 @@ describe('Auth Integration Tests (Better Auth & Fastify Bridge)', () => {
 
   // T16: requireAuth com Bearer válido -> passa; handler executa
   it('T16: requireAuth with valid Bearer token executes protected handler successfully', async () => {
-    const signUpRes = await app.inject({
-      method: 'POST',
-      url: '/api/auth/sign-up/email',
-      headers: { 'content-type': 'application/json' },
-      payload: {
-        name: 'Protected User',
-        email: 'protected@teste.com',
-        password: 'senha-de-teste-123',
-      },
-    });
-
-    const token = signUpRes.headers['set-auth-token'] as string;
-    const expectedUserId = signUpRes.json<{ user: { id: string } }>().user.id;
+    const { token, userId } = await signUpAndGetToken(app, 'protected@teste.com');
 
     const res = await app.inject({
       method: 'GET',
@@ -413,12 +470,12 @@ describe('Auth Integration Tests (Better Auth & Fastify Bridge)', () => {
     });
 
     expect(res.statusCode).toBe(200);
-    expect(res.json()).toEqual({ ok: true, userId: expectedUserId });
+    expect(res.json()).toEqual({ ok: true, userId });
   });
 
   // T17: Sessão persiste em session no banco -> SELECT encontra a linha
   it('T17: verifies session is persisted in database session table', async () => {
-    const signUpRes = await app.inject({
+    await app.inject({
       method: 'POST',
       url: '/api/auth/sign-up/email',
       headers: { 'content-type': 'application/json' },
@@ -428,30 +485,44 @@ describe('Auth Integration Tests (Better Auth & Fastify Bridge)', () => {
         password: 'senha-de-teste-123',
       },
     });
+    await testDb.db
+      .update(user)
+      .set({ emailVerified: true })
+      .where(eq(user.email, 'dbsession@teste.com'));
 
-    const userId = signUpRes.json<{ user: { id: string } }>().user.id;
+    const [createdUser] = await testDb.db
+      .select()
+      .from(user)
+      .where(eq(user.email, 'dbsession@teste.com'));
+    expect(createdUser).toBeDefined();
+    if (!createdUser) {
+      throw new Error('User not found in database');
+    }
 
-    const dbSessions = await testDb.db.select().from(session).where(eq(session.userId, userId));
+    const signInRes = await app.inject({
+      method: 'POST',
+      url: '/api/auth/sign-in/email',
+      headers: { 'content-type': 'application/json' },
+      payload: {
+        email: 'dbsession@teste.com',
+        password: 'senha-de-teste-123',
+      },
+    });
+    expect(signInRes.statusCode).toBe(200);
+
+    const dbSessions = await testDb.db
+      .select()
+      .from(session)
+      .where(eq(session.userId, createdUser.id));
 
     expect(dbSessions).toHaveLength(1);
-    expect(dbSessions[0]?.userId).toBe(userId);
+    expect(dbSessions[0]?.userId).toBe(createdUser.id);
     expect(dbSessions[0]?.token).toBeDefined();
   });
 
   // T18: POST /sign-out invalida a sessão -> get-session seguinte não autentica
   it('T18: POST /api/auth/sign-out invalidates session and subsequent get-session returns null', async () => {
-    const signUpRes = await app.inject({
-      method: 'POST',
-      url: '/api/auth/sign-up/email',
-      headers: { 'content-type': 'application/json' },
-      payload: {
-        name: 'Sign Out User',
-        email: 'signout@teste.com',
-        password: 'senha-de-teste-123',
-      },
-    });
-
-    const token = signUpRes.headers['set-auth-token'] as string;
+    const { token } = await signUpAndGetToken(app, 'signout@teste.com');
 
     const signOutRes = await app.inject({
       method: 'POST',
@@ -483,6 +554,10 @@ describe('Auth Integration Tests (Better Auth & Fastify Bridge)', () => {
         password: 'senha-de-teste-123',
       },
     });
+    await testDb.db
+      .update(user)
+      .set({ emailVerified: true })
+      .where(eq(user.email, 'ratelimit@teste.com'));
 
     for (let i = 0; i < 15; i++) {
       const res = await app.inject({

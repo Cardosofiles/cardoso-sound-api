@@ -156,37 +156,21 @@ describe('UsersRepository & /api/v1/me Integration Tests', () => {
 
     // T12: GET /me com cookie -> 200 (prova de D-13)
     it('T12: GET /api/v1/me with session cookie returns 200 (proving D-13)', async () => {
-      const signUpRes = await app.inject({
-        method: 'POST',
-        url: '/api/auth/sign-up/email',
-        headers: { 'content-type': 'application/json' },
-        payload: {
-          name: 'Cookie User',
-          email: 'cookie-user-t12@example.com',
-          password: 'Password123!',
-        },
-      });
-
-      expect(signUpRes.statusCode).toBe(200);
-      const setCookies = signUpRes.headers['set-cookie'];
-      expect(setCookies).toBeDefined();
-
-      const cookieHeader = Array.isArray(setCookies)
-        ? setCookies.map((c) => c.split(';')[0]).join('; ')
-        : (setCookies?.split(';')[0] ?? '');
+      const { cookie } = await signUpAndGetToken(app, 'cookie-user-t12@example.com');
+      expect(cookie).toBeDefined();
 
       const res = await app.inject({
         method: 'GET',
         url: '/api/v1/me',
         headers: {
-          cookie: cookieHeader,
+          cookie,
         },
       });
 
       expect(res.statusCode).toBe(200);
       const body = res.json<{ email: string; name: string }>();
       expect(body.email).toBe('cookie-user-t12@example.com');
-      expect(body.name).toBe('Cookie User');
+      expect(body.name).toBe('E2E Test User');
     });
 
     // T13: Resposta de /me tem exatamente 5 chaves -> nenhuma extra
