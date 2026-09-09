@@ -39,22 +39,22 @@ restrições de quota do Spotify Developer Mode.
 Estas ausências são **decisões**, não esquecimentos. Não implemente nenhuma delas sem uma
 nova rodada de spec.
 
-| Fora                                                                 | Por quê                                               |
-| -------------------------------------------------------------------- | ----------------------------------------------------- |
-| Integração com Spotify ou qualquer catálogo de terceiros             | Quota do Developer Mode inviabiliza                   |
-| Escrita no catálogo pela API (`POST/PATCH/DELETE` em tracks/artists) | Catálogo é read-only, mutável só por seed — **D-09**  |
-| RBAC, coluna `role`, painel administrativo                           | Consequência direta de D-09                           |
-| Endpoint de streaming, proxy de áudio, URL assinada                  | `audioUrl` vai direto no payload — **D-10**           |
-| Contador de reproduções, histórico de escuta, "tocadas recentemente" | **D-10**                                              |
-| Reordenar faixas dentro da playlist (`position`)                     | Ordem é `added_at` — **D-15**                         |
-| Playlists públicas ou compartilháveis                                | Toda playlist é privada do dono — **D-15**            |
-| Tabelas `albums` e `genres` normalizadas                             | `album` e `genre` são colunas em `tracks` — **D-12**  |
-| ~~OAuth social, verificação de e-mail, recuperação de senha~~        | **Entrou em F3-S03** — spec `04` §1.1 e §1.2          |
-| Troca de senha com o usuário logado, 2FA, magic link                 | Fora mesmo depois de F3-S03                           |
-| Upload de arquivos (avatar, capa)                                    | URLs externas apenas                                  |
-| Playwright, testes de browser                                        | E2E é `app.inject()` — **D-03**                       |
-| Neon, driver serverless, WebSocket                                   | Postgres é Docker local e Railway — **D-04**          |
-| Jobs em background (`src/jobs/runner.ts`)                            | Nenhum job necessário no MVP; arquivo permanece vazio |
+| Fora                                                                 | Por quê                                                                                                                    |
+| -------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| Integração com Spotify ou qualquer catálogo de terceiros             | Quota do Developer Mode inviabiliza                                                                                        |
+| Escrita no catálogo pela API (`POST/PATCH/DELETE` em tracks/artists) | Catálogo é read-only, mutável só por seed — **D-09**                                                                       |
+| RBAC, coluna `role`, painel administrativo                           | Consequência direta de D-09                                                                                                |
+| Endpoint de streaming, proxy de áudio, URL assinada                  | `audioUrl` vai direto no payload — **D-10**                                                                                |
+| Contador de reproduções, histórico de escuta, "tocadas recentemente" | **D-10**                                                                                                                   |
+| Reordenar faixas dentro da playlist (`position`)                     | Ordem é `added_at` — **D-15**                                                                                              |
+| Playlists públicas ou compartilháveis                                | Toda playlist é privada do dono — **D-15**                                                                                 |
+| Tabelas `albums` e `genres` normalizadas                             | `album` e `genre` são colunas em `tracks` — **D-12**                                                                       |
+| ~~OAuth social, verificação de e-mail, recuperação de senha~~        | **Entrou em F3-S03** — spec `04` §1.1 e §1.2                                                                               |
+| ~~Troca de senha com o usuário logado, 2FA~~, magic link             | **2FA entra em F5-S05 e Passkey em F5-S06** (D-53, D-54); `/change-password` é coberto em F5-S03. Magic link continua fora |
+| Upload de arquivos (avatar, capa)                                    | URLs externas apenas                                                                                                       |
+| Playwright, testes de browser                                        | E2E é `app.inject()` — **D-03**                                                                                            |
+| Neon, driver serverless, WebSocket                                   | Postgres é Docker local e Railway — **D-04**                                                                               |
+| Jobs em background (`src/jobs/runner.ts`)                            | Nenhum job necessário no MVP; arquivo permanece vazio                                                                      |
 
 ---
 

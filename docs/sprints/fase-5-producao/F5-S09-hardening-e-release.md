@@ -1,10 +1,10 @@
-# F5-S03 — Hardening, Auditoria e Release `v1.0.0`
+# F5-S09 — Hardening, Auditoria e Release `v1.0.0`
 
 |                |                                                                   |
 | -------------- | ----------------------------------------------------------------- |
 | **Fase**       | F5 — Produção · **último sprint do projeto**                      |
-| **Branch**     | `feature/f5s03-hardening-e-release`                               |
-| **Depende de** | F5-S02                                                            |
+| **Branch**     | `feature/f5s09-hardening-e-release`                               |
+| **Depende de** | F5-S08                                                            |
 | **Entrega**    | Auditoria de segurança aprovada, documentação final, tag `v1.0.0` |
 
 ---
@@ -16,8 +16,9 @@ Leia .agents/memory/PROGRESS.md e .agents/memory/DECISIONS.md para se contextual
 Leia TODOS os arquivos .agents/memory/F*-S*.md — este é o único sprint em que isso
 se justifica: a auditoria precisa da história completa.
 
-Sprint alvo: docs/sprints/fase-5-producao/F5-S03-hardening-e-release.md
-Specs obrigatórias: docs/specs/04-autenticacao-e-seguranca.md (§7),
+Sprint alvo: docs/sprints/fase-5-producao/F5-S09-hardening-e-release.md
+Specs obrigatórias: docs/specs/08-blindagem-de-seguranca.md (§9 — o checklist que vale),
+                    docs/specs/04-autenticacao-e-seguranca.md (§7 — base histórica),
                     docs/specs/00-visao-geral.md, docs/specs/06-git-ci-cd-e-deploy.md (§6)
 
 Use o subagente security-reviewer (.agents/agents/security-reviewer.md) para a §5.1.
@@ -73,7 +74,7 @@ AGENTS.md                          # se ainda houver divergência com o constru�
 src/**                             # SOMENTE correções do checklist da spec 04 §7
 .agents/memory/DECISIONS.md
 .agents/memory/PROGRESS.md
-.agents/memory/F5-S03.md
+.agents/memory/F5-S09.md
 ```
 
 > `src/**` está no blast radius **apenas** para correções de segurança do checklist.
@@ -85,7 +86,15 @@ src/**                             # SOMENTE correções do checklist da spec 04
 
 ### 5.1 Auditoria de segurança
 
-Percorra os 11 itens da **spec `04` §7**, um a um, com evidência. Delegue ao subagente
+> **O checklist mudou.** A auditoria de 2026-09-09 (`docs/issue/AUTHENTICATION.md`) levantou
+> 27 GAPs, corrigidos em F5-S02…F5-S07. O portão desta sprint é a **spec `08` §9**, que reproduz
+> os 11 itens da spec `04` §7 e soma outros 25 — um por GAP corrigido. **Percorra a `08` §9.**
+> A tabela abaixo continua valendo como subconjunto histórico.
+>
+> Um item da `08` §9 que falhe aqui significa **regressão de uma sprint anterior**: identifique
+> qual, corrija, e registre em `docs/AUDITORIA.md` qual sprint deixou passar.
+
+Percorra os itens da **spec `08` §9**, um a um, com evidência. Delegue ao subagente
 `security-reviewer`.
 
 | #   | Item                                                    | Como provar                                                          |
@@ -97,7 +106,7 @@ Percorra os 11 itens da **spec `04` §7**, um a um, com evidência. Delegue ao s
 | 5   | `redact` do Pino cobre os 6 caminhos                    | provoque 401 em produção; leia os logs                               |
 | 6   | Toda rota protegida tem `requireAuth`                   | percorra as 13 rotas de `Profile` + `Library`                        |
 | 7   | Acesso a recurso de usuário filtra por `user_id` no SQL | leia os `where` dos repositories                                     |
-| 8   | Rate limit e CORS restritos em produção                 | T11/T12 de F5-S02                                                    |
+| 8   | Rate limit e CORS restritos em produção                 | T11/T12 de F5-S08                                                    |
 | 9   | Headers do helmet ativos                                | `curl -I` na URL pública                                             |
 | 10  | Zero `any` e zero `@ts-expect-error` sem justificativa  | `grep -rn ': any\|@ts-expect-error' src/`                            |
 | 11  | `pnpm audit --prod` sem alta/crítica                    | saída do comando                                                     |
@@ -159,8 +168,8 @@ rode `pnpm openapi:export` de novo, senão o `--check` do CI falha).
 | T8  | Todas as 25 rotas respondem em produção               | script de smoke contra a URL pública                |
 | T9  | Fluxo E2E manual em produção                          | sign-up → playlist → favoritar → tocar o `audioUrl` |
 | T10 | `DECISIONS.md` não tem decisão contradita pelo código | revisão item a item                                 |
-| T11 | `PROGRESS.md` com os 18 sprints ✅                    |                                                     |
-| T12 | Existem 18 arquivos `F<n>-S<nn>.md`                   | `ls .agents/memory/F*.md \| wc -l` = 18             |
+| T11 | `PROGRESS.md` com os 25 sprints ✅                    |                                                     |
+| T12 | Existem 25 arquivos `F<n>-S<nn>.md`                   | `ls .agents/memory/F*.md \| wc -l` = 25             |
 
 ---
 
@@ -180,7 +189,7 @@ curl -sI https://<app>.up.railway.app/api/v1/tracks | head -20
 - [ ] README, AGENTS.md e rules sem nenhuma afirmação falsa
 - [ ] `version: 1.0.0` e `openapi.json` regenerado
 - [ ] `release/v1.0.0` preparada, PR para `main` aberto, `RELEASE.md` escrito
-- [ ] **`PROGRESS.md` com os 18 sprints ✅ e o roadmap encerrado**
+- [ ] **`PROGRESS.md` com os 25 sprints ✅ e o roadmap encerrado**
 
 ---
 
@@ -207,10 +216,10 @@ curl -sI https://<app>.up.railway.app/api/v1/tracks | head -20
 
 - **`DECISIONS.md`** — achados da auditoria que viraram regra permanente; qualquer item
   aceito como risco conhecido, com justificativa.
-- **`PROGRESS.md`** — F5-S03 ✅, **fase F5 concluída**, **projeto concluído**, tag
+- **`PROGRESS.md`** — F5-S09 ✅, **fase F5 concluída**, **projeto concluído**, tag
   `v1.0.0`, URL pública. Acrescente uma seção "Próximos passos" com o que ficou fora do
   MVP (spec `00` §3) para quem retomar depois.
-- **`F5-S03.md`** — o resultado da auditoria e a lista final de correções aplicadas.
+- **`F5-S09.md`** — o resultado da auditoria e a lista final de correções aplicadas.
 
 ---
 
@@ -220,9 +229,11 @@ O MVP está entregue. O que ficou deliberadamente de fora está na **spec `00` �
 continua fora até uma nova rodada de especificação. Candidatos naturais a uma v1.1:
 
 `position` nas playlists · playlists públicas · histórico de reprodução · painel admin com
-RBAC · troca de senha com usuário logado · 2FA · magic link · upload de capa e avatar.
+RBAC · magic link · upload de capa e avatar · gestão de dispositivos confiáveis (`trustDevice`,
+desligado por D-53) · rate limit em Redis (seam pronto em F5-S07, D-55).
 
-> OAuth social, verificação de e-mail e recuperação de senha **saíram desta lista**: foram
-> entregues em F3-S03.
+> **Saíram desta lista:** OAuth social, verificação de e-mail e recuperação de senha (F3-S03);
+> **2FA com TOTP, OTP e backup codes** (F5-S05, D-53); **Passkey/WebAuthn** (F5-S06, D-54);
+> troca de senha com usuário logado (`/change-password`, coberta por teste em F5-S03).
 
 Nenhum deles deve ser implementado sem passar antes por spec e sprint.

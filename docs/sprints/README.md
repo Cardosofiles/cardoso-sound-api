@@ -1,6 +1,17 @@
 # Sprints — Roadmap de Execução
 
-**19 sprints · 5 fases · 1 sprint = 1 sessão de agente = 1 PR** (D-23).
+**26 sprints · 5 fases · 1 sprint = 1 sessão de agente = 1 PR** (D-23).
+
+> **A Fase 5 foi renumerada em 2026-09-09** (D-49). A auditoria de
+> [`docs/issue/AUTHENTICATION.md`](../issue/AUTHENTICATION.md) levantou 27 GAPs — um crítico —
+> e seis sprints de blindagem passaram a rodar **antes** do deploy: não se coloca em produção uma
+> aplicação com rate limit desligado e bypass conhecido. `F5-S02` (deploy) virou `F5-S08` e
+> `F5-S03` (release) virou `F5-S09`. A spec normativa da blindagem é
+> [`docs/specs/08-blindagem-de-seguranca.md`](../specs/08-blindagem-de-seguranca.md).
+>
+> **`F5-S10` foi acrescentado em 2026-09-09** (D-58) e roda **entre `F5-S07` e `F5-S08`**.
+> O número é identidade, não ordem: depois da renumeração de D-49, renumerar de novo custaria
+> mais do que a leitura fora de ordem que ele impõe.
 
 Cada arquivo é autossuficiente: traz o prompt de abertura, os contratos exatos, a lista
 fechada de arquivos que pode tocar e o critério de pronto. O agente não deve precisar de
@@ -66,13 +77,23 @@ mais nada além dele e das specs que ele indicar.
 
 ### F5 — Produção · `v1.0.0`
 
-> Contrato publicado, deploy no ar, segurança auditada.
+> Contrato publicado, **os 27 GAPs da auditoria fechados**, deploy no ar, segurança auditada.
 
-| Sprint | Arquivo                                                              | Entrega                                  |
-| ------ | -------------------------------------------------------------------- | ---------------------------------------- |
-| F5-S01 | [OpenAPI](fase-5-producao/F5-S01-openapi-e-docs.md)                  | `openapi.json` + check no CI             |
-| F5-S02 | [Deploy na Railway](fase-5-producao/F5-S02-deploy-railway.md)        | Dockerfile, `railway.json`, `deploy.yml` |
-| F5-S03 | [Hardening e release](fase-5-producao/F5-S03-hardening-e-release.md) | Auditoria, README final, `v1.0.0`        |
+| Sprint | Arquivo                                                                                  | Entrega                                          | GAPs                           |
+| ------ | ---------------------------------------------------------------------------------------- | ------------------------------------------------ | ------------------------------ |
+| F5-S01 | [OpenAPI](fase-5-producao/F5-S01-openapi-e-docs.md)                                      | `openapi.json` + check no CI                     | —                              |
+| F5-S02 | [Blindagem de borda](fase-5-producao/F5-S02-blindagem-de-borda-e-rate-limit.md)          | rate limit em produção, `trustProxy`, Swagger    | 01, 04, 05, 06, 10, 17, 21, 27 |
+| F5-S03 | [Recuperação de conta](fase-5-producao/F5-S03-recuperacao-de-conta-e-anti-enumeracao.md) | verificação obrigatória, anti-enumeração         | 07, 08, 14, 15, 22, 24, 25     |
+| F5-S04 | [Sessão, schema e contrato](fase-5-producao/F5-S04-sessao-schema-e-contrato.md)          | `cookieCache`, índices, envelope RFC 7807        | 13, 16, 19, 20, 23, 26         |
+| F5-S05 | [Two Factor](fase-5-producao/F5-S05-two-factor.md)                                       | R32–R40 · TOTP, OTP, backup codes                | 02, 09 (2FA)                   |
+| F5-S06 | [Passkey](fase-5-producao/F5-S06-passkey-webauthn.md)                                    | R41–R45 · WebAuthn/FIDO2                         | 03, 09 (passkey)               |
+| F5-S07 | [Rate limit distribuído](fase-5-producao/F5-S07-rate-limit-distribuido.md)               | `storage: 'database'`, chave final, origens      | 11, 12, 18                     |
+| F5-S10 | [Vínculo de contas sociais](fase-5-producao/F5-S10-vinculo-de-contas-sociais.md)         | R46–R48 · política de linking (D-58)             | —                              |
+| F5-S08 | [Deploy na Railway](fase-5-producao/F5-S08-deploy-railway.md)                            | Dockerfile, `railway.json`, `deploy.yml`         | —                              |
+| F5-S09 | [Hardening e release](fase-5-producao/F5-S09-hardening-e-release.md)                     | Auditoria (spec `08` §9), README final, `v1.0.0` | portão dos 27                  |
+
+Rastreabilidade completa GAP × sprint × seção normativa:
+[`docs/specs/08-blindagem-de-seguranca.md`](../specs/08-blindagem-de-seguranca.md) §10.
 
 ---
 
@@ -89,11 +110,26 @@ F2-S01 ─▶ F2-S02 ─┬─▶ F2-S03 ─┐                            │
                           F4-S01 ─┬──────────────┘
                           F4-S02 ─┴─▶ F4-S03
                                         │
-                          F5-S01 ─▶ F5-S02 ─▶ F5-S03
+                          F5-S01 ─▶ F5-S02 ─▶ F5-S03 ─▶ F5-S04 ─┐
+                                                                  │
+                          ┌───────────────────────────────────────┘
+                          └─▶ F5-S05 ─▶ F5-S06 ─▶ F5-S07 ─▶ F5-S10 ─▶ F5-S08 ─▶ F5-S09
+                              └── blindagem: 27 GAPs (D-49) ──┘
 ```
 
 **A ordem é sequencial e não deve ser antecipada.** As únicas folgas: F2-S03 e F2-S04 são
 independentes entre si (mas ambos dependem de F2-S02); F4-S01 e F4-S02 idem.
+
+Dentro da blindagem a sequência é **rígida** e cada elo tem motivo:
+
+| Elo             | Por que não pode inverter                                                                      |
+| --------------- | ---------------------------------------------------------------------------------------------- |
+| S02 → S03       | S03 depende do rate limit funcionando: ela abre fluxos de e-mail que sem teto viram abuso      |
+| S03 → S04       | S04 mexe na ponte e no schema; S03 já reescreveu o helper E2E de que os testes de S04 dependem |
+| S04 → S05 → S06 | as tabelas de 2FA e Passkey entram **em cima** dos índices e restrições de S04                 |
+| S06 → S07       | as 13 entradas de `customRules` só ficam completas depois que 2FA e Passkey existem            |
+| S07 → S10       | S10 fecha a última superfície não documentada; depende do índice único de `account` (S04)      |
+| S10 → S08       | **D-49**: não se faz deploy com GAP aberto — nem com política de vínculo por decidir           |
 
 ---
 

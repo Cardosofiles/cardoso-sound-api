@@ -1,0 +1,3904 @@
+{
+  "components": {
+    "schemas": {},
+    "securitySchemes": {
+      "bearerAuth": {
+        "scheme": "bearer",
+        "type": "http"
+      },
+      "cookieAuth": {
+        "in": "cookie",
+        "name": "better-auth.session_token",
+        "type": "apiKey"
+      }
+    }
+  },
+  "info": {
+    "description": "API de catálogo musical para o app Flutter. As rotas de autenticação (/api/auth/*) são gerenciadas pelo Better Auth com suporte simultâneo a Bearer Token e Cookie HttpOnly.",
+    "title": "cardoso-sound-api",
+    "version": "0.1.0"
+  },
+  "openapi": "3.0.3",
+  "paths": {
+    "/api/v1/artists": {
+      "get": {
+        "description": "Retorna uma lista paginada de artistas do catálogo musical, com suporte a busca textual por nome.",
+        "operationId": "listArtists",
+        "parameters": [
+          {
+            "description": "Número da página (>= 1)",
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "maximum": 9007199254740991,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Quantidade de itens por página (1..100)",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Termo para busca textual no nome do artista (case-insensitive)",
+            "in": "query",
+            "name": "search",
+            "required": false,
+            "schema": {
+              "maxLength": 100,
+              "minLength": 1,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "data": {
+                      "description": "Lista de artistas da página solicitada",
+                      "items": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "avatarUrl": {
+                            "description": "URL do avatar do artista ou null",
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "bio": {
+                            "description": "Biografia resumida do artista ou null",
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "createdAt": {
+                            "description": "Data de cadastro do artista em formato ISO 8601 UTC",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                            "type": "string"
+                          },
+                          "id": {
+                            "description": "Identificador único do artista (UUID v4)",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                            "type": "string"
+                          },
+                          "name": {
+                            "description": "Nome do artista",
+                            "type": "string"
+                          },
+                          "trackCount": {
+                            "description": "Quantidade total de faixas do artista no catálogo",
+                            "maximum": 9007199254740991,
+                            "minimum": 0,
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "bio",
+                          "avatarUrl",
+                          "trackCount",
+                          "createdAt"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "meta": {
+                      "additionalProperties": false,
+                      "description": "Metadados de paginação da listagem",
+                      "properties": {
+                        "hasNext": {
+                          "description": "Indica se existe uma próxima página",
+                          "type": "boolean"
+                        },
+                        "hasPrev": {
+                          "description": "Indica se existe uma página anterior",
+                          "type": "boolean"
+                        },
+                        "limit": {
+                          "description": "Limite de itens solicitados por página",
+                          "maximum": 9007199254740991,
+                          "minimum": 1,
+                          "type": "integer"
+                        },
+                        "page": {
+                          "description": "Página atual da listagem",
+                          "maximum": 9007199254740991,
+                          "minimum": 1,
+                          "type": "integer"
+                        },
+                        "total": {
+                          "description": "Total geral de itens encontrados",
+                          "maximum": 9007199254740991,
+                          "minimum": 0,
+                          "type": "integer"
+                        },
+                        "totalPages": {
+                          "description": "Total de páginas disponíveis",
+                          "maximum": 9007199254740991,
+                          "minimum": 1,
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "page",
+                        "limit",
+                        "total",
+                        "totalPages",
+                        "hasNext",
+                        "hasPrev"
+                      ],
+                      "type": "object"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "meta"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "details": {
+                      "description": "Detalhes adicionais ou issues de validação RFC 7807",
+                      "nullable": true
+                    },
+                    "error": {
+                      "description": "Identificador canônico do erro",
+                      "type": "string"
+                    },
+                    "message": {
+                      "description": "Mensagem descritiva da falha",
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "description": "Código de status HTTP",
+                      "maximum": 9007199254740991,
+                      "minimum": -9007199254740991,
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "statusCode",
+                    "error",
+                    "message",
+                    "details"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          }
+        },
+        "summary": "Lista artistas do catálogo",
+        "tags": [
+          "Catalog"
+        ]
+      }
+    },
+    "/api/v1/artists/{id}": {
+      "get": {
+        "description": "Retorna as informações completas de um artista e sua lista integral de faixas ordenadas por título em ordem ascendente.",
+        "operationId": "getArtistById",
+        "parameters": [
+          {
+            "description": "Identificador único do artista (UUID v4)",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "avatarUrl": {
+                      "description": "URL do avatar do artista ou null",
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "bio": {
+                      "description": "Biografia resumida do artista ou null",
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "createdAt": {
+                      "description": "Data de cadastro do artista em formato ISO 8601 UTC",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                      "type": "string"
+                    },
+                    "id": {
+                      "description": "Identificador único do artista (UUID v4)",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                      "type": "string"
+                    },
+                    "name": {
+                      "description": "Nome do artista",
+                      "type": "string"
+                    },
+                    "trackCount": {
+                      "description": "Quantidade total de faixas do artista no catálogo",
+                      "maximum": 9007199254740991,
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "tracks": {
+                      "description": "Lista de todas as faixas do artista ordenadas por título",
+                      "items": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "album": {
+                            "description": "Nome do álbum da faixa ou null",
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "artist": {
+                            "additionalProperties": false,
+                            "description": "Resumo do artista autor da faixa",
+                            "properties": {
+                              "avatarUrl": {
+                                "description": "URL do avatar do artista ou null",
+                                "nullable": true,
+                                "type": "string"
+                              },
+                              "id": {
+                                "description": "Identificador único do artista (UUID v4)",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                                "type": "string"
+                              },
+                              "name": {
+                                "description": "Nome do artista",
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name",
+                              "avatarUrl"
+                            ],
+                            "type": "object"
+                          },
+                          "audioUrl": {
+                            "description": "URL pública de reprodução da faixa",
+                            "format": "uri",
+                            "type": "string"
+                          },
+                          "coverUrl": {
+                            "description": "URL da capa da faixa ou null",
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "createdAt": {
+                            "description": "Data de criação da faixa em formato ISO 8601 UTC",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                            "type": "string"
+                          },
+                          "durationSeconds": {
+                            "description": "Duração da faixa em segundos",
+                            "exclusiveMinimum": true,
+                            "maximum": 9007199254740991,
+                            "minimum": 0,
+                            "type": "integer"
+                          },
+                          "genre": {
+                            "description": "Gênero musical da faixa",
+                            "enum": [
+                              "rock",
+                              "pop",
+                              "electronic",
+                              "hip-hop",
+                              "jazz",
+                              "lo-fi"
+                            ],
+                            "type": "string"
+                          },
+                          "id": {
+                            "description": "Identificador único da faixa (UUID v4)",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                            "type": "string"
+                          },
+                          "title": {
+                            "description": "Título da faixa",
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "title",
+                          "album",
+                          "genre",
+                          "durationSeconds",
+                          "coverUrl",
+                          "audioUrl",
+                          "artist",
+                          "createdAt"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name",
+                    "bio",
+                    "avatarUrl",
+                    "trackCount",
+                    "createdAt",
+                    "tracks"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "details": {
+                      "description": "Detalhes adicionais ou issues de validação RFC 7807",
+                      "nullable": true
+                    },
+                    "error": {
+                      "description": "Identificador canônico do erro",
+                      "type": "string"
+                    },
+                    "message": {
+                      "description": "Mensagem descritiva da falha",
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "description": "Código de status HTTP",
+                      "maximum": 9007199254740991,
+                      "minimum": -9007199254740991,
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "statusCode",
+                    "error",
+                    "message",
+                    "details"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "details": {
+                      "description": "Detalhes adicionais ou issues de validação RFC 7807",
+                      "nullable": true
+                    },
+                    "error": {
+                      "description": "Identificador canônico do erro",
+                      "type": "string"
+                    },
+                    "message": {
+                      "description": "Mensagem descritiva da falha",
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "description": "Código de status HTTP",
+                      "maximum": 9007199254740991,
+                      "minimum": -9007199254740991,
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "statusCode",
+                    "error",
+                    "message",
+                    "details"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          }
+        },
+        "summary": "Obtém detalhes de um artista",
+        "tags": [
+          "Catalog"
+        ]
+      }
+    },
+    "/api/v1/favorites": {
+      "get": {
+        "description": "Recupera a listagem paginada de faixas favoritadas pelo usuário ativo, ordenadas pela data de inclusão (favoritedAt DESC).",
+        "operationId": "listFavorites",
+        "parameters": [
+          {
+            "description": "Número da página (>= 1)",
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "maximum": 9007199254740991,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Quantidade de itens por página (1..100)",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "data": {
+                      "description": "Lista de faixas favoritadas da página solicitada",
+                      "items": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "album": {
+                            "description": "Nome do álbum ou null",
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "artist": {
+                            "additionalProperties": false,
+                            "description": "Resumo do artista autor da faixa",
+                            "properties": {
+                              "avatarUrl": {
+                                "description": "URL do avatar do artista ou null",
+                                "nullable": true,
+                                "type": "string"
+                              },
+                              "id": {
+                                "description": "Identificador único do artista (UUID v4)",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                                "type": "string"
+                              },
+                              "name": {
+                                "description": "Nome do artista",
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name",
+                              "avatarUrl"
+                            ],
+                            "type": "object"
+                          },
+                          "audioUrl": {
+                            "description": "URL pública direta de reprodução da faixa (SoundHelix)",
+                            "format": "uri",
+                            "type": "string"
+                          },
+                          "coverUrl": {
+                            "description": "URL da capa da faixa ou null",
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "createdAt": {
+                            "description": "Data de criação da faixa em formato ISO 8601 UTC",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                            "type": "string"
+                          },
+                          "durationSeconds": {
+                            "description": "Duração da faixa em segundos",
+                            "exclusiveMinimum": true,
+                            "maximum": 9007199254740991,
+                            "minimum": 0,
+                            "type": "integer"
+                          },
+                          "favoritedAt": {
+                            "description": "Data em que a faixa foi favoritada em formato ISO 8601 UTC",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                            "type": "string"
+                          },
+                          "genre": {
+                            "description": "Gênero musical da faixa",
+                            "enum": [
+                              "rock",
+                              "pop",
+                              "electronic",
+                              "hip-hop",
+                              "jazz",
+                              "lo-fi"
+                            ],
+                            "type": "string"
+                          },
+                          "id": {
+                            "description": "Identificador único da faixa (UUID v4)",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                            "type": "string"
+                          },
+                          "title": {
+                            "description": "Título da faixa musical",
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "title",
+                          "album",
+                          "genre",
+                          "durationSeconds",
+                          "coverUrl",
+                          "audioUrl",
+                          "artist",
+                          "createdAt",
+                          "favoritedAt"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "meta": {
+                      "additionalProperties": false,
+                      "description": "Metadados de paginação da listagem",
+                      "properties": {
+                        "hasNext": {
+                          "description": "Indica se existe uma próxima página",
+                          "type": "boolean"
+                        },
+                        "hasPrev": {
+                          "description": "Indica se existe uma página anterior",
+                          "type": "boolean"
+                        },
+                        "limit": {
+                          "description": "Limite de itens solicitados por página",
+                          "maximum": 9007199254740991,
+                          "minimum": 1,
+                          "type": "integer"
+                        },
+                        "page": {
+                          "description": "Página atual da listagem",
+                          "maximum": 9007199254740991,
+                          "minimum": 1,
+                          "type": "integer"
+                        },
+                        "total": {
+                          "description": "Total geral de itens encontrados",
+                          "maximum": 9007199254740991,
+                          "minimum": 0,
+                          "type": "integer"
+                        },
+                        "totalPages": {
+                          "description": "Total de páginas disponíveis",
+                          "maximum": 9007199254740991,
+                          "minimum": 1,
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "page",
+                        "limit",
+                        "total",
+                        "totalPages",
+                        "hasNext",
+                        "hasPrev"
+                      ],
+                      "type": "object"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "meta"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "details": {
+                      "description": "Detalhes adicionais ou issues de validação RFC 7807",
+                      "nullable": true
+                    },
+                    "error": {
+                      "description": "Identificador canônico do erro",
+                      "type": "string"
+                    },
+                    "message": {
+                      "description": "Mensagem descritiva da falha",
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "description": "Código de status HTTP",
+                      "maximum": 9007199254740991,
+                      "minimum": -9007199254740991,
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "statusCode",
+                    "error",
+                    "message",
+                    "details"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "details": {
+                      "description": "Detalhes adicionais ou issues de validação RFC 7807",
+                      "nullable": true
+                    },
+                    "error": {
+                      "description": "Identificador canônico do erro",
+                      "type": "string"
+                    },
+                    "message": {
+                      "description": "Mensagem descritiva da falha",
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "description": "Código de status HTTP",
+                      "maximum": 9007199254740991,
+                      "minimum": -9007199254740991,
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "statusCode",
+                    "error",
+                    "message",
+                    "details"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "summary": "Lista as faixas favoritadas pelo usuário autenticado",
+        "tags": [
+          "Library"
+        ]
+      }
+    },
+    "/api/v1/favorites/{trackId}": {
+      "delete": {
+        "description": "Desfavorita uma faixa musical previamente marcada pelo usuário ativo. Responde 404 se a faixa não estiver nos favoritos.",
+        "operationId": "removeFavorite",
+        "parameters": [
+          {
+            "description": "Identificador único da faixa musical (UUID v4)",
+            "in": "path",
+            "name": "trackId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Faixa removida dos favoritos com sucesso sem conteúdo retornado"
+                }
+              }
+            },
+            "description": "Faixa removida dos favoritos com sucesso sem conteúdo retornado"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "details": {
+                      "description": "Detalhes adicionais ou issues de validação RFC 7807",
+                      "nullable": true
+                    },
+                    "error": {
+                      "description": "Identificador canônico do erro",
+                      "type": "string"
+                    },
+                    "message": {
+                      "description": "Mensagem descritiva da falha",
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "description": "Código de status HTTP",
+                      "maximum": 9007199254740991,
+                      "minimum": -9007199254740991,
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "statusCode",
+                    "error",
+                    "message",
+                    "details"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "details": {
+                      "description": "Detalhes adicionais ou issues de validação RFC 7807",
+                      "nullable": true
+                    },
+                    "error": {
+                      "description": "Identificador canônico do erro",
+                      "type": "string"
+                    },
+                    "message": {
+                      "description": "Mensagem descritiva da falha",
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "description": "Código de status HTTP",
+                      "maximum": 9007199254740991,
+                      "minimum": -9007199254740991,
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "statusCode",
+                    "error",
+                    "message",
+                    "details"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "details": {
+                      "description": "Detalhes adicionais ou issues de validação RFC 7807",
+                      "nullable": true
+                    },
+                    "error": {
+                      "description": "Identificador canônico do erro",
+                      "type": "string"
+                    },
+                    "message": {
+                      "description": "Mensagem descritiva da falha",
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "description": "Código de status HTTP",
+                      "maximum": 9007199254740991,
+                      "minimum": -9007199254740991,
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "statusCode",
+                    "error",
+                    "message",
+                    "details"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "summary": "Remove uma faixa dos favoritos do usuário autenticado",
+        "tags": [
+          "Library"
+        ]
+      },
+      "post": {
+        "description": "Marca uma faixa musical existente como favorita para o usuário autenticado. Retorna 404 se a faixa não existir e 409 se já favoritada.",
+        "operationId": "addFavorite",
+        "parameters": [
+          {
+            "description": "Identificador único da faixa musical (UUID v4)",
+            "in": "path",
+            "name": "trackId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "album": {
+                      "description": "Nome do álbum ou null",
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "artist": {
+                      "additionalProperties": false,
+                      "description": "Resumo do artista autor da faixa",
+                      "properties": {
+                        "avatarUrl": {
+                          "description": "URL do avatar do artista ou null",
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "id": {
+                          "description": "Identificador único do artista (UUID v4)",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                          "type": "string"
+                        },
+                        "name": {
+                          "description": "Nome do artista",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name",
+                        "avatarUrl"
+                      ],
+                      "type": "object"
+                    },
+                    "audioUrl": {
+                      "description": "URL pública direta de reprodução da faixa (SoundHelix)",
+                      "format": "uri",
+                      "type": "string"
+                    },
+                    "coverUrl": {
+                      "description": "URL da capa da faixa ou null",
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "createdAt": {
+                      "description": "Data de criação da faixa em formato ISO 8601 UTC",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                      "type": "string"
+                    },
+                    "durationSeconds": {
+                      "description": "Duração da faixa em segundos",
+                      "exclusiveMinimum": true,
+                      "maximum": 9007199254740991,
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "favoritedAt": {
+                      "description": "Data em que a faixa foi favoritada em formato ISO 8601 UTC",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                      "type": "string"
+                    },
+                    "genre": {
+                      "description": "Gênero musical da faixa",
+                      "enum": [
+                        "rock",
+                        "pop",
+                        "electronic",
+                        "hip-hop",
+                        "jazz",
+                        "lo-fi"
+                      ],
+                      "type": "string"
+                    },
+                    "id": {
+                      "description": "Identificador único da faixa (UUID v4)",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                      "type": "string"
+                    },
+                    "title": {
+                      "description": "Título da faixa musical",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "title",
+                    "album",
+                    "genre",
+                    "durationSeconds",
+                    "coverUrl",
+                    "audioUrl",
+                    "artist",
+                    "createdAt",
+                    "favoritedAt"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "details": {
+                      "description": "Detalhes adicionais ou issues de validação RFC 7807",
+                      "nullable": true
+                    },
+                    "error": {
+                      "description": "Identificador canônico do erro",
+                      "type": "string"
+                    },
+                    "message": {
+                      "description": "Mensagem descritiva da falha",
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "description": "Código de status HTTP",
+                      "maximum": 9007199254740991,
+                      "minimum": -9007199254740991,
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "statusCode",
+                    "error",
+                    "message",
+                    "details"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "details": {
+                      "description": "Detalhes adicionais ou issues de validação RFC 7807",
+                      "nullable": true
+                    },
+                    "error": {
+                      "description": "Identificador canônico do erro",
+                      "type": "string"
+                    },
+                    "message": {
+                      "description": "Mensagem descritiva da falha",
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "description": "Código de status HTTP",
+                      "maximum": 9007199254740991,
+                      "minimum": -9007199254740991,
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "statusCode",
+                    "error",
+                    "message",
+                    "details"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "details": {
+                      "description": "Detalhes adicionais ou issues de validação RFC 7807",
+                      "nullable": true
+                    },
+                    "error": {
+                      "description": "Identificador canônico do erro",
+                      "type": "string"
+                    },
+                    "message": {
+                      "description": "Mensagem descritiva da falha",
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "description": "Código de status HTTP",
+                      "maximum": 9007199254740991,
+                      "minimum": -9007199254740991,
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "statusCode",
+                    "error",
+                    "message",
+                    "details"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "details": {
+                      "description": "Detalhes adicionais ou issues de validação RFC 7807",
+                      "nullable": true
+                    },
+                    "error": {
+                      "description": "Identificador canônico do erro",
+                      "type": "string"
+                    },
+                    "message": {
+                      "description": "Mensagem descritiva da falha",
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "description": "Código de status HTTP",
+                      "maximum": 9007199254740991,
+                      "minimum": -9007199254740991,
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "statusCode",
+                    "error",
+                    "message",
+                    "details"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "summary": "Adiciona uma faixa aos favoritos do usuário autenticado",
+        "tags": [
+          "Library"
+        ]
+      }
+    },
+    "/api/v1/genres": {
+      "get": {
+        "description": "Retorna a lista de gêneros musicais cadastrados no catálogo com a contagem total de faixas associadas.",
+        "operationId": "listGenres",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "data": {
+                      "description": "Lista agregada de gêneros do catálogo ordenada alfabeticamente",
+                      "items": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "genre": {
+                            "description": "Slug do gênero musical",
+                            "type": "string"
+                          },
+                          "trackCount": {
+                            "description": "Quantidade total de faixas associadas ao gênero",
+                            "maximum": 9007199254740991,
+                            "minimum": 0,
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "genre",
+                          "trackCount"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          }
+        },
+        "summary": "Lista gêneros musicais com contagem de faixas",
+        "tags": [
+          "Catalog"
+        ]
+      }
+    },
+    "/api/v1/me": {
+      "delete": {
+        "description": "Exclui permanentemente o usuário e revoga em cascata todas as sessões e recursos vinculados.",
+        "operationId": "deleteMe",
+        "responses": {
+          "204": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Usuário excluído com sucesso sem conteúdo retornado"
+                }
+              }
+            },
+            "description": "Usuário excluído com sucesso sem conteúdo retornado"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "details": {
+                      "description": "Detalhes adicionais ou issues de validação RFC 7807",
+                      "nullable": true
+                    },
+                    "error": {
+                      "description": "Identificador canônico do erro",
+                      "type": "string"
+                    },
+                    "message": {
+                      "description": "Mensagem descritiva da falha",
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "description": "Código de status HTTP",
+                      "maximum": 9007199254740991,
+                      "minimum": -9007199254740991,
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "statusCode",
+                    "error",
+                    "message",
+                    "details"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "summary": "Remove a conta do usuário autenticado",
+        "tags": [
+          "Profile"
+        ]
+      },
+      "get": {
+        "description": "Recupera os dados cadastrais públicos e essenciais do usuário associado à sessão ativa.",
+        "operationId": "getMe",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "createdAt": {
+                      "description": "Data de cadastro do usuário em formato ISO 8601 UTC",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                      "type": "string"
+                    },
+                    "email": {
+                      "description": "Endereço de e-mail do usuário",
+                      "format": "email",
+                      "pattern": "^(?!\\.)(?!.*\\.\\.)([A-Za-z0-9_'+\\-\\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$",
+                      "type": "string"
+                    },
+                    "id": {
+                      "description": "Identificador único do usuário",
+                      "type": "string"
+                    },
+                    "image": {
+                      "description": "URL da foto de perfil ou null",
+                      "format": "uri",
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "name": {
+                      "description": "Nome de exibição do usuário",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name",
+                    "email",
+                    "image",
+                    "createdAt"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "details": {
+                      "description": "Detalhes adicionais ou issues de validação RFC 7807",
+                      "nullable": true
+                    },
+                    "error": {
+                      "description": "Identificador canônico do erro",
+                      "type": "string"
+                    },
+                    "message": {
+                      "description": "Mensagem descritiva da falha",
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "description": "Código de status HTTP",
+                      "maximum": 9007199254740991,
+                      "minimum": -9007199254740991,
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "statusCode",
+                    "error",
+                    "message",
+                    "details"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "summary": "Retorna o perfil do usuário autenticado",
+        "tags": [
+          "Profile"
+        ]
+      },
+      "patch": {
+        "description": "Atualiza o nome de exibição e/ou a foto de perfil do usuário. Rejeita requisições com corpo vazio.",
+        "operationId": "updateMe",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "image": {
+                    "description": "URL da foto de perfil ou null para remover o avatar existente",
+                    "format": "uri",
+                    "nullable": true,
+                    "type": "string"
+                  },
+                  "name": {
+                    "description": "Nome de exibição do usuário (1..255 caracteres)",
+                    "maxLength": 255,
+                    "minLength": 1,
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "createdAt": {
+                      "description": "Data de cadastro do usuário em formato ISO 8601 UTC",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                      "type": "string"
+                    },
+                    "email": {
+                      "description": "Endereço de e-mail do usuário",
+                      "format": "email",
+                      "pattern": "^(?!\\.)(?!.*\\.\\.)([A-Za-z0-9_'+\\-\\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$",
+                      "type": "string"
+                    },
+                    "id": {
+                      "description": "Identificador único do usuário",
+                      "type": "string"
+                    },
+                    "image": {
+                      "description": "URL da foto de perfil ou null",
+                      "format": "uri",
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "name": {
+                      "description": "Nome de exibição do usuário",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name",
+                    "email",
+                    "image",
+                    "createdAt"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "details": {
+                      "description": "Detalhes adicionais ou issues de validação RFC 7807",
+                      "nullable": true
+                    },
+                    "error": {
+                      "description": "Identificador canônico do erro",
+                      "type": "string"
+                    },
+                    "message": {
+                      "description": "Mensagem descritiva da falha",
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "description": "Código de status HTTP",
+                      "maximum": 9007199254740991,
+                      "minimum": -9007199254740991,
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "statusCode",
+                    "error",
+                    "message",
+                    "details"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "details": {
+                      "description": "Detalhes adicionais ou issues de validação RFC 7807",
+                      "nullable": true
+                    },
+                    "error": {
+                      "description": "Identificador canônico do erro",
+                      "type": "string"
+                    },
+                    "message": {
+                      "description": "Mensagem descritiva da falha",
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "description": "Código de status HTTP",
+                      "maximum": 9007199254740991,
+                      "minimum": -9007199254740991,
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "statusCode",
+                    "error",
+                    "message",
+                    "details"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "summary": "Atualiza o perfil do usuário autenticado",
+        "tags": [
+          "Profile"
+        ]
+      }
+    },
+    "/api/v1/playlists": {
+      "get": {
+        "description": "Recupera a listagem paginada de playlists pertencentes exclusivamente ao usuário ativo.",
+        "operationId": "listPlaylists",
+        "parameters": [
+          {
+            "description": "Número da página (>= 1)",
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "maximum": 9007199254740991,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Quantidade de itens por página (1..100)",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "data": {
+                      "description": "Lista de playlists da página solicitada",
+                      "items": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "createdAt": {
+                            "description": "Data de criação da playlist em formato ISO 8601 UTC",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                            "type": "string"
+                          },
+                          "description": {
+                            "description": "Descrição da playlist ou null",
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "id": {
+                            "description": "Identificador único da playlist (UUID v4)",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                            "type": "string"
+                          },
+                          "name": {
+                            "description": "Nome da playlist",
+                            "type": "string"
+                          },
+                          "trackCount": {
+                            "description": "Quantidade de faixas na playlist",
+                            "maximum": 9007199254740991,
+                            "minimum": 0,
+                            "type": "integer"
+                          },
+                          "updatedAt": {
+                            "description": "Data da última atualização da playlist em formato ISO 8601 UTC",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "description",
+                          "trackCount",
+                          "createdAt",
+                          "updatedAt"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "meta": {
+                      "additionalProperties": false,
+                      "description": "Metadados de paginação da listagem",
+                      "properties": {
+                        "hasNext": {
+                          "description": "Indica se existe uma próxima página",
+                          "type": "boolean"
+                        },
+                        "hasPrev": {
+                          "description": "Indica se existe uma página anterior",
+                          "type": "boolean"
+                        },
+                        "limit": {
+                          "description": "Limite de itens solicitados por página",
+                          "maximum": 9007199254740991,
+                          "minimum": 1,
+                          "type": "integer"
+                        },
+                        "page": {
+                          "description": "Página atual da listagem",
+                          "maximum": 9007199254740991,
+                          "minimum": 1,
+                          "type": "integer"
+                        },
+                        "total": {
+                          "description": "Total geral de itens encontrados",
+                          "maximum": 9007199254740991,
+                          "minimum": 0,
+                          "type": "integer"
+                        },
+                        "totalPages": {
+                          "description": "Total de páginas disponíveis",
+                          "maximum": 9007199254740991,
+                          "minimum": 1,
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "page",
+                        "limit",
+                        "total",
+                        "totalPages",
+                        "hasNext",
+                        "hasPrev"
+                      ],
+                      "type": "object"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "meta"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "details": {
+                      "description": "Detalhes adicionais ou issues de validação RFC 7807",
+                      "nullable": true
+                    },
+                    "error": {
+                      "description": "Identificador canônico do erro",
+                      "type": "string"
+                    },
+                    "message": {
+                      "description": "Mensagem descritiva da falha",
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "description": "Código de status HTTP",
+                      "maximum": 9007199254740991,
+                      "minimum": -9007199254740991,
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "statusCode",
+                    "error",
+                    "message",
+                    "details"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "details": {
+                      "description": "Detalhes adicionais ou issues de validação RFC 7807",
+                      "nullable": true
+                    },
+                    "error": {
+                      "description": "Identificador canônico do erro",
+                      "type": "string"
+                    },
+                    "message": {
+                      "description": "Mensagem descritiva da falha",
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "description": "Código de status HTTP",
+                      "maximum": 9007199254740991,
+                      "minimum": -9007199254740991,
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "statusCode",
+                    "error",
+                    "message",
+                    "details"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "summary": "Lista as playlists do usuário autenticado",
+        "tags": [
+          "Library"
+        ]
+      },
+      "post": {
+        "description": "Cria uma nova playlist com nome e descrição opcional. Limite máximo de 50 playlists por usuário.",
+        "operationId": "createPlaylist",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "description": {
+                    "description": "Descrição opcional da playlist (máximo 500 caracteres)",
+                    "maxLength": 500,
+                    "nullable": true,
+                    "type": "string"
+                  },
+                  "name": {
+                    "description": "Nome da playlist (1..120 caracteres)",
+                    "maxLength": 120,
+                    "minLength": 1,
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "name"
+                ],
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "createdAt": {
+                      "description": "Data de criação da playlist em formato ISO 8601 UTC",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                      "type": "string"
+                    },
+                    "description": {
+                      "description": "Descrição da playlist ou null",
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "id": {
+                      "description": "Identificador único da playlist (UUID v4)",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                      "type": "string"
+                    },
+                    "name": {
+                      "description": "Nome da playlist",
+                      "type": "string"
+                    },
+                    "trackCount": {
+                      "description": "Quantidade de faixas na playlist",
+                      "maximum": 9007199254740991,
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "updatedAt": {
+                      "description": "Data da última atualização da playlist em formato ISO 8601 UTC",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name",
+                    "description",
+                    "trackCount",
+                    "createdAt",
+                    "updatedAt"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "details": {
+                      "description": "Detalhes adicionais ou issues de validação RFC 7807",
+                      "nullable": true
+                    },
+                    "error": {
+                      "description": "Identificador canônico do erro",
+                      "type": "string"
+                    },
+                    "message": {
+                      "description": "Mensagem descritiva da falha",
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "description": "Código de status HTTP",
+                      "maximum": 9007199254740991,
+                      "minimum": -9007199254740991,
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "statusCode",
+                    "error",
+                    "message",
+                    "details"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "details": {
+                      "description": "Detalhes adicionais ou issues de validação RFC 7807",
+                      "nullable": true
+                    },
+                    "error": {
+                      "description": "Identificador canônico do erro",
+                      "type": "string"
+                    },
+                    "message": {
+                      "description": "Mensagem descritiva da falha",
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "description": "Código de status HTTP",
+                      "maximum": 9007199254740991,
+                      "minimum": -9007199254740991,
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "statusCode",
+                    "error",
+                    "message",
+                    "details"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "details": {
+                      "description": "Detalhes adicionais ou issues de validação RFC 7807",
+                      "nullable": true
+                    },
+                    "error": {
+                      "description": "Identificador canônico do erro",
+                      "type": "string"
+                    },
+                    "message": {
+                      "description": "Mensagem descritiva da falha",
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "description": "Código de status HTTP",
+                      "maximum": 9007199254740991,
+                      "minimum": -9007199254740991,
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "statusCode",
+                    "error",
+                    "message",
+                    "details"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "summary": "Cria uma nova playlist para o usuário autenticado",
+        "tags": [
+          "Library"
+        ]
+      }
+    },
+    "/api/v1/playlists/{id}": {
+      "delete": {
+        "description": "Remove a playlist e seus vínculos de faixas de forma atômica em transação. Playlist alheia responde 404.",
+        "operationId": "deletePlaylist",
+        "parameters": [
+          {
+            "description": "Identificador único da playlist (UUID v4)",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Playlist excluída com sucesso sem conteúdo retornado"
+                }
+              }
+            },
+            "description": "Playlist excluída com sucesso sem conteúdo retornado"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "details": {
+                      "description": "Detalhes adicionais ou issues de validação RFC 7807",
+                      "nullable": true
+                    },
+                    "error": {
+                      "description": "Identificador canônico do erro",
+                      "type": "string"
+                    },
+                    "message": {
+                      "description": "Mensagem descritiva da falha",
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "description": "Código de status HTTP",
+                      "maximum": 9007199254740991,
+                      "minimum": -9007199254740991,
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "statusCode",
+                    "error",
+                    "message",
+                    "details"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "details": {
+                      "description": "Detalhes adicionais ou issues de validação RFC 7807",
+                      "nullable": true
+                    },
+                    "error": {
+                      "description": "Identificador canônico do erro",
+                      "type": "string"
+                    },
+                    "message": {
+                      "description": "Mensagem descritiva da falha",
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "description": "Código de status HTTP",
+                      "maximum": 9007199254740991,
+                      "minimum": -9007199254740991,
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "statusCode",
+                    "error",
+                    "message",
+                    "details"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "details": {
+                      "description": "Detalhes adicionais ou issues de validação RFC 7807",
+                      "nullable": true
+                    },
+                    "error": {
+                      "description": "Identificador canônico do erro",
+                      "type": "string"
+                    },
+                    "message": {
+                      "description": "Mensagem descritiva da falha",
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "description": "Código de status HTTP",
+                      "maximum": 9007199254740991,
+                      "minimum": -9007199254740991,
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "statusCode",
+                    "error",
+                    "message",
+                    "details"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "summary": "Exclui uma playlist do usuário",
+        "tags": [
+          "Library"
+        ]
+      },
+      "get": {
+        "description": "Consulta os dados da playlist e sua lista de faixas associadas ordenadas por data de adição (addedAt ASC). Playlist alheia responde 404.",
+        "operationId": "getPlaylistById",
+        "parameters": [
+          {
+            "description": "Identificador único da playlist (UUID v4)",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "createdAt": {
+                      "description": "Data de criação da playlist em formato ISO 8601 UTC",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                      "type": "string"
+                    },
+                    "description": {
+                      "description": "Descrição da playlist ou null",
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "id": {
+                      "description": "Identificador único da playlist (UUID v4)",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                      "type": "string"
+                    },
+                    "name": {
+                      "description": "Nome da playlist",
+                      "type": "string"
+                    },
+                    "trackCount": {
+                      "description": "Quantidade de faixas na playlist",
+                      "maximum": 9007199254740991,
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "tracks": {
+                      "description": "Lista de faixas pertencentes à playlist ordenadas por addedAt ASC",
+                      "items": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "addedAt": {
+                            "description": "Data em que a faixa foi adicionada à playlist em formato ISO 8601 UTC",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                            "type": "string"
+                          },
+                          "album": {
+                            "description": "Nome do álbum ou null",
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "artist": {
+                            "additionalProperties": false,
+                            "description": "Resumo do artista autor da faixa",
+                            "properties": {
+                              "avatarUrl": {
+                                "description": "URL do avatar do artista ou null",
+                                "nullable": true,
+                                "type": "string"
+                              },
+                              "id": {
+                                "description": "Identificador único do artista (UUID v4)",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                                "type": "string"
+                              },
+                              "name": {
+                                "description": "Nome do artista",
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name",
+                              "avatarUrl"
+                            ],
+                            "type": "object"
+                          },
+                          "audioUrl": {
+                            "description": "URL pública direta de reprodução da faixa (SoundHelix)",
+                            "format": "uri",
+                            "type": "string"
+                          },
+                          "coverUrl": {
+                            "description": "URL da capa da faixa ou null",
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "createdAt": {
+                            "description": "Data de criação da faixa em formato ISO 8601 UTC",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                            "type": "string"
+                          },
+                          "durationSeconds": {
+                            "description": "Duração da faixa em segundos",
+                            "exclusiveMinimum": true,
+                            "maximum": 9007199254740991,
+                            "minimum": 0,
+                            "type": "integer"
+                          },
+                          "genre": {
+                            "description": "Gênero musical da faixa",
+                            "enum": [
+                              "rock",
+                              "pop",
+                              "electronic",
+                              "hip-hop",
+                              "jazz",
+                              "lo-fi"
+                            ],
+                            "type": "string"
+                          },
+                          "id": {
+                            "description": "Identificador único da faixa (UUID v4)",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                            "type": "string"
+                          },
+                          "title": {
+                            "description": "Título da faixa musical",
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "title",
+                          "album",
+                          "genre",
+                          "durationSeconds",
+                          "coverUrl",
+                          "audioUrl",
+                          "artist",
+                          "createdAt",
+                          "addedAt"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "updatedAt": {
+                      "description": "Data da última atualização da playlist em formato ISO 8601 UTC",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name",
+                    "description",
+                    "trackCount",
+                    "createdAt",
+                    "updatedAt",
+                    "tracks"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "details": {
+                      "description": "Detalhes adicionais ou issues de validação RFC 7807",
+                      "nullable": true
+                    },
+                    "error": {
+                      "description": "Identificador canônico do erro",
+                      "type": "string"
+                    },
+                    "message": {
+                      "description": "Mensagem descritiva da falha",
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "description": "Código de status HTTP",
+                      "maximum": 9007199254740991,
+                      "minimum": -9007199254740991,
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "statusCode",
+                    "error",
+                    "message",
+                    "details"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "details": {
+                      "description": "Detalhes adicionais ou issues de validação RFC 7807",
+                      "nullable": true
+                    },
+                    "error": {
+                      "description": "Identificador canônico do erro",
+                      "type": "string"
+                    },
+                    "message": {
+                      "description": "Mensagem descritiva da falha",
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "description": "Código de status HTTP",
+                      "maximum": 9007199254740991,
+                      "minimum": -9007199254740991,
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "statusCode",
+                    "error",
+                    "message",
+                    "details"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "details": {
+                      "description": "Detalhes adicionais ou issues de validação RFC 7807",
+                      "nullable": true
+                    },
+                    "error": {
+                      "description": "Identificador canônico do erro",
+                      "type": "string"
+                    },
+                    "message": {
+                      "description": "Mensagem descritiva da falha",
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "description": "Código de status HTTP",
+                      "maximum": 9007199254740991,
+                      "minimum": -9007199254740991,
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "statusCode",
+                    "error",
+                    "message",
+                    "details"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "summary": "Recupera os detalhes de uma playlist com suas faixas",
+        "tags": [
+          "Library"
+        ]
+      },
+      "patch": {
+        "description": "Permite atualizar o nome e/ou descrição de uma playlist existente do usuário. Rejeita payloads vazios com 400. Playlist alheia responde 404.",
+        "operationId": "updatePlaylist",
+        "parameters": [
+          {
+            "description": "Identificador único da playlist (UUID v4)",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "description": {
+                    "description": "Descrição da playlist ou null para remover descrição existente",
+                    "maxLength": 500,
+                    "nullable": true,
+                    "type": "string"
+                  },
+                  "name": {
+                    "description": "Nome da playlist (1..120 caracteres)",
+                    "maxLength": 120,
+                    "minLength": 1,
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "createdAt": {
+                      "description": "Data de criação da playlist em formato ISO 8601 UTC",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                      "type": "string"
+                    },
+                    "description": {
+                      "description": "Descrição da playlist ou null",
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "id": {
+                      "description": "Identificador único da playlist (UUID v4)",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                      "type": "string"
+                    },
+                    "name": {
+                      "description": "Nome da playlist",
+                      "type": "string"
+                    },
+                    "trackCount": {
+                      "description": "Quantidade de faixas na playlist",
+                      "maximum": 9007199254740991,
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "updatedAt": {
+                      "description": "Data da última atualização da playlist em formato ISO 8601 UTC",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name",
+                    "description",
+                    "trackCount",
+                    "createdAt",
+                    "updatedAt"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "details": {
+                      "description": "Detalhes adicionais ou issues de validação RFC 7807",
+                      "nullable": true
+                    },
+                    "error": {
+                      "description": "Identificador canônico do erro",
+                      "type": "string"
+                    },
+                    "message": {
+                      "description": "Mensagem descritiva da falha",
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "description": "Código de status HTTP",
+                      "maximum": 9007199254740991,
+                      "minimum": -9007199254740991,
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "statusCode",
+                    "error",
+                    "message",
+                    "details"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "details": {
+                      "description": "Detalhes adicionais ou issues de validação RFC 7807",
+                      "nullable": true
+                    },
+                    "error": {
+                      "description": "Identificador canônico do erro",
+                      "type": "string"
+                    },
+                    "message": {
+                      "description": "Mensagem descritiva da falha",
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "description": "Código de status HTTP",
+                      "maximum": 9007199254740991,
+                      "minimum": -9007199254740991,
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "statusCode",
+                    "error",
+                    "message",
+                    "details"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "details": {
+                      "description": "Detalhes adicionais ou issues de validação RFC 7807",
+                      "nullable": true
+                    },
+                    "error": {
+                      "description": "Identificador canônico do erro",
+                      "type": "string"
+                    },
+                    "message": {
+                      "description": "Mensagem descritiva da falha",
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "description": "Código de status HTTP",
+                      "maximum": 9007199254740991,
+                      "minimum": -9007199254740991,
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "statusCode",
+                    "error",
+                    "message",
+                    "details"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "summary": "Atualiza os dados de uma playlist",
+        "tags": [
+          "Library"
+        ]
+      }
+    },
+    "/api/v1/playlists/{id}/tracks": {
+      "post": {
+        "description": "Insere uma faixa existente do catálogo na playlist. Rejeita faixas repetidas com 409 e limite de 500 faixas com 422.",
+        "operationId": "addTrackToPlaylist",
+        "parameters": [
+          {
+            "description": "Identificador único da playlist (UUID v4)",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "trackId": {
+                    "description": "Identificador único da faixa musical a ser adicionada (UUID v4)",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "trackId"
+                ],
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "createdAt": {
+                      "description": "Data de criação da playlist em formato ISO 8601 UTC",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                      "type": "string"
+                    },
+                    "description": {
+                      "description": "Descrição da playlist ou null",
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "id": {
+                      "description": "Identificador único da playlist (UUID v4)",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                      "type": "string"
+                    },
+                    "name": {
+                      "description": "Nome da playlist",
+                      "type": "string"
+                    },
+                    "trackCount": {
+                      "description": "Quantidade de faixas na playlist",
+                      "maximum": 9007199254740991,
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "tracks": {
+                      "description": "Lista de faixas pertencentes à playlist ordenadas por addedAt ASC",
+                      "items": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "addedAt": {
+                            "description": "Data em que a faixa foi adicionada à playlist em formato ISO 8601 UTC",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                            "type": "string"
+                          },
+                          "album": {
+                            "description": "Nome do álbum ou null",
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "artist": {
+                            "additionalProperties": false,
+                            "description": "Resumo do artista autor da faixa",
+                            "properties": {
+                              "avatarUrl": {
+                                "description": "URL do avatar do artista ou null",
+                                "nullable": true,
+                                "type": "string"
+                              },
+                              "id": {
+                                "description": "Identificador único do artista (UUID v4)",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                                "type": "string"
+                              },
+                              "name": {
+                                "description": "Nome do artista",
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name",
+                              "avatarUrl"
+                            ],
+                            "type": "object"
+                          },
+                          "audioUrl": {
+                            "description": "URL pública direta de reprodução da faixa (SoundHelix)",
+                            "format": "uri",
+                            "type": "string"
+                          },
+                          "coverUrl": {
+                            "description": "URL da capa da faixa ou null",
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "createdAt": {
+                            "description": "Data de criação da faixa em formato ISO 8601 UTC",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                            "type": "string"
+                          },
+                          "durationSeconds": {
+                            "description": "Duração da faixa em segundos",
+                            "exclusiveMinimum": true,
+                            "maximum": 9007199254740991,
+                            "minimum": 0,
+                            "type": "integer"
+                          },
+                          "genre": {
+                            "description": "Gênero musical da faixa",
+                            "enum": [
+                              "rock",
+                              "pop",
+                              "electronic",
+                              "hip-hop",
+                              "jazz",
+                              "lo-fi"
+                            ],
+                            "type": "string"
+                          },
+                          "id": {
+                            "description": "Identificador único da faixa (UUID v4)",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                            "type": "string"
+                          },
+                          "title": {
+                            "description": "Título da faixa musical",
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "title",
+                          "album",
+                          "genre",
+                          "durationSeconds",
+                          "coverUrl",
+                          "audioUrl",
+                          "artist",
+                          "createdAt",
+                          "addedAt"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "updatedAt": {
+                      "description": "Data da última atualização da playlist em formato ISO 8601 UTC",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name",
+                    "description",
+                    "trackCount",
+                    "createdAt",
+                    "updatedAt",
+                    "tracks"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "details": {
+                      "description": "Detalhes adicionais ou issues de validação RFC 7807",
+                      "nullable": true
+                    },
+                    "error": {
+                      "description": "Identificador canônico do erro",
+                      "type": "string"
+                    },
+                    "message": {
+                      "description": "Mensagem descritiva da falha",
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "description": "Código de status HTTP",
+                      "maximum": 9007199254740991,
+                      "minimum": -9007199254740991,
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "statusCode",
+                    "error",
+                    "message",
+                    "details"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "details": {
+                      "description": "Detalhes adicionais ou issues de validação RFC 7807",
+                      "nullable": true
+                    },
+                    "error": {
+                      "description": "Identificador canônico do erro",
+                      "type": "string"
+                    },
+                    "message": {
+                      "description": "Mensagem descritiva da falha",
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "description": "Código de status HTTP",
+                      "maximum": 9007199254740991,
+                      "minimum": -9007199254740991,
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "statusCode",
+                    "error",
+                    "message",
+                    "details"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "details": {
+                      "description": "Detalhes adicionais ou issues de validação RFC 7807",
+                      "nullable": true
+                    },
+                    "error": {
+                      "description": "Identificador canônico do erro",
+                      "type": "string"
+                    },
+                    "message": {
+                      "description": "Mensagem descritiva da falha",
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "description": "Código de status HTTP",
+                      "maximum": 9007199254740991,
+                      "minimum": -9007199254740991,
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "statusCode",
+                    "error",
+                    "message",
+                    "details"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "details": {
+                      "description": "Detalhes adicionais ou issues de validação RFC 7807",
+                      "nullable": true
+                    },
+                    "error": {
+                      "description": "Identificador canônico do erro",
+                      "type": "string"
+                    },
+                    "message": {
+                      "description": "Mensagem descritiva da falha",
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "description": "Código de status HTTP",
+                      "maximum": 9007199254740991,
+                      "minimum": -9007199254740991,
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "statusCode",
+                    "error",
+                    "message",
+                    "details"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "details": {
+                      "description": "Detalhes adicionais ou issues de validação RFC 7807",
+                      "nullable": true
+                    },
+                    "error": {
+                      "description": "Identificador canônico do erro",
+                      "type": "string"
+                    },
+                    "message": {
+                      "description": "Mensagem descritiva da falha",
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "description": "Código de status HTTP",
+                      "maximum": 9007199254740991,
+                      "minimum": -9007199254740991,
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "statusCode",
+                    "error",
+                    "message",
+                    "details"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "summary": "Adiciona uma faixa musical a uma playlist",
+        "tags": [
+          "Library"
+        ]
+      }
+    },
+    "/api/v1/playlists/{id}/tracks/{trackId}": {
+      "delete": {
+        "description": "Remove o vínculo de uma faixa específica com a playlist. Responde 404 se a playlist ou a faixa não estiverem presentes.",
+        "operationId": "removeTrackFromPlaylist",
+        "parameters": [
+          {
+            "description": "Identificador único da playlist (UUID v4)",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Identificador único da faixa musical (UUID v4)",
+            "in": "path",
+            "name": "trackId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Faixa removida da playlist com sucesso sem conteúdo retornado"
+                }
+              }
+            },
+            "description": "Faixa removida da playlist com sucesso sem conteúdo retornado"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "details": {
+                      "description": "Detalhes adicionais ou issues de validação RFC 7807",
+                      "nullable": true
+                    },
+                    "error": {
+                      "description": "Identificador canônico do erro",
+                      "type": "string"
+                    },
+                    "message": {
+                      "description": "Mensagem descritiva da falha",
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "description": "Código de status HTTP",
+                      "maximum": 9007199254740991,
+                      "minimum": -9007199254740991,
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "statusCode",
+                    "error",
+                    "message",
+                    "details"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "details": {
+                      "description": "Detalhes adicionais ou issues de validação RFC 7807",
+                      "nullable": true
+                    },
+                    "error": {
+                      "description": "Identificador canônico do erro",
+                      "type": "string"
+                    },
+                    "message": {
+                      "description": "Mensagem descritiva da falha",
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "description": "Código de status HTTP",
+                      "maximum": 9007199254740991,
+                      "minimum": -9007199254740991,
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "statusCode",
+                    "error",
+                    "message",
+                    "details"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "details": {
+                      "description": "Detalhes adicionais ou issues de validação RFC 7807",
+                      "nullable": true
+                    },
+                    "error": {
+                      "description": "Identificador canônico do erro",
+                      "type": "string"
+                    },
+                    "message": {
+                      "description": "Mensagem descritiva da falha",
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "description": "Código de status HTTP",
+                      "maximum": 9007199254740991,
+                      "minimum": -9007199254740991,
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "statusCode",
+                    "error",
+                    "message",
+                    "details"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "summary": "Remove uma faixa musical de uma playlist",
+        "tags": [
+          "Library"
+        ]
+      }
+    },
+    "/api/v1/tracks": {
+      "get": {
+        "description": "Retorna uma lista paginada de faixas musicais, com suporte a busca textual, filtro por gênero, artista e ordenação.",
+        "operationId": "listTracks",
+        "parameters": [
+          {
+            "description": "Número da página (>= 1)",
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "maximum": 9007199254740991,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Quantidade de itens por página (1..100)",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Termo de busca textual parcial em título, álbum ou nome do artista (case-insensitive)",
+            "in": "query",
+            "name": "search",
+            "required": false,
+            "schema": {
+              "maxLength": 100,
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          {
+            "description": "Filtro por gênero musical (rejeita valores fora dos 6 slugs suportados)",
+            "in": "query",
+            "name": "genre",
+            "required": false,
+            "schema": {
+              "enum": [
+                "rock",
+                "pop",
+                "electronic",
+                "hip-hop",
+                "jazz",
+                "lo-fi"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Filtro por identificador único do artista (UUID v4)",
+            "in": "query",
+            "name": "artistId",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Critério de ordenação: recent (criação DESC), title (título ASC), duration (duração ASC)",
+            "in": "query",
+            "name": "sort",
+            "required": false,
+            "schema": {
+              "default": "recent",
+              "enum": [
+                "recent",
+                "title",
+                "duration"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "data": {
+                      "description": "Lista de faixas da página solicitada",
+                      "items": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "album": {
+                            "description": "Nome do álbum ou null",
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "artist": {
+                            "additionalProperties": false,
+                            "description": "Resumo do artista autor da faixa",
+                            "properties": {
+                              "avatarUrl": {
+                                "description": "URL do avatar do artista ou null",
+                                "nullable": true,
+                                "type": "string"
+                              },
+                              "id": {
+                                "description": "Identificador único do artista (UUID v4)",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                                "type": "string"
+                              },
+                              "name": {
+                                "description": "Nome do artista",
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name",
+                              "avatarUrl"
+                            ],
+                            "type": "object"
+                          },
+                          "audioUrl": {
+                            "description": "URL pública direta de reprodução da faixa (SoundHelix)",
+                            "format": "uri",
+                            "type": "string"
+                          },
+                          "coverUrl": {
+                            "description": "URL da capa da faixa ou null",
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "createdAt": {
+                            "description": "Data de criação da faixa em formato ISO 8601 UTC",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                            "type": "string"
+                          },
+                          "durationSeconds": {
+                            "description": "Duração da faixa em segundos",
+                            "exclusiveMinimum": true,
+                            "maximum": 9007199254740991,
+                            "minimum": 0,
+                            "type": "integer"
+                          },
+                          "genre": {
+                            "description": "Gênero musical da faixa",
+                            "enum": [
+                              "rock",
+                              "pop",
+                              "electronic",
+                              "hip-hop",
+                              "jazz",
+                              "lo-fi"
+                            ],
+                            "type": "string"
+                          },
+                          "id": {
+                            "description": "Identificador único da faixa (UUID v4)",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                            "type": "string"
+                          },
+                          "title": {
+                            "description": "Título da faixa musical",
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "title",
+                          "album",
+                          "genre",
+                          "durationSeconds",
+                          "coverUrl",
+                          "audioUrl",
+                          "artist",
+                          "createdAt"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "meta": {
+                      "additionalProperties": false,
+                      "description": "Metadados de paginação da listagem",
+                      "properties": {
+                        "hasNext": {
+                          "description": "Indica se existe uma próxima página",
+                          "type": "boolean"
+                        },
+                        "hasPrev": {
+                          "description": "Indica se existe uma página anterior",
+                          "type": "boolean"
+                        },
+                        "limit": {
+                          "description": "Limite de itens solicitados por página",
+                          "maximum": 9007199254740991,
+                          "minimum": 1,
+                          "type": "integer"
+                        },
+                        "page": {
+                          "description": "Página atual da listagem",
+                          "maximum": 9007199254740991,
+                          "minimum": 1,
+                          "type": "integer"
+                        },
+                        "total": {
+                          "description": "Total geral de itens encontrados",
+                          "maximum": 9007199254740991,
+                          "minimum": 0,
+                          "type": "integer"
+                        },
+                        "totalPages": {
+                          "description": "Total de páginas disponíveis",
+                          "maximum": 9007199254740991,
+                          "minimum": 1,
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "page",
+                        "limit",
+                        "total",
+                        "totalPages",
+                        "hasNext",
+                        "hasPrev"
+                      ],
+                      "type": "object"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "meta"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "details": {
+                      "description": "Detalhes adicionais ou issues de validação RFC 7807",
+                      "nullable": true
+                    },
+                    "error": {
+                      "description": "Identificador canônico do erro",
+                      "type": "string"
+                    },
+                    "message": {
+                      "description": "Mensagem descritiva da falha",
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "description": "Código de status HTTP",
+                      "maximum": 9007199254740991,
+                      "minimum": -9007199254740991,
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "statusCode",
+                    "error",
+                    "message",
+                    "details"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          }
+        },
+        "summary": "Lista faixas do catálogo com busca e filtros",
+        "tags": [
+          "Catalog"
+        ]
+      }
+    },
+    "/api/v1/tracks/{id}": {
+      "get": {
+        "description": "Retorna as informações completas de uma faixa do catálogo musical identificada por seu UUID.",
+        "operationId": "getTrackById",
+        "parameters": [
+          {
+            "description": "Identificador único da faixa (UUID v4)",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "album": {
+                      "description": "Nome do álbum ou null",
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "artist": {
+                      "additionalProperties": false,
+                      "description": "Resumo do artista autor da faixa",
+                      "properties": {
+                        "avatarUrl": {
+                          "description": "URL do avatar do artista ou null",
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "id": {
+                          "description": "Identificador único do artista (UUID v4)",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                          "type": "string"
+                        },
+                        "name": {
+                          "description": "Nome do artista",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name",
+                        "avatarUrl"
+                      ],
+                      "type": "object"
+                    },
+                    "audioUrl": {
+                      "description": "URL pública direta de reprodução da faixa (SoundHelix)",
+                      "format": "uri",
+                      "type": "string"
+                    },
+                    "coverUrl": {
+                      "description": "URL da capa da faixa ou null",
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "createdAt": {
+                      "description": "Data de criação da faixa em formato ISO 8601 UTC",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                      "type": "string"
+                    },
+                    "durationSeconds": {
+                      "description": "Duração da faixa em segundos",
+                      "exclusiveMinimum": true,
+                      "maximum": 9007199254740991,
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "genre": {
+                      "description": "Gênero musical da faixa",
+                      "enum": [
+                        "rock",
+                        "pop",
+                        "electronic",
+                        "hip-hop",
+                        "jazz",
+                        "lo-fi"
+                      ],
+                      "type": "string"
+                    },
+                    "id": {
+                      "description": "Identificador único da faixa (UUID v4)",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                      "type": "string"
+                    },
+                    "title": {
+                      "description": "Título da faixa musical",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "title",
+                    "album",
+                    "genre",
+                    "durationSeconds",
+                    "coverUrl",
+                    "audioUrl",
+                    "artist",
+                    "createdAt"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "details": {
+                      "description": "Detalhes adicionais ou issues de validação RFC 7807",
+                      "nullable": true
+                    },
+                    "error": {
+                      "description": "Identificador canônico do erro",
+                      "type": "string"
+                    },
+                    "message": {
+                      "description": "Mensagem descritiva da falha",
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "description": "Código de status HTTP",
+                      "maximum": 9007199254740991,
+                      "minimum": -9007199254740991,
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "statusCode",
+                    "error",
+                    "message",
+                    "details"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "details": {
+                      "description": "Detalhes adicionais ou issues de validação RFC 7807",
+                      "nullable": true
+                    },
+                    "error": {
+                      "description": "Identificador canônico do erro",
+                      "type": "string"
+                    },
+                    "message": {
+                      "description": "Mensagem descritiva da falha",
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "description": "Código de status HTTP",
+                      "maximum": 9007199254740991,
+                      "minimum": -9007199254740991,
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "statusCode",
+                    "error",
+                    "message",
+                    "details"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          }
+        },
+        "summary": "Obtém detalhes de uma faixa",
+        "tags": [
+          "Catalog"
+        ]
+      }
+    },
+    "/health": {
+      "get": {
+        "description": "Verifica se a instância da API está ativa e responsiva. Não toca no banco de dados.",
+        "operationId": "getHealth",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "status": {
+                      "enum": [
+                        "ok"
+                      ],
+                      "type": "string"
+                    },
+                    "uptime": {
+                      "minimum": 0,
+                      "type": "number"
+                    },
+                    "version": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "uptime",
+                    "version"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          }
+        },
+        "summary": "Liveness health check",
+        "tags": [
+          "Health"
+        ]
+      }
+    },
+    "/health/ready": {
+      "get": {
+        "description": "Verifica a conectividade com o banco de dados PostgreSQL antes de receber tráfego.",
+        "operationId": "getHealthReady",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "database": {
+                      "enum": [
+                        "up"
+                      ],
+                      "type": "string"
+                    },
+                    "status": {
+                      "enum": [
+                        "ready"
+                      ],
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "database"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "database": {
+                      "enum": [
+                        "down"
+                      ],
+                      "type": "string"
+                    },
+                    "status": {
+                      "enum": [
+                        "unavailable"
+                      ],
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "database"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          }
+        },
+        "summary": "Readiness health check",
+        "tags": [
+          "Health"
+        ]
+      }
+    }
+  },
+  "servers": [
+    {
+      "description": "Local",
+      "url": "http://localhost:3333"
+    }
+  ],
+  "tags": [
+    {
+      "description": "Liveness e readiness",
+      "name": "Health"
+    },
+    {
+      "description": "Cadastro, login e sessão",
+      "name": "Auth"
+    },
+    {
+      "description": "Faixas, artistas e gêneros (público)",
+      "name": "Catalog"
+    },
+    {
+      "description": "Perfil do usuário autenticado",
+      "name": "Profile"
+    },
+    {
+      "description": "Playlists e favoritos",
+      "name": "Library"
+    }
+  ]
+}

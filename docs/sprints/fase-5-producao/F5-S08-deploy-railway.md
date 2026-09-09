@@ -1,10 +1,10 @@
-# F5-S02 — Deploy na Railway
+# F5-S08 — Deploy na Railway
 
 |                |                                                                    |
 | -------------- | ------------------------------------------------------------------ |
 | **Fase**       | F5 — Produção                                                      |
-| **Branch**     | `feature/f5s02-deploy-railway`                                     |
-| **Depende de** | F5-S01                                                             |
+| **Branch**     | `feature/f5s08-deploy-railway`                                     |
+| **Depende de** | F5-S07 (toda a blindagem — D-49)                                   |
 | **Entrega**    | Dockerfile multi-stage, `railway.json`, `deploy.yml` e a API no ar |
 
 > **Pré-requisito humano:** conta na Railway com projeto criado, addon Postgres
@@ -18,7 +18,7 @@
 ```
 Leia .agents/memory/PROGRESS.md e .agents/memory/DECISIONS.md para se contextualizar.
 
-Sprint alvo: docs/sprints/fase-5-producao/F5-S02-deploy-railway.md
+Sprint alvo: docs/sprints/fase-5-producao/F5-S08-deploy-railway.md
 Specs obrigatórias: docs/specs/06-git-ci-cd-e-deploy.md (§7),
                     docs/specs/04-autenticacao-e-seguranca.md (§6)
 
@@ -80,7 +80,7 @@ railway.json
 README.md                    # seção de deploy e a URL pública
 .agents/memory/DECISIONS.md
 .agents/memory/PROGRESS.md
-.agents/memory/F5-S02.md
+.agents/memory/F5-S08.md
 ```
 
 **Não toque em:** `.github/workflows/ci.yml` (pronto) · qualquer `src/**` ·
@@ -146,7 +146,7 @@ No painel do serviço:
 | `PORT`               | injetada pela Railway — **não sobrescreva**                |
 
 > `BETTER_AUTH_URL` só existe depois do primeiro deploy gerar o domínio. Faça um deploy,
-> pegue a URL, preencha, redeploy. Registre essa ordem no `F5-S02.md`.
+> pegue a URL, preencha, redeploy. Registre essa ordem no `F5-S08.md`.
 
 ### 5.3 `deploy.yml`
 
@@ -251,6 +251,6 @@ curl -s 'https://<app>.up.railway.app/api/v1/tracks?limit=3' | jq '.meta'
 
 - **`DECISIONS.md`** — **obrigatório**: seed manual (não no pipeline); ausência de
   rollback automático; ordem deploy → migrate → smoke.
-- **`PROGRESS.md`** — F5-S02 ✅, URL pública registrada, próximo = F5-S03.
-- **`F5-S02.md`** — a ordem de configuração das variáveis (§5.2), o `docker build` local
+- **`PROGRESS.md`** — F5-S08 ✅, URL pública registrada, próximo = F5-S09.
+- **`F5-S08.md`** — a ordem de configuração das variáveis (§5.2), o `docker build` local
   usado para validar, e o tempo do deploy.

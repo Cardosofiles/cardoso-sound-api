@@ -56,7 +56,13 @@ account: {
   accountLinking: {
     enabled: true,
     trustedProviders: ['google', 'github'],
+    allowDifferentEmails: true, // D-58 (a) — acrescentado por F5-S10
   },
+},
+session: {
+  expiresIn: 60 * 60 * 24 * 7,
+  updateAge: 60 * 60 * 24,
+  freshAge: 60 * 60 * 24, // D-58 (c) — explícito, governa só R48
 },
 ```
 
@@ -100,6 +106,15 @@ Isso só é seguro com provedor que **comprovadamente verifica** o e-mail antes 
 
 Ligar um provedor não confiável permite que alguém crie uma conta social com o e-mail da
 vítima e passe a entrar na conta dela. É sequestro de conta, não conveniência.
+
+**Reafirmado por D-58 (b), com evidência de runtime.** O Facebook não fica fora por precaução
+genérica: ele **nunca** produz `emailVerified: true` nesta versão da lib. Em
+`@better-auth/core/dist/social-providers/facebook.mjs`, o caminho do idToken (Limited Login) fixa
+`emailVerified: false` na linha 102, e o caminho do access token lê `profile.email_verified ?? false`
+na linha 130 — enquanto o `fields` da chamada ao Graph, na linha 110, pede apenas
+`id,name,email,picture`. O campo nunca chega. Como o teste da lib é
+`!trustedProviders.includes(provider) && !userInfo.emailVerified`, o Facebook é recusado nos dois
+caminhos de vínculo. **Isso é contrato, não defeito** — spec `03` §5.1, R47.
 
 ### Cliente nativo (Flutter) — dois caminhos
 
@@ -146,7 +161,14 @@ emailVerification: {
 `POST /api/auth/send-verification-email` (R28) · `GET /api/auth/verify-email` (R29) ·
 `POST /api/auth/forget-password` (R30) · `POST /api/auth/reset-password` (R31).
 
-### `requireEmailVerification: false` é deliberado
+### ~~`requireEmailVerification: false` é deliberado~~ — **SUPERADO pela spec `08` §4**
+
+> **⚠️ Este bloco descreve o estado entregue por F3-S03 e não vale mais.**
+> A auditoria de `docs/issue/AUTHENTICATION.md` mostrou que `false` cria dois vetores de abuso
+> (GAP-08, enumeração de contas no sign-up; GAP-14, squatting de e-mail e relay de spam).
+> **D-51 revogou D-46 (a)**: `requireEmailVerification: true` a partir de **F5-S03** — leia a
+> **spec `08` §4** antes de tocar em `emailAndPassword`. O helper `signUpAndGetToken` é reescrito
+> lá, com verificação offline pelo `outbox`.
 
 `true` faz o `sign-in/email` responder 403 até o clique no link, o que quebra
 `signUpAndGetToken` (spec `05` §4) — o helper de que F3-S02, F4-S01, F4-S02 e a suíte E2E
@@ -179,7 +201,13 @@ Resend estiver fora do ar. Falha vira log `warn`; o usuário pede reenvio em R28
 e-mail existente e inexistente. A diferença é só que, no segundo caso, nenhum e-mail sai.
 Resposta diferenciada transforma a rota em oráculo de enumeração de contas.
 
-### Rate limit dedicado
+### Rate limit dedicado — **AMPLIADO pela spec `08` §3.3**
+
+> **⚠️ A lista abaixo está incompleta e tem um furo explorável.** Ela protege o alias
+> `/forget-password` mas **não** o endpoint nativo `/request-password-reset`, que o core continua
+> servindo — 600 e-mails/hora por caminho alternativo (GAP-05). Também não cobre
+> `/sign-in/email` (GAP-06). A lista normativa completa, com **13 entradas**, está na
+> **spec `08` §3.3** e é entregue por **F5-S02**.
 
 Estas rotas mandam e-mail e testam senha; o limite global de 10/min é frouxo para elas:
 
@@ -201,6 +229,70 @@ rateLimit: {
   `/api/auth/forget-password`). Escritas errado, a regra não casa e falha em silêncio — o
   limite global assume o lugar dela.
 - `enabled` continua preso a produção (**D-19**), `customRules` inclusive.
+
+---
+
+## 1.3 Vínculo de contas na área administrativa (F5-S10) — D-58
+
+A área de conta do Flutter lista, acrescenta e remove métodos de login. As três rotas
+(R46, R47, R48 na spec `03` §5.1) **já são montadas pela rota coringa** — nenhum handler novo é
+escrito. O que F5-S10 entrega é política, contrato e teste.
+
+### Política
+
+| Chave                  | Valor                  | Por quê                                                         |
+| ---------------------- | ---------------------- | --------------------------------------------------------------- |
+| `allowDifferentEmails` | `true`                 | O e-mail primário do GitHub raramente é o do cadastro. D-58 (a) |
+| `trustedProviders`     | `['google', 'github']` | Facebook fora — §1.1 acima. D-58 (b)                            |
+| `session.freshAge`     | `60 * 60 * 24`         | Desvincular exige sessão com menos de 24 h. D-58 (c)            |
+| `allowUnlinkingAll`    | ausente (`false`)      | Ninguém fica sem método de login                                |
+| `updateUserInfoOnLink` | ausente (`false`)      | Vincular não reescreve `name`/`image` do perfil                 |
+
+### O que `allowDifferentEmails: true` não abre
+
+Vincular **nunca altera a identidade da conta**. `applyUpdateUserInfoOnLink`
+(`better-auth/dist/oauth2/link-account.mjs:319-331`) retorna cedo enquanto
+`updateUserInfoOnLink !== true` e, mesmo ligado, desestrutura `email` e `emailVerified` para fora
+do update. O e-mail da conta é imutável por vínculo.
+
+A chave também **não** afeta o auto-vínculo do `/sign-in/social` (R26): lá o casamento é por
+e-mail (`link-account.mjs:63`), então os e-mails são iguais por construção. `allowDifferentEmails`
+é lido apenas em `/link-social` e no callback que carrega `state.link`.
+
+### Cliente nativo — o caminho de cada provedor
+
+| Provedor | Vincular por `idToken`         | Vincular por redirect          |
+| -------- | ------------------------------ | ------------------------------ |
+| Google   | ✅ preferir                    | ✅                             |
+| GitHub   | ❌ a lib não declara `idToken` | ✅ único caminho               |
+| Facebook | ❌ `401 LINKING_NOT_ALLOWED`   | ❌ `EMAIL_DOES_NOT_MATCH`/erro |
+
+`supportsIdTokenSignIn` exige que o provedor declare configuração de `idToken`. Google
+(`google.mjs:110`) e Facebook (`facebook.mjs:74`) declaram; **GitHub não**. GitHub no app é
+obrigatoriamente redirect + deep link.
+
+**O `aud` do id_token tem de bater com `GOOGLE_CLIENT_ID` do servidor.** `google.mjs:113` fixa
+`audience: options.clientId`, um único valor: no Flutter, o `google_sign_in` precisa ser
+configurado com `serverClientId` igual ao **web client ID** que está no ambiente da API. O client
+ID de Android/iOS não passa na verificação.
+
+**Nenhum client secret vai no binário.** No caminho `idToken` o app usa só o client ID, que é
+público; o secret fica no servidor. Um APK é descompilável.
+
+**Deep link por App Links / Universal Links**, com `assetlinks.json` e AASA — não por scheme
+customizado puro, que no Android pode ser reivindicado por outro app instalado e sequestrar o
+callback. O caminho `idToken`, quando disponível, não abre browser nenhum.
+
+### Step-up de sessão para desvincular
+
+`freshSessionMiddleware` é usado por **duas rotas em toda a lib**: `/unlink-account`
+(`account.mjs:266`), que é R48, e `/list-sessions` (`session.mjs:343`), que responde pela coringa
+mas não está no contrato. O terceiro consumidor de `freshAge` é o `/delete-user` nativo
+(`update-user.mjs:335`), que este projeto não usa — `DELETE /api/v1/me` (R15) é código próprio.
+
+O contrato para o app: ao receber `403 SESSION_NOT_FRESH`, pedir a senha, chamar
+`POST /api/auth/sign-in/email` e repetir o `unlink` com o token novo. Nenhuma rota nova é criada
+para isso.
 
 ---
 
@@ -337,7 +429,7 @@ await fastify.register(cors, {
 > consegue ler o token. App Flutter nativo **não envia `Origin`**, então CORS não o afeta;
 > isso protege apenas Swagger UI e um eventual front web.
 
-### `rate-limit.plugin.ts` — **D-19**
+### `rate-limit.plugin.ts` — **D-19** · **SUPERADO pela spec `08` §3.1 e §3.2**
 
 ```ts
 await fastify.register(rateLimit, {
@@ -352,6 +444,19 @@ await fastify.register(rateLimit, {
 > Desligado fora de produção — 429 esporádico em teste é a fonte clássica de flake.
 > As rotas `/api/auth/*` têm o rate limit **próprio** do Better Auth (10/60s), também
 > só em produção.
+
+> **⚠️ Duas ressalvas, ambas verificadas contra o código real:**
+>
+> 1. **`global` acima está correto; o código não está.** `rate-limit.plugin.ts:8` implementa
+>    `env.NODE_ENV === 'development'` — a negação exata desta spec e de D-19, e o único achado
+>    crítico da auditoria (GAP-01). **F5-S02** faz o código voltar a obedecer esta linha.
+> 2. **`keyGenerator: (req) => req.user?.id ?? req.ip` é código morto** e esta spec deixa de
+>    prescrevê-lo. O hook do rate limit roda **antes** do hook que popula `request.user`
+>    (GAP-11), e chavear por identidade em rota de autenticação daria a um atacante com N contas
+>    N × a cota. A forma normativa passa a ser a **spec `08` §3.2**, entregue por **F5-S07**.
+>
+> `trustProxy`, ausente aqui e no código, é pré-requisito para que `req.ip` signifique alguma
+> coisa atrás da Railway: **spec `08` §2**, entregue por **F5-S02**.
 
 ### `under-pressure.plugin.ts` — **D-26**
 
@@ -467,7 +572,12 @@ no repositório público.
 
 ---
 
-## 7. Checklist de auditoria de segurança (F5-S03)
+## 7. Checklist de auditoria de segurança (F5-S09)
+
+> **⚠️ Este checklist continua válido mas está incompleto.** A auditoria de 2026-09-09 acrescentou
+> 27 GAPs; o checklist que efetivamente fecha a `v1.0.0` é o da **spec `08` §9**, que reproduz os
+> itens abaixo e soma outros 25. Use os dois — o daqui como base histórica, o da `08` como portão.
+> A numeração do sprint mudou de `F5-S03` para **`F5-S09`** por D-49.
 
 - [ ] `.env` fora do git; `git log -p` não contém segredo em nenhum commit
 - [ ] `mcp_config.json` sem token real

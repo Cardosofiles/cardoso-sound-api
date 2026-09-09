@@ -11,16 +11,23 @@
 
 | Campo                  | Valor                                                            |
 | ---------------------- | ---------------------------------------------------------------- |
-| **Fase corrente**      | F4 — Biblioteca (concluída) · Próxima: F5 — Produção             |
-| **Próximo sprint**     | **F5-S01** — OpenAPI: export, verificação no CI e polimento      |
+| **Fase corrente**      | F5 — Produção (em andamento)                                     |
+| **Próximo sprint**     | **F5-S02** — Blindagem de borda e rate limiting                  |
 | **Última tag**         | `v0.4.0` (preparada)                                             |
 | **`gh` CLI**           | ✅ 2.46.0, autenticado como `Cardosofiles`, protocolo SSH (D-33) |
 | **`pnpm install`**     | ✅ passa — `allowBuilds` decidido (D-32)                         |
 | **Repositório**        | ✅ público `Cardosofiles/cardoso-sound-api` no GitHub            |
-| **Branch de trabalho** | `feature/f4s03-suite-e2e` (default: `develop`)                   |
+| **Branch de trabalho** | `feature/f5s01-openapi-e-docs` (default: `develop`)              |
 | **CI**                 | ✅ ativo (`.github/workflows/ci.yml`) — check obrigatório        |
 | **Banco**              | ✅ Postgres 17 ativo via Docker Compose                          |
-| **Última atualização** | 2026-09-08 — F4-S03 concluído (E1–E15 entregues, Fase 4 selada)  |
+| **Última atualização** | 2026-09-09 — F5-S01 concluído: OpenAPI versionado e verificado   |
+
+> ⚠️ **Auditoria de segurança aberta.** `docs/issue/AUTHENTICATION.md` (2026-09-09) registra
+> **27 GAPs**, um deles **CRÍTICO**: `src/plugins/rate-limit.plugin.ts:8` implementa
+> `global: env.NODE_ENV === 'development'`, a negação exata de D-19 — em produção o plugin
+> governa **zero rotas**. Score atual em `docs/report/SECURITY_SCORE.md`: **58.3/100**.
+> As correções estão planejadas em **F5-S02 … F5-S07** e são pré-requisito do deploy (D-49).
+> **Nada disso foi corrigido ainda** — o código no `develop` continua com os 27 GAPs abertos.
 
 ### O que já tem código e o que ainda está vazio
 
@@ -38,11 +45,11 @@ Testcontainers · módulos `artists`, `tracks`, `auth` (Better Auth, e-mail e so
 suíte E2E dos fluxos completos (E1–E15, 5 specs via `app.inject()` com container singleton, D-48).
 
 **Ainda com 0 bytes, aguardando seus sprints:**
-`Dockerfile`, `railway.json`, `.github/workflows/deploy.yml` (F5-S02).
+`Dockerfile`, `railway.json`, `.github/workflows/deploy.yml` (F5-S08).
 
 ---
 
-## Roadmap — 19 sprints em 5 fases
+## Roadmap — 25 sprints em 5 fases
 
 Legenda: ⬜ pendente · 🟡 em andamento · ✅ concluído · 🔴 bloqueado
 
@@ -92,13 +99,32 @@ Legenda: ⬜ pendente · 🟡 em andamento · ✅ concluído · 🔴 bloqueado
 
 ### F5 — Produção → tag `v1.0.0`
 
-> Objetivo: contrato publicado, deploy funcionando, segurança auditada.
+> Objetivo: contrato publicado, **os 27 GAPs da auditoria de segurança fechados**, deploy
+> funcionando, segurança auditada.
+>
+> **Renumerada em 2026-09-09 por D-49.** A auditoria de `docs/issue/AUTHENTICATION.md` levantou
+> 27 GAPs, um deles crítico (rate limit global desligado justamente em produção). Seis sprints de
+> blindagem passaram a rodar **antes** do deploy. O antigo `F5-S02` (deploy) é agora `F5-S08`; o
+> antigo `F5-S03` (release) é agora `F5-S09`. Spec normativa:
+> `docs/specs/08-blindagem-de-seguranca.md`; rastreabilidade GAP × sprint na §10 dela.
+>
+> **`F5-S10` acrescentado em 2026-09-09 por D-58** e roda **entre `F5-S07` e `F5-S08`** — o
+> número é identidade, não ordem. Fecha as três rotas de vínculo de conta social que a coringa
+> já responde sem contrato nem teste. Depende do índice `account_provider_account_unique` de
+> F5-S04 (GAP-16).
 
-| Sprint     | Título                                         | Status | PR  | Data |
-| ---------- | ---------------------------------------------- | ------ | --- | ---- |
-| **F5-S01** | OpenAPI: export, verificação no CI e polimento | ⬜     | —   | —    |
-| **F5-S02** | Deploy na Railway                              | ⬜     | —   | —    |
-| **F5-S03** | Hardening, auditoria e release `v1.0.0`        | ⬜     | —   | —    |
+| Sprint     | Título                                         | Status | PR  | Data       | GAPs                           |
+| ---------- | ---------------------------------------------- | ------ | --- | ---------- | ------------------------------ |
+| **F5-S01** | OpenAPI: export, verificação no CI e polimento | ✅     | #28 | 2026-09-09 | —                              |
+| **F5-S02** | Blindagem de borda e rate limiting             | ⬜     | —   | —          | 01, 04, 05, 06, 10, 17, 21, 27 |
+| **F5-S03** | Recuperação de conta, anti-enumeração e senha  | ⬜     | —   | —          | 07, 08, 14, 15, 22, 24, 25     |
+| **F5-S04** | Endurecimento de sessão, schema e contrato     | ⬜     | —   | —          | 13, 16, 19, 20, 23, 26         |
+| **F5-S05** | Two Factor: TOTP, OTP e backup codes           | ⬜     | —   | —          | 02, 09 (parte 2FA)             |
+| **F5-S06** | Passkey (WebAuthn / FIDO2)                     | ⬜     | —   | —          | 03, 09 (parte passkey)         |
+| **F5-S07** | Rate limit distribuído e origens confiáveis    | ⬜     | —   | —          | 11, 12, 18                     |
+| **F5-S10** | Vínculo de contas sociais (R46–R48)            | ⬜     | —   | —          | — (D-58)                       |
+| **F5-S08** | Deploy na Railway                              | ⬜     | —   | —          | —                              |
+| **F5-S09** | Hardening, auditoria e release `v1.0.0`        | ⬜     | —   | —          | portão dos 27                  |
 
 ---
 
@@ -162,19 +188,24 @@ antes de reimplementar.
 | R25: `DELETE /api/v1/favorites/:trackId` (remoção de favorito com isolamento por usuário no WHERE)     | F4-S02 | `src/modules/favorites/`              |
 | Suíte E2E Completa (E1–E15: auth, catálogo, playlists, favoritos e lifecycle)                          | F4-S03 | `tests/e2e/specs/`                    |
 | Helper E2E `buildTestApp()` com container singleton efêmero (D-48)                                     | F4-S03 | `tests/e2e/helpers/app.ts`            |
+| Contrato OpenAPI 3.0.3 versionado (`docs/openapi.json`) e verificação no CI (D-21)                     | F5-S01 | `scripts/export-openapi.ts`           |
+| Suíte de conformidade de contrato OpenAPI (T1–T12)                                                     | F5-S01 | `tests/integration/openapi.test.ts`   |
 
 ---
 
 ## Bloqueios e pendências
 
-| #      | Item                                                               | Bloqueia                      | Quem resolve                                                                                     |
-| ------ | ------------------------------------------------------------------ | ----------------------------- | ------------------------------------------------------------------------------------------------ |
-| ~~B1~~ | ~~`gh` CLI não instalado~~                                         | —                             | ✅ **resolvido 2026-09-03** — `gh` 2.46.0, autenticado como `Cardosofiles`, protocolo SSH (D-33) |
-| ~~B4~~ | ~~`pnpm install` abortando com `ERR_PNPM_IGNORED_BUILDS`~~         | —                             | ✅ **resolvido 2026-09-03** — `allowBuilds` preenchido (D-32)                                    |
-| ~~B2~~ | ~~`.env` vazio, sem `DATABASE_URL`~~                               | —                             | ✅ **resolvido 2026-09-04** em F1-S03 (`.env.example`, validação Zod e docker compose)           |
-| ~~B3~~ | ~~`AGENTS.md` e `README.md` contradizem D-01/D-03/D-09/D-10/D-16~~ | —                             | ✅ **resolvido 2026-09-03** em F1-S01                                                            |
-| B5     | Token do `gh` sem escopo `workflow`                                | possivelmente F1-S04 e F5-S02 | **Você**, só se um push de workflow for recusado: `gh auth refresh -h github.com -s workflow`    |
-| ~~P1~~ | ~~Exigir status check obrigatório `ci` nos rulesets~~              | —                             | ✅ **resolvido 2026-09-04** em F1-S04 (rulesets `protection-develop` e `protection-main`)        |
+| #      | Item                                                                            | Bloqueia                      | Quem resolve                                                                                     |
+| ------ | ------------------------------------------------------------------------------- | ----------------------------- | ------------------------------------------------------------------------------------------------ |
+| ~~B1~~ | ~~`gh` CLI não instalado~~                                                      | —                             | ✅ **resolvido 2026-09-03** — `gh` 2.46.0, autenticado como `Cardosofiles`, protocolo SSH (D-33) |
+| ~~B4~~ | ~~`pnpm install` abortando com `ERR_PNPM_IGNORED_BUILDS`~~                      | —                             | ✅ **resolvido 2026-09-03** — `allowBuilds` preenchido (D-32)                                    |
+| ~~B2~~ | ~~`.env` vazio, sem `DATABASE_URL`~~                                            | —                             | ✅ **resolvido 2026-09-04** em F1-S03 (`.env.example`, validação Zod e docker compose)           |
+| ~~B3~~ | ~~`AGENTS.md` e `README.md` contradizem D-01/D-03/D-09/D-10/D-16~~              | —                             | ✅ **resolvido 2026-09-03** em F1-S01                                                            |
+| B5     | Token do `gh` sem escopo `workflow`                                             | possivelmente F1-S04 e F5-S08 | **Você**, só se um push de workflow for recusado: `gh auth refresh -h github.com -s workflow`    |
+| ~~P1~~ | ~~Exigir status check obrigatório `ci` nos rulesets~~                           | —                             | ✅ **resolvido 2026-09-04** em F1-S04 (rulesets `protection-develop` e `protection-main`)        |
+| P2     | **27 GAPs de segurança abertos** (`docs/issue/AUTHENTICATION.md`) — 1 crítico   | F5-S08 (deploy), por D-49     | **Agentes**, em F5-S02 … F5-S07. Spec normativa: `docs/specs/08-blindagem-de-seguranca.md`       |
+| P3     | CIDRs reais da borda da Railway para `TRUSTED_PROXIES` (D-50)                   | boot em produção              | **Você**, ao configurar as Railway Variables em F5-S08. F5-S02 já valida a ausência no boot      |
+| P4     | Produção restrita a **réplica única** até `RATE_LIMIT_REDIS_URL` existir (D-55) | escalar horizontalmente       | **Você**, quando houver necessidade. F5-S08 fixa `replicas: 1` e registra no runbook             |
 
 ---
 

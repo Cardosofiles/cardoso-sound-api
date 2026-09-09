@@ -49,6 +49,7 @@ export const playlistsRoutes: FastifyPluginAsyncZod<PlaylistsRoutesOptions> = as
         querystring: listPlaylistsQuerySchema,
         response: {
           200: listPlaylistsResponseSchema,
+          400: errorResponseSchema,
           401: errorResponseSchema,
         },
       },

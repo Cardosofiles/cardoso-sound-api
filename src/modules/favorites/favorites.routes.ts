@@ -44,6 +44,7 @@ export const favoritesRoutes: FastifyPluginAsyncZod<FavoritesRoutesOptions> = as
         querystring: listFavoritesQuerySchema,
         response: {
           200: listFavoritesResponseSchema,
+          400: errorResponseSchema,
           401: errorResponseSchema,
         },
       },
