@@ -9,18 +9,18 @@
 
 ## Estado atual
 
-| Campo                  | Valor                                                            |
-| ---------------------- | ---------------------------------------------------------------- |
-| **Fase corrente**      | F5 — Produção (em andamento)                                     |
-| **Próximo sprint**     | **F5-S03** — Recuperação de conta, anti-enumeração e senha       |
-| **Última tag**         | `v0.4.0` (preparada)                                             |
-| **`gh` CLI**           | ✅ 2.46.0, autenticado como `Cardosofiles`, protocolo SSH (D-33) |
-| **`pnpm install`**     | ✅ passa — `allowBuilds` decidido (D-32)                         |
-| **Repositório**        | ✅ público `Cardosofiles/cardoso-sound-api` no GitHub            |
-| **Branch de trabalho** | `feature/f5s02-blindagem-de-borda` (default: `develop`)          |
-| **CI**                 | ✅ ativo (`.github/workflows/ci.yml`) — check obrigatório        |
-| **Banco**              | ✅ Postgres 17 ativo via Docker Compose                          |
-| **Última atualização** | 2026-09-09 — F5-S02 concluído: blindagem de borda e D-60         |
+| Campo                  | Valor                                                               |
+| ---------------------- | ------------------------------------------------------------------- |
+| **Fase corrente**      | F5 — Produção (em andamento)                                        |
+| **Próximo sprint**     | **F5-S04** — Endurecimento de sessão, schema e contrato             |
+| **Última tag**         | `v0.4.0` (preparada)                                                |
+| **`gh` CLI**           | ✅ 2.46.0, autenticado como `Cardosofiles`, protocolo SSH (D-33)    |
+| **`pnpm install`**     | ✅ passa — `allowBuilds` decidido (D-32)                            |
+| **Repositório**        | ✅ público `Cardosofiles/cardoso-sound-api` no GitHub               |
+| **Branch de trabalho** | `feature/f5s03-recuperacao-de-conta` (default: `develop`)           |
+| **CI**                 | ✅ ativo (`.github/workflows/ci.yml`) — check obrigatório           |
+| **Banco**              | ✅ Postgres 17 ativo via Docker Compose                             |
+| **Última atualização** | 2026-09-09 — F5-S03 concluído: recuperação, anti-enumeração e senha |
 
 > ⚠️ **Auditoria de segurança aberta.** `docs/issue/AUTHENTICATION.md` (2026-09-09) registra
 > **27 GAPs**, um deles **CRÍTICO**: `src/plugins/rate-limit.plugin.ts:8` implementa
@@ -117,7 +117,7 @@ Legenda: ⬜ pendente · 🟡 em andamento · ✅ concluído · 🔴 bloqueado
 | ---------- | ---------------------------------------------- | ------ | --- | ---------- | ------------------------------ |
 | **F5-S01** | OpenAPI: export, verificação no CI e polimento | ✅     | #28 | 2026-09-09 | —                              |
 | **F5-S02** | Blindagem de borda e rate limiting             | ✅     | #29 | 2026-09-09 | 01, 04, 05, 06, 10, 17, 21, 27 |
-| **F5-S03** | Recuperação de conta, anti-enumeração e senha  | ⬜     | —   | —          | 07, 08, 14, 15, 22, 24, 25     |
+| **F5-S03** | Recuperação de conta, anti-enumeração e senha  | ✅     | #30 | 2026-09-09 | 07, 08, 14, 15, 22, 24, 25     |
 | **F5-S04** | Endurecimento de sessão, schema e contrato     | ⬜     | —   | —          | 13, 16, 19, 20, 23, 26         |
 | **F5-S05** | Two Factor: TOTP, OTP e backup codes           | ⬜     | —   | —          | 02, 09 (parte 2FA)             |
 | **F5-S06** | Passkey (WebAuthn / FIDO2)                     | ⬜     | —   | —          | 03, 09 (parte passkey)         |
@@ -194,23 +194,48 @@ antes de reimplementar.
 | Regras de rate limit de autenticação em 8 endpoints (`AUTH_RATE_LIMIT_RULES`) (GAP-05/06)              | F5-S02 | `src/modules/auth/auth.config.ts`       |
 | Utilitário de sanitização e truncagem de Request ID `resolveRequestId` (GAP-27)                        | F5-S02 | `src/shared/utils/request-id.ts`        |
 | Suíte de testes unitários e de integração de borda e rate limit (T1–T40)                               | F5-S02 | `tests/unit/**`, `tests/integration/**` |
+| Verificação obrigatória de e-mail e anti-enumeração genérica no cadastro (GAP-08/14, D-51)             | F5-S03 | `src/modules/auth/auth.config.ts`       |
+| Revogação de sessões ativas pós-reset de senha no banco de dados (GAP-07, D-52)                        | F5-S03 | `src/modules/auth/auth.config.ts`       |
+| Política de bloqueio offline de senhas fracas e limite de 128 caracteres (GAP-15)                      | F5-S03 | `src/shared/security/weak-passwords.ts` |
+| Escape estrito de atributos HTML em templates de e-mail (`escapeHtmlAttribute`) (GAP-22)               | F5-S03 | `src/shared/email/templates.ts`         |
+| Mailer com logger injetado sem pino() local e sem vazamento de URLs ou destinatários (GAP-25, D-57)    | F5-S03 | `src/shared/email/mailer.ts`            |
+| Suíte de testes e E2E helper para recuperação de conta, anti-enumeração e senha (T1–T32)               | F5-S03 | `tests/integration/**`, `tests/unit/**` |
 
 ---
 
 ## Bloqueios e pendências
 
-| #      | Item                                                                                                                                                              | Bloqueia                      | Quem resolve                                                                                     |
-| ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------- | ------------------------------------------------------------------------------------------------ |
-| ~~B1~~ | ~~`gh` CLI não instalado~~                                                                                                                                        | —                             | ✅ **resolvido 2026-09-03** — `gh` 2.46.0, autenticado como `Cardosofiles`, protocolo SSH (D-33) |
-| ~~B4~~ | ~~`pnpm install` abortando com `ERR_PNPM_IGNORED_BUILDS`~~                                                                                                        | —                             | ✅ **resolvido 2026-09-03** — `allowBuilds` preenchido (D-32)                                    |
-| ~~B2~~ | ~~`.env` vazio, sem `DATABASE_URL`~~                                                                                                                              | —                             | ✅ **resolvido 2026-09-04** em F1-S03 (`.env.example`, validação Zod e docker compose)           |
-| ~~B3~~ | ~~`AGENTS.md` e `README.md` contradizem D-01/D-03/D-09/D-10/D-16~~                                                                                                | —                             | ✅ **resolvido 2026-09-03** em F1-S01                                                            |
-| B5     | Token do `gh` sem escopo `workflow`                                                                                                                               | possivelmente F1-S04 e F5-S08 | **Você**, só se um push de workflow for recusado: `gh auth refresh -h github.com -s workflow`    |
-| ~~P1~~ | ~~Exigir status check obrigatório `ci` nos rulesets~~                                                                                                             | —                             | ✅ **resolvido 2026-09-04** em F1-S04 (rulesets `protection-develop` e `protection-main`)        |
-| P2     | **27 GAPs de segurança abertos** (`docs/issue/AUTHENTICATION.md`) — 1 crítico                                                                                     | F5-S08 (deploy), por D-49     | **Agentes**, em F5-S02 … F5-S07. Spec normativa: `docs/specs/08-blindagem-de-seguranca.md`       |
-| P3     | CIDRs reais da borda da Railway para `TRUSTED_PROXIES` (D-50)                                                                                                     | boot em produção              | **Você**, ao configurar as Railway Variables em F5-S08. F5-S02 já valida a ausência no boot      |
-| P4     | Produção restrita a **réplica única** até `RATE_LIMIT_REDIS_URL` existir (D-55)                                                                                   | escalar horizontalmente       | **Você**, quando houver necessidade. F5-S08 fixa `replicas: 1` e registra no runbook             |
-| P5     | `tsup` corrigido para emitir a árvore completa (`entry: ['src/**/*.ts']`) — o artefato de produção não iniciava; consequência do D-35 estava violada desde F1-S02 | —                             | ✅ **resolvido 2026-09-09** em F5-S02                                                            |
+| #      | Item                                                                                                                                                              | Bloqueia                      | Quem resolve                                                                                                                                                     |
+| ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ~~B1~~ | ~~`gh` CLI não instalado~~                                                                                                                                        | —                             | ✅ **resolvido 2026-09-03** — `gh` 2.46.0, autenticado como `Cardosofiles`, protocolo SSH (D-33)                                                                 |
+| ~~B4~~ | ~~`pnpm install` abortando com `ERR_PNPM_IGNORED_BUILDS`~~                                                                                                        | —                             | ✅ **resolvido 2026-09-03** — `allowBuilds` preenchido (D-32)                                                                                                    |
+| ~~B2~~ | ~~`.env` vazio, sem `DATABASE_URL`~~                                                                                                                              | —                             | ✅ **resolvido 2026-09-04** em F1-S03 (`.env.example`, validação Zod e docker compose)                                                                           |
+| ~~B3~~ | ~~`AGENTS.md` e `README.md` contradizem D-01/D-03/D-09/D-10/D-16~~                                                                                                | —                             | ✅ **resolvido 2026-09-03** em F1-S01                                                                                                                            |
+| B5     | Token do `gh` sem escopo `workflow`                                                                                                                               | possivelmente F1-S04 e F5-S08 | **Você**, só se um push de workflow for recusado: `gh auth refresh -h github.com -s workflow`                                                                    |
+| ~~P1~~ | ~~Exigir status check obrigatório `ci` nos rulesets~~                                                                                                             | —                             | ✅ **resolvido 2026-09-04** em F1-S04 (rulesets `protection-develop` e `protection-main`)                                                                        |
+| P2     | **27 GAPs de segurança abertos** (`docs/issue/AUTHENTICATION.md`) — 1 crítico                                                                                     | F5-S08 (deploy), por D-49     | **Agentes**, em F5-S02 … F5-S07. Spec normativa: `docs/specs/08-blindagem-de-seguranca.md`                                                                       |
+| P3     | Topologia real da borda da Railway — **`TRUSTED_PROXIES` (CIDRs) e `TRUST_PROXY_HOPS` (nº de saltos)**, as duas do D-50                                           | boot em produção              | **Você**, ao configurar as Railway Variables em F5-S08. F5-S02 já valida a ausência das duas no boot. Ver a nota abaixo sobre o valor de `TRUST_PROXY_HOPS`      |
+| P6     | Achado **R-01** — a ponte do Better Auth resolve o IP só por header; `session.ip_address` e as 8 regras de rate limit de auth são falsificáveis fora da borda     | F5-S04                        | **Agentes**, em F5-S04 (§3.3, §5.7, T29–T33). Medido em `docs/agents-reviews/review-f5-s02-validacao-ponta-a-ponta.md`; detalhe em `.agents/memory/F5-S02.md` §5 |
+| P4     | Produção restrita a **réplica única** até `RATE_LIMIT_REDIS_URL` existir (D-55)                                                                                   | escalar horizontalmente       | **Você**, quando houver necessidade. F5-S08 fixa `replicas: 1` e registra no runbook                                                                             |
+| P5     | `tsup` corrigido para emitir a árvore completa (`entry: ['src/**/*.ts']`) — o artefato de produção não iniciava; consequência do D-35 estava violada desde F1-S02 | —                             | ✅ **resolvido 2026-09-09** em F5-S02                                                                                                                            |
+
+> **Nota sobre P3 — como escolher `TRUST_PROXY_HOPS` (medido em 2026-09-09).** O predicado do D-60
+> valida **cada salto** contra `TRUSTED_PROXIES`, então os dois erros não são simétricos:
+>
+> - **Superestimar é seguro.** `HOPS=5` com um proxy real não afrouxa nada — o salto seguinte já
+>   falha na checagem de CIDR e a cadeia é truncada ali.
+> - **Subestimar colapsa os buckets.** Com `HOPS=1` e dois proxies reais à frente, `req.ip` vira o
+>   IP do segundo proxy para **todos** os clientes: o limitador global cai num bucket único e o
+>   primeiro usuário ativo consome os 100/min de todo mundo. É a Armadilha §8.1 da spec `08` pela
+>   porta dos fundos.
+>
+> Na dúvida entre dois valores, **escolha o maior**. E confira o resultado em produção: `req.ip` nos
+> logs do Pino tem de ser o IP do cliente, nunca um endereço da faixa em `TRUSTED_PROXIES`.
+>
+> **Depois de F5-S04 isso fica mais carregado ainda:** com R-01 corrigido, a ponte passa `req.ip`
+> ao Better Auth. Se `req.ip` cair **dentro** de `TRUSTED_PROXIES` por causa de um `HOPS`
+> subestimado, o resolvedor devolve `null` e o limitador de autenticação inteiro colapsa na chave
+> compartilhada `no-trusted-ip|<path>` — medido em `@better-auth/core@1.7.2`.
 
 ---
 

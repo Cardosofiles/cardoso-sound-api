@@ -1,16 +1,14 @@
-import { pino } from 'pino';
+import type { FastifyBaseLogger } from 'fastify';
 import { Resend } from 'resend';
 import { env, isDevelopment } from '../../config/env.js';
 
-const logger = pino({
-  level: env.LOG_LEVEL,
-  transport: isDevelopment
-    ? {
-        target: 'pino-pretty',
-        options: { colorize: true, translateTime: 'HH:MM:ss' },
-      }
-    : undefined,
-});
+export type MailerLogger = Pick<FastifyBaseLogger, 'info' | 'warn' | 'error'>;
+
+const silentLogger: MailerLogger = {
+  info: () => {},
+  warn: () => {},
+  error: () => {},
+};
 
 export interface SentEmail {
   to: string;
@@ -30,7 +28,7 @@ export function clearOutbox(): void {
   _outbox.length = 0;
 }
 
-export function createMemoryMailer(): Mailer {
+export function createMemoryMailer(logger: MailerLogger = silentLogger): Mailer {
   return {
     send(input: { to: string; subject: string; html: string }): Promise<void> {
       const sentEmail: SentEmail = {
@@ -41,25 +39,38 @@ export function createMemoryMailer(): Mailer {
       };
       _outbox.push(sentEmail);
 
-      // Em desenvolvimento e teste, extrai a URL do href para exibir no log legível
-      const urlMatch = /href="([^"]+)"/.exec(input.html);
-      const extractedUrl = urlMatch ? urlMatch[1] : undefined;
+      // O transporte de memória só loga a URL quando NODE_ENV === 'development'. Em test e production, nunca.
+      if (isDevelopment) {
+        const urlMatch = /href="([^"]+)"/.exec(input.html);
+        const extractedUrl = urlMatch ? urlMatch[1] : undefined;
 
-      logger.info(
-        {
-          to: input.to,
-          subject: input.subject,
-          url: extractedUrl,
-        },
-        '[MemoryMailer] E-mail acumulado no outbox',
-      );
+        logger.info(
+          {
+            to: input.to,
+            subject: input.subject,
+            url: extractedUrl,
+          },
+          '[MemoryMailer] E-mail acumulado no outbox',
+        );
+      } else {
+        logger.info(
+          {
+            subject: input.subject,
+          },
+          '[MemoryMailer] E-mail acumulado no outbox',
+        );
+      }
 
       return Promise.resolve();
     },
   };
 }
 
-export function createResendMailer(resendClient: Resend, from: string): Mailer {
+export function createResendMailer(
+  resendClient: Resend,
+  from: string,
+  logger: MailerLogger = silentLogger,
+): Mailer {
   return {
     async send(input: { to: string; subject: string; html: string }): Promise<void> {
       try {
@@ -73,20 +84,21 @@ export function createResendMailer(resendClient: Resend, from: string): Mailer {
         if (error) {
           logger.warn(
             {
-              to: input.to,
-              subject: input.subject,
-              error,
+              provider: 'resend',
+              status: error.name,
+              message: error.message,
             },
             '[ResendMailer] Provedor retornou erro no envio de e-mail',
           );
         }
       } catch (err: unknown) {
         // Armadilha 1 / T3: falha do provedor nunca rejeita a promise
+        const errorMessage = err instanceof Error ? err.message : 'Unknown error';
         logger.warn(
           {
-            to: input.to,
-            subject: input.subject,
-            err,
+            provider: 'resend',
+            status: 'exception',
+            message: errorMessage,
           },
           '[ResendMailer] Exceção capturada no envio de e-mail',
         );

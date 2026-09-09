@@ -32,26 +32,8 @@ describe('E2E Auth Flow (Identity, Bearer Token & Cookie Sessions)', () => {
   // E1: sign-up -> GET /me com Bearer -> 200 com o e-mail correto
   it('E1: sign-up -> GET /api/v1/me com Bearer token -> 200 com perfil e e-mail correto', async () => {
     const userEmail = `user-${randomUUID()}@teste.local`;
-    const userName = 'Alice E2E';
-    const password = 'Password123!';
 
-    const signUpRes = await app.inject({
-      method: 'POST',
-      url: '/api/auth/sign-up/email',
-      headers: { 'content-type': 'application/json' },
-      payload: {
-        name: userName,
-        email: userEmail,
-        password,
-      },
-    });
-
-    expect(signUpRes.statusCode).toBe(200);
-    const tokenHeader = signUpRes.headers['set-auth-token'];
-    const token =
-      typeof tokenHeader === 'string'
-        ? tokenHeader
-        : (signUpRes.json<{ token?: string }>().token ?? '');
+    const { token } = await signUpAndGetToken(app, userEmail);
     expect(token).toBeTruthy();
 
     const meRes = await app.inject({
@@ -70,7 +52,7 @@ describe('E2E Auth Flow (Identity, Bearer Token & Cookie Sessions)', () => {
     }>();
 
     expect(meBody.email).toBe(userEmail);
-    expect(meBody.name).toBe(userName);
+    expect(meBody.name).toBe('E2E Test User');
     expect(meBody.id).toBeTruthy();
     expect(meBody.createdAt).toBeTruthy();
     expect(Object.keys(meBody).sort()).toEqual(['createdAt', 'email', 'id', 'image', 'name']);

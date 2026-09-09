@@ -50,4 +50,32 @@ describe('email templates', () => {
     expect(verifyResult.subject).not.toContain(token);
     expect(resetResult.subject).not.toContain(token);
   });
+
+  it('T23: verificationEmail({ name, url: "https://x/?t=1&a="><b>" }) escapes quotes and < in href', () => {
+    const maliciousUrl = 'https://x/?t=1&a="><b>';
+    const result = verificationEmail({ name: 'User', url: maliciousUrl });
+
+    expect(result.html).toContain('href="https://x/?t=1&amp;a=&quot;&gt;&lt;b&gt;"');
+    expect(result.html).not.toContain('href="https://x/?t=1&a="><b>"');
+  });
+
+  it('T24: resetPasswordEmail({ name, url: "https://x/?t=1&a="><b>" }) escapes quotes and < in href', () => {
+    const maliciousUrl = 'https://x/?t=1&a="><b>';
+    const result = resetPasswordEmail({ name: 'User', url: maliciousUrl });
+
+    expect(result.html).toContain('href="https://x/?t=1&amp;a=&quot;&gt;&lt;b&gt;"');
+    expect(result.html).not.toContain('href="https://x/?t=1&a="><b>"');
+  });
+
+  it('T25: both templates with name: "<script>" have name properly escaped (regression protection)', () => {
+    const maliciousName = '<script>alert(1)</script>';
+    const verifyResult = verificationEmail({ name: maliciousName, url: mockUrl });
+    const resetResult = resetPasswordEmail({ name: maliciousName, url: mockResetUrl });
+
+    expect(verifyResult.html).toContain('&lt;script&gt;alert(1)&lt;/script&gt;');
+    expect(verifyResult.html).not.toContain('<script>alert(1)</script>');
+
+    expect(resetResult.html).toContain('&lt;script&gt;alert(1)&lt;/script&gt;');
+    expect(resetResult.html).not.toContain('<script>alert(1)</script>');
+  });
 });

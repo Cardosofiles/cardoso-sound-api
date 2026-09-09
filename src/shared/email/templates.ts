@@ -7,12 +7,21 @@ function escapeHtml(str: string): string {
     .replace(/'/g, '&#039;');
 }
 
+function escapeHtmlAttribute(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
 export function verificationEmail(input: { name: string; url: string }): {
   subject: string;
   html: string;
 } {
   const safeName = escapeHtml(input.name.trim() || 'Usuário');
-  const safeUrl = input.url;
+  const safeUrl = escapeHtmlAttribute(input.url);
 
   return {
     subject: 'Verifique seu e-mail no Cardoso Sound',
@@ -41,7 +50,7 @@ export function resetPasswordEmail(input: { name: string; url: string }): {
   html: string;
 } {
   const safeName = escapeHtml(input.name.trim() || 'Usuário');
-  const safeUrl = input.url;
+  const safeUrl = escapeHtmlAttribute(input.url);
 
   return {
     subject: 'Redefinição de senha no Cardoso Sound',

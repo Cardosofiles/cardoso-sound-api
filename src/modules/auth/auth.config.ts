@@ -1,12 +1,18 @@
 import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
-import { createAuthEndpoint, requestPasswordReset } from 'better-auth/api';
+import {
+  APIError,
+  createAuthEndpoint,
+  createAuthMiddleware,
+  requestPasswordReset,
+} from 'better-auth/api';
 import { bearer } from 'better-auth/plugins';
 import { env, isProduction, SOCIAL_PROVIDERS, TRUSTED_PROXY_LIST } from '../../config/env.js';
 import { db, type Database } from '../../db/client.js';
 import * as schema from '../../db/schema/index.js';
 import { mailer } from '../../shared/email/mailer.js';
 import { resetPasswordEmail, verificationEmail } from '../../shared/email/templates.js';
+import { isWeakPassword } from '../../shared/security/weak-passwords.js';
 
 // Proxy dinâmico para garantir que mutações em db (via setPool no harness de testes)
 // sejam refletidas imediatamente pelo Drizzle Adapter sem recriação de instância
@@ -31,6 +37,33 @@ const forgetPasswordPlugin = () => ({
         return requestPasswordReset(ctx);
       },
     ),
+  },
+});
+
+const weakPasswordPlugin = () => ({
+  id: 'weak-passwords',
+  hooks: {
+    before: [
+      {
+        matcher(context: { path?: string }) {
+          return (
+            context.path === '/sign-up/email' ||
+            context.path === '/reset-password' ||
+            context.path === '/change-password'
+          );
+        },
+        handler: createAuthMiddleware(async (ctx) => {
+          const body = (await ctx.body) as Record<string, unknown> | undefined;
+          const password = (body?.password ?? body?.newPassword) as string | undefined;
+          if (typeof password === 'string' && isWeakPassword(password)) {
+            throw APIError.from('BAD_REQUEST', {
+              code: 'INVALID_PASSWORD',
+              message: 'Invalid password. Please choose a different password.',
+            });
+          }
+        }),
+      },
+    ],
   },
 });
 
@@ -85,8 +118,10 @@ export function createAuth(options?: CreateAuthOptions) {
     emailAndPassword: {
       enabled: true,
       minPasswordLength: 8,
+      maxPasswordLength: 128,
       autoSignIn: true,
-      requireEmailVerification: false,
+      requireEmailVerification: true,
+      revokeSessionsOnPasswordReset: true,
       resetPasswordTokenExpiresIn: 60 * 60, // 1 hora
       sendResetPassword: async ({ user, url }) => {
         const { subject, html } = resetPasswordEmail({ name: user.name || 'Usuário', url });
@@ -123,7 +158,7 @@ export function createAuth(options?: CreateAuthOptions) {
         trustedProxies: TRUSTED_PROXY_LIST,
       },
     },
-    plugins: [bearer(), forgetPasswordPlugin()],
+    plugins: [bearer(), forgetPasswordPlugin(), weakPasswordPlugin()],
   });
 }
 
