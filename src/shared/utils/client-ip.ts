@@ -1,4 +1,7 @@
 import net from 'node:net';
+import type { Env } from '../../config/env.js';
+
+const blockListCache = new Map<string, net.BlockList>();
 
 function createBlockList(trustedProxies: readonly string[]): net.BlockList {
   const blockList = new net.BlockList();
@@ -12,8 +15,11 @@ function createBlockList(trustedProxies: readonly string[]): net.BlockList {
       if (addr && prefixStr) {
         const prefix = parseInt(prefixStr, 10);
         const type = net.isIP(addr);
-        if (type === 4) blockList.addSubnet(addr, prefix, 'ipv4');
-        else if (type === 6) blockList.addSubnet(addr, prefix, 'ipv6');
+        if (type === 4 && prefix >= 0 && prefix <= 32) {
+          blockList.addSubnet(addr, prefix, 'ipv4');
+        } else if (type === 6 && prefix >= 0 && prefix <= 128) {
+          blockList.addSubnet(addr, prefix, 'ipv6');
+        }
       }
     } else {
       const type = net.isIP(trimmed);
@@ -24,11 +30,43 @@ function createBlockList(trustedProxies: readonly string[]): net.BlockList {
   return blockList;
 }
 
+function getOrCreateBlockList(trustedProxies: readonly string[]): net.BlockList {
+  const key = trustedProxies.join(',');
+  let blockList = blockListCache.get(key);
+  if (!blockList) {
+    blockList = createBlockList(trustedProxies);
+    blockListCache.set(key, blockList);
+  }
+  return blockList;
+}
+
 function isIpTrusted(blockList: net.BlockList, ip: string): boolean {
   const type = net.isIP(ip);
   if (type === 4) return blockList.check(ip, 'ipv4');
   if (type === 6) return blockList.check(ip, 'ipv6');
   return false;
+}
+
+/** `true` se `ip` pertence a algum CIDR/endereço de `trustedProxies`. */
+export function isTrustedProxy(ip: string, trustedProxies: readonly string[]): boolean {
+  if (trustedProxies.length === 0) {
+    return false;
+  }
+  const blockList = getOrCreateBlockList(trustedProxies);
+  return isIpTrusted(blockList, ip);
+}
+
+/**
+ * Predicado de confiança do Fastify. Um salto só é confiável se estiver dentro
+ * da profundidade declarada (D-50) E o endereço for de um proxy da borda.
+ */
+export function buildTrustProxy(config: Env): ((address: string, hop: number) => boolean) | false {
+  if (config.TRUST_PROXY_HOPS === 0 || config.TRUSTED_PROXY_LIST.length === 0) {
+    return false;
+  }
+
+  return (address: string, hop: number) =>
+    hop < config.TRUST_PROXY_HOPS && isTrustedProxy(address, config.TRUSTED_PROXY_LIST);
 }
 
 export function resolveClientIp(
@@ -54,7 +92,7 @@ export function resolveClientIp(
     return socketIp;
   }
 
-  const blockList = createBlockList(trustedProxies);
+  const blockList = getOrCreateBlockList(trustedProxies);
 
   // Se o socket que conectou diretamente não for de um proxy confiável,
   // a requisição veio direto do cliente ou de um salto não autorizado; o XFF foi forjado.

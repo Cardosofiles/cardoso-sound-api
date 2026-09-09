@@ -702,3 +702,22 @@ period: 10, sendOTP } })`. O 2FA é **opcional por usuário** (`user.twoFactorEn
   - **(c) Rotas do Better Auth:** permanecem gerenciadas exclusivamente pelo handler curinga do Better Auth em `auth.plugin.ts` e omitidas do mapa de rotas Zod do Fastify; são documentadas textualmente em `info.description` informando suporte simultâneo a Bearer Token e Cookie HttpOnly.
   - **(d) Determinismo de Exportação:** garantido através de ordenação recursiva alfabética de chaves de objetos em `scripts/export-openapi.ts` (`sortObjectKeys`).
 - **Consequência:** `docs/openapi.json` é perfeitamente estável e determinístico. O CI roda `pnpm openapi:export -- --check` bloqueando PRs que alterem schemas sem atualizar o artefato versionado.
+
+### D-60 · `trustProxy` por profundidade E validação do peer; número é proibido
+
+- **Data:** 2026-09-09 · **Sprint:** F5-S02 · **Status:** vigente
+- **Contexto:** o `fastify@5.12.1` (`lib/request.js:51-55`) passou a tratar `trustProxy`
+  numérico como _fail closed_ (`return function () { return false }`), com a justificativa de
+  que a contagem de saltos sozinha não valida o peer imediato. Com um número, a aplicação
+  atrás da Railway atribuiria o IP do balanceador a todos os clientes e o limitador global
+  colapsaria num único bucket. Já um predicado que só conta saltos, sem olhar o endereço,
+  devolve ao cliente direto a capacidade de escolher o próprio IP via `X-Forwarded-For` —
+  medido: socket `198.51.100.9` com `XFF: 9.9.9.9` resulta em `req.ip = 9.9.9.9`.
+- **Decisão:** `trustProxy` recebe o predicado
+  `(address, hop) => hop < TRUST_PROXY_HOPS && isTrustedProxy(address, TRUSTED_PROXY_LIST)`,
+  construído por `buildTrustProxy(env)` em `src/shared/utils/client-ip.ts`. Devolve `false`
+  quando `TRUST_PROXY_HOPS === 0` ou a lista de CIDRs está vazia. **`trustProxy` numérico e
+  `trustProxy: true` são proibidos** (este último já por D-50).
+- **Consequência:** as duas variáveis do D-50 continuam com função real — `TRUST_PROXY_HOPS`
+  limita a profundidade, `TRUSTED_PROXIES` valida o peer. `req.ip` é confiável para o rate
+  limit e para os logs. `client-ip.ts` deixa de ser código sem consumidor.

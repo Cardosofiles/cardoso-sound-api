@@ -12,15 +12,15 @@
 | Campo                  | Valor                                                            |
 | ---------------------- | ---------------------------------------------------------------- |
 | **Fase corrente**      | F5 — Produção (em andamento)                                     |
-| **Próximo sprint**     | **F5-S02** — Blindagem de borda e rate limiting                  |
+| **Próximo sprint**     | **F5-S03** — Recuperação de conta, anti-enumeração e senha       |
 | **Última tag**         | `v0.4.0` (preparada)                                             |
 | **`gh` CLI**           | ✅ 2.46.0, autenticado como `Cardosofiles`, protocolo SSH (D-33) |
 | **`pnpm install`**     | ✅ passa — `allowBuilds` decidido (D-32)                         |
 | **Repositório**        | ✅ público `Cardosofiles/cardoso-sound-api` no GitHub            |
-| **Branch de trabalho** | `feature/f5s01-openapi-e-docs` (default: `develop`)              |
+| **Branch de trabalho** | `feature/f5s02-blindagem-de-borda` (default: `develop`)          |
 | **CI**                 | ✅ ativo (`.github/workflows/ci.yml`) — check obrigatório        |
 | **Banco**              | ✅ Postgres 17 ativo via Docker Compose                          |
-| **Última atualização** | 2026-09-09 — F5-S01 concluído: OpenAPI versionado e verificado   |
+| **Última atualização** | 2026-09-09 — F5-S02 concluído: blindagem de borda e D-60         |
 
 > ⚠️ **Auditoria de segurança aberta.** `docs/issue/AUTHENTICATION.md` (2026-09-09) registra
 > **27 GAPs**, um deles **CRÍTICO**: `src/plugins/rate-limit.plugin.ts:8` implementa
@@ -116,7 +116,7 @@ Legenda: ⬜ pendente · 🟡 em andamento · ✅ concluído · 🔴 bloqueado
 | Sprint     | Título                                         | Status | PR  | Data       | GAPs                           |
 | ---------- | ---------------------------------------------- | ------ | --- | ---------- | ------------------------------ |
 | **F5-S01** | OpenAPI: export, verificação no CI e polimento | ✅     | #28 | 2026-09-09 | —                              |
-| **F5-S02** | Blindagem de borda e rate limiting             | ⬜     | —   | —          | 01, 04, 05, 06, 10, 17, 21, 27 |
+| **F5-S02** | Blindagem de borda e rate limiting             | ✅     | #29 | 2026-09-09 | 01, 04, 05, 06, 10, 17, 21, 27 |
 | **F5-S03** | Recuperação de conta, anti-enumeração e senha  | ⬜     | —   | —          | 07, 08, 14, 15, 22, 24, 25     |
 | **F5-S04** | Endurecimento de sessão, schema e contrato     | ⬜     | —   | —          | 13, 16, 19, 20, 23, 26         |
 | **F5-S05** | Two Factor: TOTP, OTP e backup codes           | ⬜     | —   | —          | 02, 09 (parte 2FA)             |
@@ -133,79 +133,84 @@ Legenda: ⬜ pendente · 🟡 em andamento · ✅ concluído · 🔴 bloqueado
 Preenchido conforme os sprints avançam — serve para o agente saber o que **já existe**
 antes de reimplementar.
 
-| Rota / Símbolo                                                                                         | Sprint | Arquivo                               |
-| ------------------------------------------------------------------------------------------------------ | ------ | ------------------------------------- |
-| Pagination (`toOffset`, `buildPaginationMeta`)                                                         | F1-S02 | `src/shared/utils/pagination.ts`      |
-| `env`, `parseEnv`, `isProduction`, `isTest`, `isDevelopment`                                           | F1-S03 | `src/config/env.ts`                   |
-| `APP_NAME`, `API_PREFIX`, `AUTH_PREFIX`, `GENRES`, limites                                             | F1-S03 | `src/config/constants.ts`             |
-| Pipeline CI (`ci`), PR template, rulesets `main`/`develop`                                             | F1-S04 | `.github/workflows/ci.yml`            |
-| `AppError`, `NotFoundError`, `UnauthorizedError`, `ForbiddenError`, `ConflictError`, `ValidationError` | F1-S05 | `src/shared/errors/`                  |
-| `errorHandlerPlugin` (envelope RFC 7807, 404 handler)                                                  | F1-S05 | `src/plugins/error-handler.plugin.ts` |
-| `buildApp()` (factory pura Fastify, Zod type provider, Pino)                                           | F1-S05 | `src/app.ts`                          |
-| Bootstrap do servidor e graceful shutdown                                                              | F1-S05 | `src/server.ts`                       |
-| R01: `GET /health` (Liveness, não toca no banco)                                                       | F1-S06 | `src/plugins/health.plugin.ts`        |
-| R02: `GET /health/ready` (Readiness, faz `SELECT 1`)                                                   | F1-S06 | `src/plugins/health.plugin.ts`        |
-| R03: `GET /docs`, `GET /docs/json` (OpenAPI 3.0.3 + Swagger UI)                                        | F1-S06 | `src/plugins/swagger.plugin.ts`       |
-| Cliente Drizzle e Pool Postgres (`pool`, `db`, `checkDatabase`, `setPool`)                             | F1-S06 | `src/db/client.ts`                    |
-| Plugins de borda e defesa (`helmet`, `cors`, `rate-limit`, `under-pressure`)                           | F1-S06 | `src/plugins/`                        |
-| Schemas Drizzle (9 tabelas: `user`, `session`, `account`, `verification`, `artists`, `tracks`, etc.)   | F2-S01 | `src/db/schema/*.schema.ts`           |
-| Relações Drizzle ORM (5 relations para `db.query.*` com `with`)                                        | F2-S01 | `src/db/schema/index.ts`              |
-| Migração inicial (`0000_*.sql` com `pg_trgm` e 3 índices GIN)                                          | F2-S01 | `drizzle/`                            |
-| Runner de migração de produção (`runMigrations()`)                                                     | F2-S01 | `src/db/migrate.ts`                   |
-| Harness de integração Testcontainers (`startTestDatabase`, `truncateAll`)                              | F2-S02 | `tests/setup/testcontainers.ts`       |
-| Seed idempotente do catálogo musical (`seed`, `SEED_ARTISTS`, `SEED_TRACKS`)                           | F2-S02 | `src/db/seed/`                        |
-| R04: `GET /api/v1/artists` (lista paginada com busca e `trackCount`)                                   | F2-S03 | `src/modules/artists/`                |
-| R05: `GET /api/v1/artists/:id` (detalhe do artista com faixas `title ASC`)                             | F2-S03 | `src/modules/artists/`                |
-| R06: `GET /api/v1/tracks` (lista paginada com busca e filtros)                                         | F2-S04 | `src/modules/tracks/`                 |
-| R07: `GET /api/v1/tracks/:id` (detalhe da faixa com `artist` embutido)                                 | F2-S04 | `src/modules/tracks/`                 |
-| R08: `GET /api/v1/genres` (lista agregada dos 6 gêneros com `trackCount`)                              | F2-S04 | `src/modules/tracks/`                 |
-| R09: `POST /api/auth/sign-up/email` (cadastro com e-mail/senha, bearer token e cookie)                 | F3-S01 | `src/modules/auth/`                   |
-| R10: `POST /api/auth/sign-in/email` (autenticação por e-mail/senha)                                    | F3-S01 | `src/modules/auth/`                   |
-| R11: `POST /api/auth/sign-out` (invalidação de sessão)                                                 | F3-S01 | `src/modules/auth/`                   |
-| R12: `GET /api/auth/get-session` (resolução de sessão ativa por bearer token ou cookie)                | F3-S01 | `src/modules/auth/`                   |
-| Decorators `request.user` / `request.session` e guard `fastify.requireAuth`                            | F3-S01 | `src/modules/auth/auth.plugin.ts`     |
-| Helper E2E `signUpAndGetToken` (registro de usuário e extração de Bearer token)                        | F3-S01 | `tests/e2e/helpers/auth.ts`           |
-| Migração `0001_early_blazing_skull.sql` (adição de `account.issuer` para Better Auth v1.7.2)           | F3-S01 | `drizzle/`                            |
-| R13: `GET /api/v1/me` (perfil do usuário autenticado com 5 chaves estritas)                            | F3-S02 | `src/modules/users/`                  |
-| R14: `PATCH /api/v1/me` (atualização de nome/avatar com rejeição de corpo vazio)                       | F3-S02 | `src/modules/users/`                  |
-| R15: `DELETE /api/v1/me` (exclusão transacional da conta com expurgo em cascata)                       | F3-S02 | `src/modules/users/`                  |
-| R26: `POST /api/auth/sign-in/social` (início de fluxo OAuth com Google, GitHub ou Facebook)            | F3-S03 | `src/modules/auth/`                   |
-| R27: `GET /api/auth/callback/:provider` (retorno do provedor OAuth com geração de sessão/tokens)       | F3-S03 | `src/modules/auth/`                   |
-| R28: `POST /api/auth/send-verification-email` (disparo idempotente de e-mail de verificação)           | F3-S03 | `src/modules/auth/`                   |
-| R29: `GET /api/auth/verify-email` (consumo de token descartável e marcação de titularidade de e-mail)  | F3-S03 | `src/modules/auth/`                   |
-| R30: `POST /api/auth/forget-password` (solicitação segura de link de recuperação de senha)             | F3-S03 | `src/modules/auth/`                   |
-| R31: `POST /api/auth/reset-password` (redefinição de senha com token temporário descartável)           | F3-S03 | `src/modules/auth/`                   |
-| Mailer e Templates (`memoryMailer`, `resendMailer`, `verificationEmail`, `resetPasswordEmail`)         | F3-S03 | `src/shared/email/`                   |
-| R16: `POST /api/v1/playlists` (criação de playlist privada com limite de 50)                           | F4-S01 | `src/modules/playlists/`              |
-| R17: `GET /api/v1/playlists` (listagem paginada de playlists do usuário com `trackCount`)              | F4-S01 | `src/modules/playlists/`              |
-| R18: `GET /api/v1/playlists/:id` (detalhe da playlist com faixas `addedAt ASC`, isolamento por WHERE)  | F4-S01 | `src/modules/playlists/`              |
-| R19: `PATCH /api/v1/playlists/:id` (atualização de nome/descrição, rejeita corpo vazio)                | F4-S01 | `src/modules/playlists/`              |
-| R20: `DELETE /api/v1/playlists/:id` (exclusão transacional com expurgo em cascata)                     | F4-S01 | `src/modules/playlists/`              |
-| R21: `POST /api/v1/playlists/:id/tracks` (adição idempotente com limite de 500 faixas)                 | F4-S01 | `src/modules/playlists/`              |
-| R22: `DELETE /api/v1/playlists/:id/tracks/:trackId` (remoção de faixa da playlist)                     | F4-S01 | `src/modules/playlists/`              |
-| R23: `GET /api/v1/favorites` (listagem paginada de favoritos ordenados por `favoritedAt DESC`)         | F4-S02 | `src/modules/favorites/`              |
-| R24: `POST /api/v1/favorites/:trackId` (adição aos favoritos com `FavoriteItem` e 409 em duplicidade)  | F4-S02 | `src/modules/favorites/`              |
-| R25: `DELETE /api/v1/favorites/:trackId` (remoção de favorito com isolamento por usuário no WHERE)     | F4-S02 | `src/modules/favorites/`              |
-| Suíte E2E Completa (E1–E15: auth, catálogo, playlists, favoritos e lifecycle)                          | F4-S03 | `tests/e2e/specs/`                    |
-| Helper E2E `buildTestApp()` com container singleton efêmero (D-48)                                     | F4-S03 | `tests/e2e/helpers/app.ts`            |
-| Contrato OpenAPI 3.0.3 versionado (`docs/openapi.json`) e verificação no CI (D-21)                     | F5-S01 | `scripts/export-openapi.ts`           |
-| Suíte de conformidade de contrato OpenAPI (T1–T12)                                                     | F5-S01 | `tests/integration/openapi.test.ts`   |
+| Rota / Símbolo                                                                                         | Sprint | Arquivo                                 |
+| ------------------------------------------------------------------------------------------------------ | ------ | --------------------------------------- |
+| Pagination (`toOffset`, `buildPaginationMeta`)                                                         | F1-S02 | `src/shared/utils/pagination.ts`        |
+| `env`, `parseEnv`, `isProduction`, `isTest`, `isDevelopment`                                           | F1-S03 | `src/config/env.ts`                     |
+| `APP_NAME`, `API_PREFIX`, `AUTH_PREFIX`, `GENRES`, limites                                             | F1-S03 | `src/config/constants.ts`               |
+| Pipeline CI (`ci`), PR template, rulesets `main`/`develop`                                             | F1-S04 | `.github/workflows/ci.yml`              |
+| `AppError`, `NotFoundError`, `UnauthorizedError`, `ForbiddenError`, `ConflictError`, `ValidationError` | F1-S05 | `src/shared/errors/`                    |
+| `errorHandlerPlugin` (envelope RFC 7807, 404 handler)                                                  | F1-S05 | `src/plugins/error-handler.plugin.ts`   |
+| `buildApp()` (factory pura Fastify, Zod type provider, Pino)                                           | F1-S05 | `src/app.ts`                            |
+| Bootstrap do servidor e graceful shutdown                                                              | F1-S05 | `src/server.ts`                         |
+| R01: `GET /health` (Liveness, não toca no banco)                                                       | F1-S06 | `src/plugins/health.plugin.ts`          |
+| R02: `GET /health/ready` (Readiness, faz `SELECT 1`)                                                   | F1-S06 | `src/plugins/health.plugin.ts`          |
+| R03: `GET /docs`, `GET /docs/json` (OpenAPI 3.0.3 + Swagger UI)                                        | F1-S06 | `src/plugins/swagger.plugin.ts`         |
+| Cliente Drizzle e Pool Postgres (`pool`, `db`, `checkDatabase`, `setPool`)                             | F1-S06 | `src/db/client.ts`                      |
+| Plugins de borda e defesa (`helmet`, `cors`, `rate-limit`, `under-pressure`)                           | F1-S06 | `src/plugins/`                          |
+| Schemas Drizzle (9 tabelas: `user`, `session`, `account`, `verification`, `artists`, `tracks`, etc.)   | F2-S01 | `src/db/schema/*.schema.ts`             |
+| Relações Drizzle ORM (5 relations para `db.query.*` com `with`)                                        | F2-S01 | `src/db/schema/index.ts`                |
+| Migração inicial (`0000_*.sql` com `pg_trgm` e 3 índices GIN)                                          | F2-S01 | `drizzle/`                              |
+| Runner de migração de produção (`runMigrations()`)                                                     | F2-S01 | `src/db/migrate.ts`                     |
+| Harness de integração Testcontainers (`startTestDatabase`, `truncateAll`)                              | F2-S02 | `tests/setup/testcontainers.ts`         |
+| Seed idempotente do catálogo musical (`seed`, `SEED_ARTISTS`, `SEED_TRACKS`)                           | F2-S02 | `src/db/seed/`                          |
+| R04: `GET /api/v1/artists` (lista paginada com busca e `trackCount`)                                   | F2-S03 | `src/modules/artists/`                  |
+| R05: `GET /api/v1/artists/:id` (detalhe do artista com faixas `title ASC`)                             | F2-S03 | `src/modules/artists/`                  |
+| R06: `GET /api/v1/tracks` (lista paginada com busca e filtros)                                         | F2-S04 | `src/modules/tracks/`                   |
+| R07: `GET /api/v1/tracks/:id` (detalhe da faixa com `artist` embutido)                                 | F2-S04 | `src/modules/tracks/`                   |
+| R08: `GET /api/v1/genres` (lista agregada dos 6 gêneros com `trackCount`)                              | F2-S04 | `src/modules/tracks/`                   |
+| R09: `POST /api/auth/sign-up/email` (cadastro com e-mail/senha, bearer token e cookie)                 | F3-S01 | `src/modules/auth/`                     |
+| R10: `POST /api/auth/sign-in/email` (autenticação por e-mail/senha)                                    | F3-S01 | `src/modules/auth/`                     |
+| R11: `POST /api/auth/sign-out` (invalidação de sessão)                                                 | F3-S01 | `src/modules/auth/`                     |
+| R12: `GET /api/auth/get-session` (resolução de sessão ativa por bearer token ou cookie)                | F3-S01 | `src/modules/auth/`                     |
+| Decorators `request.user` / `request.session` e guard `fastify.requireAuth`                            | F3-S01 | `src/modules/auth/auth.plugin.ts`       |
+| Helper E2E `signUpAndGetToken` (registro de usuário e extração de Bearer token)                        | F3-S01 | `tests/e2e/helpers/auth.ts`             |
+| Migração `0001_early_blazing_skull.sql` (adição de `account.issuer` para Better Auth v1.7.2)           | F3-S01 | `drizzle/`                              |
+| R13: `GET /api/v1/me` (perfil do usuário autenticado com 5 chaves estritas)                            | F3-S02 | `src/modules/users/`                    |
+| R14: `PATCH /api/v1/me` (atualização de nome/avatar com rejeição de corpo vazio)                       | F3-S02 | `src/modules/users/`                    |
+| R15: `DELETE /api/v1/me` (exclusão transacional da conta com expurgo em cascata)                       | F3-S02 | `src/modules/users/`                    |
+| R26: `POST /api/auth/sign-in/social` (início de fluxo OAuth com Google, GitHub ou Facebook)            | F3-S03 | `src/modules/auth/`                     |
+| R27: `GET /api/auth/callback/:provider` (retorno do provedor OAuth com geração de sessão/tokens)       | F3-S03 | `src/modules/auth/`                     |
+| R28: `POST /api/auth/send-verification-email` (disparo idempotente de e-mail de verificação)           | F3-S03 | `src/modules/auth/`                     |
+| R29: `GET /api/auth/verify-email` (consumo de token descartável e marcação de titularidade de e-mail)  | F3-S03 | `src/modules/auth/`                     |
+| R30: `POST /api/auth/forget-password` (solicitação segura de link de recuperação de senha)             | F3-S03 | `src/modules/auth/`                     |
+| R31: `POST /api/auth/reset-password` (redefinição de senha com token temporário descartável)           | F3-S03 | `src/modules/auth/`                     |
+| Mailer e Templates (`memoryMailer`, `resendMailer`, `verificationEmail`, `resetPasswordEmail`)         | F3-S03 | `src/shared/email/`                     |
+| R16: `POST /api/v1/playlists` (criação de playlist privada com limite de 50)                           | F4-S01 | `src/modules/playlists/`                |
+| R17: `GET /api/v1/playlists` (listagem paginada de playlists do usuário com `trackCount`)              | F4-S01 | `src/modules/playlists/`                |
+| R18: `GET /api/v1/playlists/:id` (detalhe da playlist com faixas `addedAt ASC`, isolamento por WHERE)  | F4-S01 | `src/modules/playlists/`                |
+| R19: `PATCH /api/v1/playlists/:id` (atualização de nome/descrição, rejeita corpo vazio)                | F4-S01 | `src/modules/playlists/`                |
+| R20: `DELETE /api/v1/playlists/:id` (exclusão transacional com expurgo em cascata)                     | F4-S01 | `src/modules/playlists/`                |
+| R21: `POST /api/v1/playlists/:id/tracks` (adição idempotente com limite de 500 faixas)                 | F4-S01 | `src/modules/playlists/`                |
+| R22: `DELETE /api/v1/playlists/:id/tracks/:trackId` (remoção de faixa da playlist)                     | F4-S01 | `src/modules/playlists/`                |
+| R23: `GET /api/v1/favorites` (listagem paginada de favoritos ordenados por `favoritedAt DESC`)         | F4-S02 | `src/modules/favorites/`                |
+| R24: `POST /api/v1/favorites/:trackId` (adição aos favoritos com `FavoriteItem` e 409 em duplicidade)  | F4-S02 | `src/modules/favorites/`                |
+| R25: `DELETE /api/v1/favorites/:trackId` (remoção de favorito com isolamento por usuário no WHERE)     | F4-S02 | `src/modules/favorites/`                |
+| Suíte E2E Completa (E1–E15: auth, catálogo, playlists, favoritos e lifecycle)                          | F4-S03 | `tests/e2e/specs/`                      |
+| Helper E2E `buildTestApp()` com container singleton efêmero (D-48)                                     | F4-S03 | `tests/e2e/helpers/app.ts`              |
+| Contrato OpenAPI 3.0.3 versionado (`docs/openapi.json`) e verificação no CI (D-21)                     | F5-S01 | `scripts/export-openapi.ts`             |
+| Suíte de conformidade de contrato OpenAPI (T1–T12)                                                     | F5-S01 | `tests/integration/openapi.test.ts`     |
+| Predicado `buildTrustProxy` e utilitário `isTrustedProxy` com memo de BlockList (D-60)                 | F5-S02 | `src/shared/utils/client-ip.ts`         |
+| Regras de rate limit de autenticação em 8 endpoints (`AUTH_RATE_LIMIT_RULES`) (GAP-05/06)              | F5-S02 | `src/modules/auth/auth.config.ts`       |
+| Utilitário de sanitização e truncagem de Request ID `resolveRequestId` (GAP-27)                        | F5-S02 | `src/shared/utils/request-id.ts`        |
+| Suíte de testes unitários e de integração de borda e rate limit (T1–T40)                               | F5-S02 | `tests/unit/**`, `tests/integration/**` |
 
 ---
 
 ## Bloqueios e pendências
 
-| #      | Item                                                                            | Bloqueia                      | Quem resolve                                                                                     |
-| ------ | ------------------------------------------------------------------------------- | ----------------------------- | ------------------------------------------------------------------------------------------------ |
-| ~~B1~~ | ~~`gh` CLI não instalado~~                                                      | —                             | ✅ **resolvido 2026-09-03** — `gh` 2.46.0, autenticado como `Cardosofiles`, protocolo SSH (D-33) |
-| ~~B4~~ | ~~`pnpm install` abortando com `ERR_PNPM_IGNORED_BUILDS`~~                      | —                             | ✅ **resolvido 2026-09-03** — `allowBuilds` preenchido (D-32)                                    |
-| ~~B2~~ | ~~`.env` vazio, sem `DATABASE_URL`~~                                            | —                             | ✅ **resolvido 2026-09-04** em F1-S03 (`.env.example`, validação Zod e docker compose)           |
-| ~~B3~~ | ~~`AGENTS.md` e `README.md` contradizem D-01/D-03/D-09/D-10/D-16~~              | —                             | ✅ **resolvido 2026-09-03** em F1-S01                                                            |
-| B5     | Token do `gh` sem escopo `workflow`                                             | possivelmente F1-S04 e F5-S08 | **Você**, só se um push de workflow for recusado: `gh auth refresh -h github.com -s workflow`    |
-| ~~P1~~ | ~~Exigir status check obrigatório `ci` nos rulesets~~                           | —                             | ✅ **resolvido 2026-09-04** em F1-S04 (rulesets `protection-develop` e `protection-main`)        |
-| P2     | **27 GAPs de segurança abertos** (`docs/issue/AUTHENTICATION.md`) — 1 crítico   | F5-S08 (deploy), por D-49     | **Agentes**, em F5-S02 … F5-S07. Spec normativa: `docs/specs/08-blindagem-de-seguranca.md`       |
-| P3     | CIDRs reais da borda da Railway para `TRUSTED_PROXIES` (D-50)                   | boot em produção              | **Você**, ao configurar as Railway Variables em F5-S08. F5-S02 já valida a ausência no boot      |
-| P4     | Produção restrita a **réplica única** até `RATE_LIMIT_REDIS_URL` existir (D-55) | escalar horizontalmente       | **Você**, quando houver necessidade. F5-S08 fixa `replicas: 1` e registra no runbook             |
+| #      | Item                                                                                                                                                              | Bloqueia                      | Quem resolve                                                                                     |
+| ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------- | ------------------------------------------------------------------------------------------------ |
+| ~~B1~~ | ~~`gh` CLI não instalado~~                                                                                                                                        | —                             | ✅ **resolvido 2026-09-03** — `gh` 2.46.0, autenticado como `Cardosofiles`, protocolo SSH (D-33) |
+| ~~B4~~ | ~~`pnpm install` abortando com `ERR_PNPM_IGNORED_BUILDS`~~                                                                                                        | —                             | ✅ **resolvido 2026-09-03** — `allowBuilds` preenchido (D-32)                                    |
+| ~~B2~~ | ~~`.env` vazio, sem `DATABASE_URL`~~                                                                                                                              | —                             | ✅ **resolvido 2026-09-04** em F1-S03 (`.env.example`, validação Zod e docker compose)           |
+| ~~B3~~ | ~~`AGENTS.md` e `README.md` contradizem D-01/D-03/D-09/D-10/D-16~~                                                                                                | —                             | ✅ **resolvido 2026-09-03** em F1-S01                                                            |
+| B5     | Token do `gh` sem escopo `workflow`                                                                                                                               | possivelmente F1-S04 e F5-S08 | **Você**, só se um push de workflow for recusado: `gh auth refresh -h github.com -s workflow`    |
+| ~~P1~~ | ~~Exigir status check obrigatório `ci` nos rulesets~~                                                                                                             | —                             | ✅ **resolvido 2026-09-04** em F1-S04 (rulesets `protection-develop` e `protection-main`)        |
+| P2     | **27 GAPs de segurança abertos** (`docs/issue/AUTHENTICATION.md`) — 1 crítico                                                                                     | F5-S08 (deploy), por D-49     | **Agentes**, em F5-S02 … F5-S07. Spec normativa: `docs/specs/08-blindagem-de-seguranca.md`       |
+| P3     | CIDRs reais da borda da Railway para `TRUSTED_PROXIES` (D-50)                                                                                                     | boot em produção              | **Você**, ao configurar as Railway Variables em F5-S08. F5-S02 já valida a ausência no boot      |
+| P4     | Produção restrita a **réplica única** até `RATE_LIMIT_REDIS_URL` existir (D-55)                                                                                   | escalar horizontalmente       | **Você**, quando houver necessidade. F5-S08 fixa `replicas: 1` e registra no runbook             |
+| P5     | `tsup` corrigido para emitir a árvore completa (`entry: ['src/**/*.ts']`) — o artefato de produção não iniciava; consequência do D-35 estava violada desde F1-S02 | —                             | ✅ **resolvido 2026-09-09** em F5-S02                                                            |
 
 ---
 

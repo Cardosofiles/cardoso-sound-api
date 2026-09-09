@@ -4,9 +4,8 @@ import {
   validatorCompiler,
   type ZodTypeProvider,
 } from 'fastify-type-provider-zod';
-import { resolveRequestId } from './shared/utils/request-id.js';
-import { env } from './config/env.js';
 import { API_PREFIX } from './config/constants.js';
+import { env } from './config/env.js';
 import { artistsRoutes } from './modules/artists/artists.routes.js';
 import { authPlugin } from './modules/auth/auth.plugin.js';
 import { favoritesRoutes } from './modules/favorites/favorites.routes.js';
@@ -20,13 +19,12 @@ import { helmetPlugin } from './plugins/helmet.plugin.js';
 import { rateLimitPlugin } from './plugins/rate-limit.plugin.js';
 import { swaggerPlugin } from './plugins/swagger.plugin.js';
 import { underPressurePlugin } from './plugins/under-pressure.plugin.js';
+import { buildTrustProxy } from './shared/utils/client-ip.js';
+import { resolveRequestId } from './shared/utils/request-id.js';
 
 export async function buildApp(): Promise<FastifyInstance> {
   const app = Fastify({
-    trustProxy:
-      env.TRUST_PROXY_HOPS > 0
-        ? (_address: string, hop: number) => hop < env.TRUST_PROXY_HOPS
-        : false,
+    trustProxy: buildTrustProxy(env),
     logger: {
       level: env.LOG_LEVEL,
       transport:
