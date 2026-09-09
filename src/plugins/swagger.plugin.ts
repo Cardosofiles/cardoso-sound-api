@@ -15,40 +15,29 @@ export const swaggerPlugin = fp(
         openapi: '3.0.3',
         info: {
           title: APP_NAME,
-          description:
-            pkg.description ||
-            'API RESTful para catálogo e streaming do Cardoso Sound construída com Fastify, PostgreSQL e TypeScript.',
           version: pkg.version,
+          description:
+            'API de catálogo musical para o app Flutter. ' +
+            'As rotas de autenticação (/api/auth/*) são gerenciadas pelo Better Auth com suporte simultâneo a Bearer Token e Cookie HttpOnly.',
         },
+        servers: [{ url: 'http://localhost:3333', description: 'Local' }],
         tags: [
-          {
-            name: 'Health',
-            description: 'Monitoramento de liveness e readiness da aplicação e banco de dados',
-          },
-          {
-            name: 'Auth',
-            description: 'Autenticação, sessões e credenciais de usuários (Better Auth)',
-          },
-          {
-            name: 'Catalog',
-            description: 'Catálogo musical público com artistas, faixas e gêneros',
-          },
-          { name: 'Profile', description: 'Gerenciamento do perfil do usuário autenticado' },
-          { name: 'Library', description: 'Playlists particulares e faixas favoritas do usuário' },
+          { name: 'Health', description: 'Liveness e readiness' },
+          { name: 'Auth', description: 'Cadastro, login e sessão' },
+          { name: 'Catalog', description: 'Faixas, artistas e gêneros (público)' },
+          { name: 'Profile', description: 'Perfil do usuário autenticado' },
+          { name: 'Library', description: 'Playlists e favoritos' },
         ],
         components: {
           securitySchemes: {
             bearerAuth: {
               type: 'http',
               scheme: 'bearer',
-              bearerFormat: 'JWT',
-              description: 'Bearer token gerado pelo Better Auth (usado pelo aplicativo Flutter)',
             },
             cookieAuth: {
               type: 'apiKey',
               in: 'cookie',
               name: 'better-auth.session_token',
-              description: 'Cookie de sessão httpOnly do Better Auth (usado pelo Swagger UI)',
             },
           },
         },

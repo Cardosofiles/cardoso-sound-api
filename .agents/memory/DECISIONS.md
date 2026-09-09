@@ -463,3 +463,242 @@
   Implementar a estratégia de Container Singleton em `tests/e2e/helpers/app.ts`. Respaldado pela decisão D-36 (`singleFork: true` para o project `e2e` no Vitest), o container PostgreSQL 17 sobe uma única vez para toda a suíte E2E no primeiro teste que invocar `buildTestApp()`. O pool de conexões é sincronizado transparentemente via `setPool(sharedTestDb.pool)` e `process.env.DATABASE_URL = sharedTestDb.connectionString`. O isolamento estrito entre testes é garantido compulsoriamente por `truncateAll(db)` seguido de `seed(db)` no `beforeEach` de cada spec.
 - **Consequência:**
   A suíte E2E executa os 5 arquivos de fluxo em ~20-28s (metade do teto de 45s), preserva o blast radius estritamente fechado, garante determinismo total inclusive sob `--sequence.shuffle` e dispensa qualquer refatoração em `src/db/client.ts`.
+
+### D-49 · Blindagem de segurança precede o deploy: Fase 5 renumerada para 9 sprints
+
+- **Data:** 2026-09-09 · **Sprint:** — (decisão do Staff) · **Status:** vigente
+- **Contexto:** a auditoria de `docs/issue/AUTHENTICATION.md` levantou 27 GAPs, um deles crítico
+  (`rate-limit.plugin.ts:8` desliga o rate limit global exatamente em produção) e outro que torna o
+  rate limit de autenticação inoperante em qualquer topologia (`X-Forwarded-For` sem
+  `trustedProxies`). O roadmap original punha `F5-S02 · Deploy na Railway` antes de qualquer
+  correção — ou seja, colocaria no ar uma aplicação com negação de serviço e bypass de rate limit
+  conhecidos e documentados.
+- **Opções consideradas:** (a) manter a numeração e executar as sprints de segurança fora de ordem;
+  (b) criar uma fase F6 depois da `v1.0.0`; (c) renumerar a Fase 5 inserindo a blindagem entre o
+  OpenAPI e o deploy.
+- **Decisão:** opção (c). A Fase 5 passa a ter **9 sprints**: `F5-S01` (OpenAPI, inalterado),
+  `F5-S02`…`F5-S07` (blindagem, novos), `F5-S08` (deploy, era `F5-S02`) e `F5-S09` (hardening e
+  release `v1.0.0`, era `F5-S03`). O número do sprint volta a ser igual à ordem de execução, que é
+  o que `PROGRESS.md` promete a quem abre a sessão.
+- **Consequência:** `docs/sprints/fase-5-producao/F5-S02-deploy-railway.md` e
+  `F5-S03-hardening-e-release.md` são renomeados para `F5-S08-*` e `F5-S09-*`, com os campos
+  **Depende de**, o nome da branch e o caminho no prompt de abertura atualizados. O projeto passa
+  de 19 para **25 sprints**. Nenhuma `v1.0.0` sai com GAP aberto: a §7 da spec `04` e o checklist
+  ampliado da spec `08` §9 são o portão de F5-S09.
+
+### D-50 · Confiança em proxy declarada por contagem de hops e CIDR, nunca por `true`
+
+- **Data:** 2026-09-09 · **Sprint:** F5-S02 · **Status:** vigente
+- **Contexto:** o Fastify não tem `trustProxy` (GAP-10), então `req.ip` devolve o IP do balanceador
+  da Railway para todos os clientes; e o Better Auth resolve a chave de rate limit a partir de
+  `X-Forwarded-For` sem `advanced.ipAddress.trustedProxies` (GAP-04), o que permite forjar o IP e
+  contornar todos os limites de autenticação. `trustProxy: true` trocaria um problema por outro:
+  o Fastify passaria a confiar na cadeia inteira, e o cliente voltaria a poder forjar o IP.
+- **Decisão:** a confiança em proxy é **declarada, nunca inferida**. Duas variáveis novas em
+  `src/config/env.ts`: `TRUST_PROXY_HOPS` (inteiro ≥ 0, default `0` = desligado) alimenta
+  `Fastify({ trustProxy })`, e `TRUSTED_PROXIES` (CSV de CIDRs, default vazio) alimenta
+  `advanced.ipAddress.trustedProxies` do Better Auth. Em `production`, ambas são **obrigatórias e
+  não vazias** — o boot falha com `process.exit(1)` se faltarem.
+- **Consequência:** falha fechada e ruidosa. Um deploy sem a topologia declarada não sobe, em vez
+  de subir com rate limit desarmado. Fora de produção o default `0` / vazio preserva o
+  comportamento atual e não afeta a suíte. F5-S08 é responsável por preencher os valores reais da
+  Railway nas Railway Variables.
+
+### D-51 · Verificação de e-mail passa a ser obrigatória — D-46 (a) revogada
+
+- **Data:** 2026-09-09 · **Sprint:** F5-S03 · **Status:** vigente · **revoga D-46 (a)**
+- **Contexto:** D-46 (a) fixou `requireEmailVerification: false` com uma justificativa de
+  conveniência de teste: `true` quebraria o helper `signUpAndGetToken`. A auditoria mostrou o preço
+  disso em dois GAPs distintos: (i) GAP-14 — qualquer pessoa se cadastra com o e-mail de um
+  terceiro, recebe sessão de 7 dias e, pelo `user_email_unique`, **impede o dono real de se
+  cadastrar**; (ii) GAP-08 — o Better Auth só emite a resposta genérica de duplicidade quando
+  `requireEmailVerification` **ou** `autoSignIn: false` está ativo
+  (`dist/api/routes/sign-up.mjs:163`), então hoje `POST /sign-up/email` é um oráculo de enumeração
+  de contas: 422 significa cadastrado, 200 significa novo.
+- **Opções consideradas:** (a) `autoSignIn: false` — resolve só a enumeração e muda o contrato de
+  R09, que hoje devolve bearer no cadastro; (b) `requireEmailVerification: true` — resolve os dois
+  GAPs e preserva R09; (c) manter e aceitar o risco.
+- **Decisão:** opção (b). `requireEmailVerification: true`. A justificativa de D-46 (a) não se
+  sustenta: o transporte de memória expõe o link em `outbox`, então o helper passa a fazer
+  `sign-up` → ler o `outbox` → `GET /verify-email` → `sign-in`, de forma determinística e sem rede.
+  É trabalho mecânico num helper, contra dois vetores de abuso permanentes em produção.
+- **Consequência:** `tests/e2e/helpers/auth.ts` e todo teste que cadastra usuário são reescritos em
+  F5-S03; os casos T6 e T8 de F3 mudam de expectativa e são reescritos no mesmo PR. A spec `04`
+  §1.2 é substituída pela spec `08` §4. `POST /sign-in/email` passa a responder 403 enquanto o
+  e-mail não for verificado — isso é contrato novo e vai para a spec `03` §5 em F5-S09.
+
+### D-52 · Reset de senha revoga todas as sessões — D-46 (e) revogada
+
+- **Data:** 2026-09-09 · **Sprint:** F5-S03 · **Status:** vigente · **revoga D-46 (e)**
+- **Contexto:** D-46 (e) apenas **registrou** que, sem `revokeSessionsOnPasswordReset: true`, as
+  sessões anteriores sobrevivem ao reset — comportamento verificado no caso T20, que hoje o
+  **afirma como esperado**. Na prática isso significa que o fluxo de recuperação de conta não
+  recupera a conta: um atacante com cookie ou bearer roubado mantém acesso total por até 7 dias
+  depois de a vítima trocar a senha, inclusive ao `DELETE /api/v1/me`.
+- **Decisão:** `emailAndPassword.revokeSessionsOnPasswordReset: true`. Registrar um comportamento
+  não é aceitá-lo; D-46 (e) descrevia o default da lib, não uma escolha do projeto.
+- **Consequência:** T20 é reescrito em F5-S03 com a expectativa invertida — o bearer anterior ao
+  reset passa a responder 401. A chave de configuração é `revokeSessionsOnPasswordReset`;
+  `revokeOtherSessions` é parâmetro do corpo de `POST /change-password` e **não** existe como opção
+  de `emailAndPassword` — escrevê-la ali é no-op silencioso.
+
+### D-53 · Two Factor obrigatório na oferta: TOTP, OTP por e-mail e backup codes
+
+- **Data:** 2026-09-09 · **Sprint:** F5-S05 · **Status:** vigente
+- **Contexto:** GAP-02. O plugin `twoFactor` vive em `better-auth/plugins`, pacote já instalado —
+  não há dependência nova. Além dos nove endpoints, o plugin traz o **bloqueio de conta nativo**
+  (contador compartilhado entre TOTP, OTP e backup codes que devolve
+  `429 ACCOUNT_TEMPORARILY_LOCKED`), que é hoje a única defesa por conta que o projeto não tem —
+  o rate limit é por IP e, antes de F5-S02, contornável.
+- **Decisão:** habilitar `twoFactor({ issuer: 'Cardoso Sound', skipVerificationOnEnable: false,
+totpOptions: { digits: 6, period: 30, backupCodes: { count: 10 } }, otpOptions: { digits: 6,
+period: 10, sendOTP } })`. O 2FA é **opcional por usuário** (`user.twoFactorEnabled`), nunca
+  imposto no cadastro. `trustDevice` fica **desligado** no MVP: 30 dias de isenção por dispositivo
+  é superfície que não temos como revogar sem uma tela de gestão de dispositivos.
+- **Consequência:** schema ganha `user.two_factor_enabled` e a tabela `two_factor`; o template
+  `twoFactorOtpEmail` entra em `src/shared/email/templates.ts`; `POST /sign-in/email` passa a
+  poder devolver `{ twoFactorRedirect: true }` em vez de sessão, o que é contrato novo para o
+  cliente Flutter.
+
+### D-54 · Passkey com `@better-auth/passkey`; `rpID` derivado de `BETTER_AUTH_URL`
+
+- **Data:** 2026-09-09 · **Sprint:** F5-S06 · **Status:** vigente
+- **Contexto:** GAP-03. Diferente do 2FA, o Passkey exige **dependência nova de produção**
+  (`@better-auth/passkey`), o que por política precisa de ADR antes do sprint.
+- **Decisão:** aprovar `@better-auth/passkey`. `rpID`, `rpName` e `origin` são **derivados de
+  `BETTER_AUTH_URL`**, nunca variáveis próprias: `rpID = new URL(env.BETTER_AUTH_URL).hostname` e
+  `origin = env.BETTER_AUTH_URL` sem barra final. `registration.requireSession: true` — o MVP não
+  tem fluxo passkey-first, e `false` exigiria um `resolveUser` que identifica usuário sem sessão,
+  superfície que não precisamos abrir.
+- **Consequência:** duas fontes de verdade para o domínio (`BETTER_AUTH_URL` e `rpID`) tornam-se
+  uma só, o que elimina a classe de bug em que o passkey registrado em `localhost` não valida em
+  produção. A tabela `passkey` exige `UNIQUE(credential_id)` — sem ela o mesmo credential WebAuthn
+  pode ser registrado sob dois usuários e a resolução de identidade no `sign-in` fica ambígua — e a
+  coluna `aaguid`, consumida por `registration.afterVerification`.
+
+### D-55 · Rate limit: `storage: 'database'` no Better Auth, Redis opcional por env no Fastify, chave por IP
+
+- **Data:** 2026-09-09 · **Sprint:** F5-S07 · **Status:** vigente
+- **Contexto:** três problemas relacionados. GAP-12: os dois limitadores contam em memória, então
+  com `k` réplicas o limite efetivo é `k × max`. GAP-11: o `keyGenerator` lê `req.user?.id` num
+  hook que roda **antes** do hook que popula `request.user`, então o ramo é código morto e o cast
+  `as unknown as` esconde isso do type checker. A correção óbvia — registrar o rate limit depois do
+  auth — é errada duas vezes: tiraria do teto a própria rota coringa `/api/auth/*`, registrada
+  dentro do `authPlugin`, e daria a um atacante com N contas N × a cota.
+- **Decisão:** (i) `rateLimit.storage: 'database'` no Better Auth, reaproveitando o PostgreSQL —
+  nenhum serviço novo, custo de reversão mínimo; exige a tabela `rate_limit` no schema Drizzle.
+  (ii) O `@fastify/rate-limit` continua **antes** do `authPlugin` e a ordem de registro do
+  `buildApp()` **não muda**; o ramo morto é removido e a chave passa a ser explicitamente o IP,
+  opcionalmente combinada com um hash estável do token de sessão presente no header ou no cookie,
+  que está disponível no `onRequest` sem nenhum acesso ao banco. (iii) Armazenamento compartilhado
+  do limitador Fastify vira configuração, não código: `RATE_LIMIT_REDIS_URL` presente liga o store
+  Redis; ausente mantém o contador local.
+- **Consequência:** escalar horizontalmente passa a ser uma variável de ambiente. Enquanto
+  `RATE_LIMIT_REDIS_URL` não for definida, **produção roda com réplica única** — restrição que
+  F5-S08 registra no runbook de deploy. A forma normativa do `keyGenerator` na spec `04` §4 é
+  substituída pela spec `08` §8.
+
+### D-56 · Swagger UI só fora de produção; `openapi.json` continua artefato versionado
+
+- **Data:** 2026-09-09 · **Sprint:** F5-S02 · **Status:** vigente
+- **Contexto:** GAP-17. `swaggerPlugin` é registrado incondicionalmente, então `/docs` e o spec
+  ficam públicos em produção, entregando o inventário completo de rotas e schemas. Agravante: o
+  `helmet` aplica a CSP padrão em produção (`helmet.plugin.ts:8` passa `undefined`), que bloqueia
+  os scripts inline do próprio Swagger UI — a interface está publicamente montada e provavelmente
+  quebrada.
+- **Opções consideradas:** (a) proteger `/docs` com Basic Auth e liberar a CSP para essa rota;
+  (b) registrar o Swagger UI apenas fora de produção.
+- **Decisão:** opção (b). `@fastify/swagger` (geração do spec) continua sempre registrado — é dele
+  que `scripts/export-openapi.ts` depende (D-21). Só o `@fastify/swagger-ui` passa a ser
+  condicional. Basic Auth adicionaria uma segunda forma de autenticação na API para servir
+  documentação que já é pública no repositório como `docs/openapi.json`.
+- **Consequência:** o contrato continua publicado, versionado e verificado no CI, sem superfície
+  em produção e sem a exceção de CSP. `scripts/export-openapi.ts` precisa rodar com
+  `NODE_ENV !== 'production'`, o que já é o caso em CI e em desenvolvimento.
+
+### D-57 · Um único logger na aplicação; o mailer não instancia Pino próprio
+
+- **Data:** 2026-09-09 · **Sprint:** F5-S03 · **Status:** vigente
+- **Contexto:** GAP-15. `src/shared/email/mailer.ts:5-13` cria uma **segunda instância Pino sem
+  `redact`**, fora do alcance de D-22, e em seguida extrai o `href` do corpo do e-mail e o registra
+  em log. Num e-mail de reset, essa URL é o token válido por uma hora. O caminho do Resend loga o
+  endereço do destinatário e o objeto de erro cru do provedor em `warn`, em produção.
+- **Decisão:** a aplicação tem **um** logger, o do `buildApp()`. O mailer recebe um `Logger`
+  injetado e, quando nenhum é fornecido (uso fora de requisição), usa uma instância que aplica
+  **os mesmos `redact.paths` de D-22 acrescidos de `*.url`, `url` e `to`**. O transporte de memória
+  pode continuar logando o link em `development` — é como se pega o token em dev — mas nunca em
+  `test` nem em `production`, e nunca pelo transporte Resend.
+- **Consequência:** D-22 deixa de ser uma propriedade do `app.ts` e passa a ser uma propriedade do
+  projeto: qualquer módulo que precise logar usa o logger da aplicação. Um `pino()` novo em `src/**`
+  passa a ser achado de auditoria na spec `08` §9.
+
+### D-58 · Vínculo de contas sociais: e-mails diferentes permitidos, Facebook fora de `trustedProviders`, `freshAge` explícito
+
+- **Data:** 2026-09-09 · **Sprint:** F5-S10 · **Status:** vigente
+- **Contexto:** a rota coringa de `auth.plugin.ts:33-38` monta o handler inteiro do Better Auth, de
+  modo que `GET /list-accounts`, `POST /link-social` e `POST /unlink-account` **já respondem** —
+  sem estar no contrato da spec `03`, sem teste, sem sprint. Superfície não documentada é
+  superfície não auditada. Quatro regras do runtime 1.7.2 governam essas rotas e nenhuma estava
+  decidida:
+  1. `account.mjs:213` e `callback.mjs:177` recusam vincular provedor cujo e-mail difere do e-mail
+     da conta, a menos que `accountLinking.allowDifferentEmails === true`.
+  2. `account.mjs:209` e `callback.mjs:173` recusam vincular provedor que não está em
+     `trustedProviders` **e** não devolveu `emailVerified: true`.
+  3. `unlinkAccount` (`account.mjs:266`) usa `freshSessionMiddleware`, e o `freshAge` default é
+     86400 s (`create-context.mjs:148`) contra sessão de 7 dias — desvincular no 3º dia responde
+     **403 `SESSION_NOT_FRESH`**.
+  4. `account.mjs:280` recusa desvincular a **última** conta, salvo `allowUnlinkingAll`.
+- **Decisão:**
+  - **(a) `accountLinking.allowDifferentEmails: true`.** Vincular Google/GitHub cujo e-mail
+    primário difere do e-mail de cadastro passa a ser permitido.
+  - **(b) `trustedProviders` continua `['google', 'github']`.** A regra da spec `04` §1.1 —
+    "o Facebook fica fora, mesmo depois do App Review" — **é reafirmada, não revogada**.
+  - **(c) `session.freshAge: 60 * 60 * 24` declarado explicitamente** em `auth.config.ts`, em vez
+    de herdado do default. O valor não muda; o que muda é ele deixar de ser implícito.
+  - **(d) `allowUnlinkingAll` permanece ausente** (default `false`): ninguém fica sem método de
+    login.
+  - **(e) `updateUserInfoOnLink` permanece ausente** (default `false`).
+  - **(f) As três rotas entram no contrato** como R46, R47 e R48 (spec `03` §2 e §5.1).
+- **Consequência:**
+  - **(a) é seguro porque vincular nunca altera identidade.** `applyUpdateUserInfoOnLink`
+    (`link-account.mjs:319-331`) só roda com `updateUserInfoOnLink: true` — que a decisão (e)
+    mantém desligado — e, mesmo ligado, **desestrutura `email` e `emailVerified` para fora** do
+    update. O e-mail da conta é imutável por vínculo. O risco residual é o usuário perder o
+    controle do provedor vinculado (e-mail corporativo devolvido, conta reciclada): quem receber
+    aquela identidade de provedor entra na conta. Mitigação é o próprio `unlink`, que R48 expõe.
+  - **(a) não afeta o caminho implícito.** `allowDifferentEmails` é lido apenas em `/link-social`
+    e no callback com `state.link`. O auto-vínculo do `/sign-in/social` casa por e-mail
+    (`link-account.mjs:63`), então lá os e-mails são iguais por construção.
+  - **(b) significa que vincular Facebook responde `401 LINKING_NOT_ALLOWED` sempre — e isso é
+    contrato, não defeito.** Verificado em `@better-auth/core/dist/social-providers/facebook.mjs`:
+    pelo idToken (Limited Login) a lib fixa `emailVerified: false` (linha 102); pelo access token
+    ela lê `profile.email_verified ?? false` (linha 130), e o `fields` da chamada ao Graph (linha 110) pede apenas `id,name,email,picture` — o campo nunca vem. **O Facebook nunca produz
+    `emailVerified: true` neste stack.** Confiar nele seria aceitar o e-mail sem nenhum sinal de
+    verificação, que é exatamente o sequestro descrito na spec `04` §1.1. O Facebook continua
+    registrado como provedor de sign-in; só não é elegível a vínculo.
+  - **(c) mantém o step-up.** Desvincular método de login é operação sensível e exige sessão com
+    menos de 24 h. O cliente Flutter trata `403 SESSION_NOT_FRESH` reautenticando por
+    `POST /sign-in/email` e repetindo a chamada — contrato em spec `03` §5.1 (R48).
+    O alcance da chave são **duas rotas**: `freshSessionMiddleware` é usado por
+    `/unlink-account` (`account.mjs:266`) e por `/list-sessions` (`session.mjs:343`) — esta
+    segunda responde pela coringa mas não está no contrato. O terceiro consumidor de `freshAge`, o
+    `/delete-user` nativo (`update-user.mjs:335`), não é usado: `DELETE /api/v1/me` (R15) é código
+    próprio do módulo `users`.
+  - **Pré-requisito de banco:** o índice `account_provider_account_unique` de F5-S04 (GAP-16). A
+    decisão de vínculo é read-then-write sem guarda no banco (`link-account.mjs`), e sem o índice
+    dois callbacks concorrentes duplicam a identidade do provedor. **F5-S10 não roda antes de
+    F5-S04.**
+
+### D-59 · Especificação OpenAPI 3.0.3 versionada, servers estáticos e documentação de Better Auth
+
+- **Data:** 2026-09-09 · **Sprint:** F5-S01 · **Status:** vigente
+- **Contexto:** a transformação do contrato da API em artefato versionado (`docs/openapi.json`) com verificação contínua no CI (D-21) exigiu resolver três fatores de estabilidade e completude:
+  1. Versão do OpenAPI emitida pelo `@fastify/swagger` v9 com `fastify-type-provider-zod`;
+  2. Definição do bloco `servers` sem causar diffs espúrios decorrentes de variáveis de ambiente (`env.BETTER_AUTH_URL`) entre máquinas de desenvolvimento e runners de CI;
+  3. Tratamento das rotas de autenticação (`/api/auth/*`), que são montadas dinamicamente pelo Better Auth através de handler curinga com Fetch API (D-45) e não geram esquemas Zod nativos no Fastify.
+- **Decisão:**
+  - **(a) Versão OpenAPI:** fixada e validada em `3.0.3`.
+  - **(b) Servers:** fixado estaticamente em `[{ url: 'http://localhost:3333', description: 'Local' }]`. Não utiliza variáveis de ambiente para preservar determinismo de exportação (diff zero em qualquer host).
+  - **(c) Rotas do Better Auth:** permanecem gerenciadas exclusivamente pelo handler curinga do Better Auth em `auth.plugin.ts` e omitidas do mapa de rotas Zod do Fastify; são documentadas textualmente em `info.description` informando suporte simultâneo a Bearer Token e Cookie HttpOnly.
+  - **(d) Determinismo de Exportação:** garantido através de ordenação recursiva alfabética de chaves de objetos em `scripts/export-openapi.ts` (`sortObjectKeys`).
+- **Consequência:** `docs/openapi.json` é perfeitamente estável e determinístico. O CI roda `pnpm openapi:export -- --check` bloqueando PRs que alterem schemas sem atualizar o artefato versionado.

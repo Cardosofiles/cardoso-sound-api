@@ -104,6 +104,9 @@ O objeto puro, **sem** wrapper `data`.
 | R29 | GET    | `/api/auth/verify-email`                | ❌   | F3-S03 |
 | R30 | POST   | `/api/auth/forget-password`             | ❌   | F3-S03 |
 | R31 | POST   | `/api/auth/reset-password`              | ❌   | F3-S03 |
+| R46 | GET    | `/api/auth/list-accounts`               | ✅   | F5-S10 |
+| R47 | POST   | `/api/auth/link-social`                 | ✅   | F5-S10 |
+| R48 | POST   | `/api/auth/unlink-account`              | ✅   | F5-S10 |
 
 ---
 
@@ -317,6 +320,76 @@ oráculo de enumeração de contas. `429` acima de **3 por hora**.
 
 `200` senha trocada · `4xx` token inválido, expirado ou reusado, ou senha < 8 chars.
 Token de **uso único**, validade **1 h**. `429` acima de **5 por hora**.
+
+---
+
+### 5.1 · Vínculo de contas sociais (área administrativa) — F5-S10 · política em spec `04` §1.3
+
+Três rotas que a lib já monta na coringa. `allowDifferentEmails: true` e
+`trustedProviders: ['google', 'github']` por **D-58**.
+
+#### R46 · `GET /api/auth/list-accounts`
+
+`200` → **array** (não é lista paginada — o envelope da §1 não se aplica; o corpo é da lib):
+
+```json
+[
+  {
+    "id": "acc_...",
+    "providerId": "google",
+    "accountId": "1078...",
+    "userId": "usr_...",
+    "issuer": "https://accounts.google.com",
+    "scopes": ["openid", "email", "profile"],
+    "createdAt": "2026-09-09T12:00:00.000Z",
+    "updatedAt": "2026-09-09T12:00:00.000Z"
+  }
+]
+```
+
+`401` sem sessão. Quem se cadastrou por e-mail e senha tem uma linha com
+`providerId: "credential"` — ela conta para o limite de R48 e **não** é exibida como "conta
+conectada" na UI.
+
+#### R47 · `POST /api/auth/link-social`
+
+```json
+{ "provider": "google", "idToken": { "token": "<id_token>" } }
+```
+
+ou, no caminho por redirect:
+
+```json
+{ "provider": "github", "callbackURL": "cardososound://accounts" }
+```
+
+- `200` `{ "url": "", "status": true, "redirect": false }` — vínculo concluído (caminho `idToken`)
+- `200` `{ "url": "https://provider/...", "redirect": true }` — o app abre a URL (caminho redirect)
+- `401` `LINKING_NOT_ALLOWED` — provedor fora de `trustedProviders` sem `emailVerified`.
+  **É a resposta permanente do `facebook`** (spec `04` §1.1 e §1.3)
+- `401` `INVALID_TOKEN` · `USER_EMAIL_NOT_FOUND` — id_token inválido, ou sem e-mail
+- `404` `PROVIDER_NOT_FOUND` — provedor sem credencial no ambiente
+- `404` `ID_TOKEN_NOT_SUPPORTED` — `idToken` enviado para provedor que não suporta. **É a resposta
+  permanente do `github`**
+- `409` `SOCIAL_ACCOUNT_ALREADY_LINKED` — a identidade do provedor já pertence a outro usuário
+- `417` `LINKING_FAILED` — falha ao gravar
+- `401` `LINKING_DIFFERENT_EMAILS_NOT_ALLOWED` — **não ocorre**, `allowDifferentEmails: true`
+
+> **No caminho por redirect o erro não volta em JSON.** O callback responde `302` para
+> `errorCallbackURL` (ou `callbackURL`) com o código em query string — `?error=<CODE>`. O deep link
+> do app precisa tratar `error` além do caso de sucesso.
+
+#### R48 · `POST /api/auth/unlink-account`
+
+```json
+{ "accountId": "acc_..." }
+```
+
+- `200` `{ "status": true }`
+- `400` `FAILED_TO_UNLINK_LAST_ACCOUNT` — é a última conta; ninguém fica sem método de login
+- `400` `ACCOUNT_NOT_FOUND` — `accountId` inexistente **ou de outro usuário** (D-31: indistinguível)
+- **`403` `SESSION_NOT_FRESH` — sessão com mais de 24 h** (`freshAge`, D-58 c). O cliente
+  reautentica por R10 e repete a chamada. Não há rota de step-up dedicada.
 
 ---
 

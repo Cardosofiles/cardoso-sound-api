@@ -49,3 +49,6 @@ jobs:
 
       - name: Build
         run: pnpm build
+
+      - name: Verify OpenAPI specification
+        run: pnpm openapi:export -- --check
