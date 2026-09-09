@@ -4,9 +4,14 @@ import fp from 'fastify-plugin';
 import { jsonSchemaTransform } from 'fastify-type-provider-zod';
 import { createRequire } from 'node:module';
 import { APP_NAME } from '../config/constants.js';
+import { env } from '../config/env.js';
 
 const require = createRequire(import.meta.url);
 const pkg = require('../../package.json') as { version: string; description?: string };
+
+export function shouldExposeSwaggerUi(nodeEnv: string): boolean {
+  return nodeEnv !== 'production';
+}
 
 export const swaggerPlugin = fp(
   async (fastify) => {
@@ -45,13 +50,15 @@ export const swaggerPlugin = fp(
       transform: jsonSchemaTransform,
     });
 
-    await fastify.register(swaggerUi, {
-      routePrefix: '/docs',
-      uiConfig: {
-        docExpansion: 'list',
-        deepLinking: true,
-      },
-    });
+    if (shouldExposeSwaggerUi(env.NODE_ENV)) {
+      await fastify.register(swaggerUi, {
+        routePrefix: '/docs',
+        uiConfig: {
+          docExpansion: 'list',
+          deepLinking: true,
+        },
+      });
+    }
   },
   { name: 'swagger-plugin' },
 );

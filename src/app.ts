@@ -4,9 +4,8 @@ import {
   validatorCompiler,
   type ZodTypeProvider,
 } from 'fastify-type-provider-zod';
-import { randomUUID } from 'node:crypto';
-import { env } from './config/env.js';
 import { API_PREFIX } from './config/constants.js';
+import { env } from './config/env.js';
 import { artistsRoutes } from './modules/artists/artists.routes.js';
 import { authPlugin } from './modules/auth/auth.plugin.js';
 import { favoritesRoutes } from './modules/favorites/favorites.routes.js';
@@ -20,9 +19,12 @@ import { helmetPlugin } from './plugins/helmet.plugin.js';
 import { rateLimitPlugin } from './plugins/rate-limit.plugin.js';
 import { swaggerPlugin } from './plugins/swagger.plugin.js';
 import { underPressurePlugin } from './plugins/under-pressure.plugin.js';
+import { buildTrustProxy } from './shared/utils/client-ip.js';
+import { resolveRequestId } from './shared/utils/request-id.js';
 
 export async function buildApp(): Promise<FastifyInstance> {
   const app = Fastify({
+    trustProxy: buildTrustProxy(env),
     logger: {
       level: env.LOG_LEVEL,
       transport:
@@ -47,8 +49,7 @@ export async function buildApp(): Promise<FastifyInstance> {
         censor: '[REDACTED]',
       },
     },
-    genReqId: (req) =>
-      (req.headers['x-request-id'] as string | undefined) ?? randomUUID().slice(0, 8),
+    genReqId: (req) => resolveRequestId(req.headers['x-request-id']),
   }).withTypeProvider<ZodTypeProvider>();
 
   // Compiladores do type provider Zod devem ser registrados antes de qualquer rota
