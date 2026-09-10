@@ -92,6 +92,26 @@ export const twoFactor = pgTable(
   (t) => [index('two_factor_user_id_idx').on(t.userId)],
 );
 
+export const passkey = pgTable(
+  'passkey',
+  {
+    id: text('id').primaryKey(),
+    name: text('name'),
+    publicKey: text('public_key').notNull(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    credentialID: text('credential_id').notNull().unique(), // D-54 — obrigatório
+    counter: integer('counter').notNull().default(0),
+    deviceType: text('device_type').notNull(),
+    backedUp: boolean('backed_up').notNull().default(false),
+    transports: text('transports'),
+    aaguid: text('aaguid'), // D-54 — consumido pelo plugin
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+  },
+  (t) => [index('passkey_user_id_idx').on(t.userId)],
+);
+
 export type User = typeof user.$inferSelect;
 export type NewUser = typeof user.$inferInsert;
 export type Session = typeof session.$inferSelect;
@@ -102,3 +122,5 @@ export type Verification = typeof verification.$inferSelect;
 export type NewVerification = typeof verification.$inferInsert;
 export type TwoFactor = typeof twoFactor.$inferSelect;
 export type NewTwoFactor = typeof twoFactor.$inferInsert;
+export type Passkey = typeof passkey.$inferSelect;
+export type NewPasskey = typeof passkey.$inferInsert;

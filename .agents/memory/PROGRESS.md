@@ -9,18 +9,18 @@
 
 ## Estado atual
 
-| Campo                  | Valor                                                              |
-| ---------------------- | ------------------------------------------------------------------ |
-| **Fase corrente**      | F5 — Produção (em andamento)                                       |
-| **Próximo sprint**     | **F5-S06** — Passkey (WebAuthn / FIDO2)                            |
-| **Última tag**         | `v0.4.0` (preparada)                                               |
-| **`gh` CLI**           | ✅ 2.46.0, autenticado como `Cardosofiles`, protocolo SSH (D-33)   |
-| **`pnpm install`**     | ✅ passa — `allowBuilds` decidido (D-32)                           |
-| **Repositório**        | ✅ público `Cardosofiles/cardoso-sound-api` no GitHub              |
-| **Branch de trabalho** | `feature/f5s05-two-factor` (default: `develop`)                    |
-| **CI**                 | ✅ ativo (`.github/workflows/ci.yml`) — check obrigatório          |
-| **Banco**              | ✅ Postgres 17 ativo via Docker Compose                            |
-| **Última atualização** | 2026-09-10 — F5-S05 concluído: Two Factor TOTP, OTP e backup codes |
+| Campo                  | Valor                                                            |
+| ---------------------- | ---------------------------------------------------------------- |
+| **Fase corrente**      | F5 — Produção (em andamento)                                     |
+| **Próximo sprint**     | **F5-S07** — Rate limit distribuído e origens confiáveis         |
+| **Última tag**         | `v0.4.0` (preparada)                                             |
+| **`gh` CLI**           | ✅ 2.46.0, autenticado como `Cardosofiles`, protocolo SSH (D-33) |
+| **`pnpm install`**     | ✅ passa — `allowBuilds` decidido (D-32)                         |
+| **Repositório**        | ✅ público `Cardosofiles/cardoso-sound-api` no GitHub            |
+| **Branch de trabalho** | `feature/f5s06-passkey-webauthn` (default: `develop`)            |
+| **CI**                 | ✅ ativo (`.github/workflows/ci.yml`) — check obrigatório        |
+| **Banco**              | ✅ Postgres 17 ativo via Docker Compose                          |
+| **Última atualização** | 2026-09-10 — F5-S06 concluído: Passkey (WebAuthn / FIDO2)        |
 
 > ⚠️ **Auditoria de segurança aberta.** `docs/issue/AUTHENTICATION.md` (2026-09-09) registra
 > **27 GAPs**, um deles **CRÍTICO**: `src/plugins/rate-limit.plugin.ts:8` implementa
@@ -120,7 +120,7 @@ Legenda: ⬜ pendente · 🟡 em andamento · ✅ concluído · 🔴 bloqueado
 | **F5-S03** | Recuperação de conta, anti-enumeração e senha  | ✅     | #30 | 2026-09-09 | 07, 08, 14, 15, 22, 24, 25     |
 | **F5-S04** | Endurecimento de sessão, schema e contrato     | ✅     | #32 | 2026-09-09 | 13, 16, 19, 20, 23, 26         |
 | **F5-S05** | Two Factor: TOTP, OTP e backup codes           | ✅     | #33 | 2026-09-10 | 02, 09 (parte 2FA)             |
-| **F5-S06** | Passkey (WebAuthn / FIDO2)                     | ⬜     | —   | —          | 03, 09 (parte passkey)         |
+| **F5-S06** | Passkey (WebAuthn / FIDO2)                     | ✅     | #34 | 2026-09-10 | 03, 09 (parte passkey)         |
 | **F5-S07** | Rate limit distribuído e origens confiáveis    | ⬜     | —   | —          | 11, 12, 18                     |
 | **F5-S10** | Vínculo de contas sociais (R46–R48)            | ⬜     | —   | —          | — (D-58)                       |
 | **F5-S08** | Deploy na Railway                              | ⬜     | —   | —          | —                              |
@@ -216,6 +216,13 @@ antes de reimplementar.
 | R38: `POST /api/auth/two-factor/verify-otp` (validação de OTP de e-mail no desafio 2FA)                                                                                        | F5-S05 | `src/modules/auth/`                                                  |
 | R39: Template `twoFactorOtpEmail` e envio de OTP por e-mail em texto puro sem links (D-53)                                                                                     | F5-S05 | `src/shared/email/templates.ts`                                      |
 | Suíte de testes unitários e de integração de 2FA, lockout e rate-limiting (T1–T28)                                                                                             | F5-S05 | `tests/unit/**`, `tests/integration/**`                              |
+| Migração `0004_eager_argent.sql` (tabela `passkey` com 11 colunas, `credential_id` unique, `aaguid`, FK `user_id` cascade)                                                     | F5-S06 | `drizzle/`                                                           |
+| R41: `GET /api/auth/passkey/generate-register-options` (geração de challenge para registro de Passkey)                                                                         | F5-S06 | `src/modules/auth/`                                                  |
+| R42: `POST /api/auth/passkey/verify-registration` (verificação de atestação e persistência da credencial FIDO2)                                                                | F5-S06 | `src/modules/auth/`                                                  |
+| R43: `GET /api/auth/passkey/generate-authenticate-options` (geração de challenge de autenticação sem sessão)                                                                   | F5-S06 | `src/modules/auth/`                                                  |
+| R44: `POST /api/auth/passkey/verify-authentication` / `POST /api/auth/sign-in/passkey` (asserção WebAuthn e login)                                                             | F5-S06 | `src/modules/auth/`                                                  |
+| R45: `GET /api/auth/passkey/list-user-passkeys`, `POST /api/auth/passkey/delete-passkey`, `POST /api/auth/passkey/update-passkey` (gerenciamento privado)                      | F5-S06 | `src/modules/auth/`                                                  |
+| Suíte de testes unitários e de integração de Passkey e WebAuthn (T1–T24)                                                                                                       | F5-S06 | `tests/unit/**`, `tests/integration/**`                              |
 
 ---
 
