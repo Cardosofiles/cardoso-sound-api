@@ -620,7 +620,15 @@ describe('Auth Email Integration Tests (Verification & Password Reset)', () => {
 
   // T9: Reset de senha revoga Cookie de sessão anterior (GAP-07 / D-52)
   it('T9: password reset revokes previous session cookie so protected routes return 401 (GAP-07 / D-52)', async () => {
-    const { cookie, email } = await signUpAndGetToken(app, 'session-reset-cookie@teste.com');
+    const { cookie: allCookies, email } = await signUpAndGetToken(
+      app,
+      'session-reset-cookie@teste.com',
+    );
+    const cookie =
+      allCookies
+        .split(';')
+        .find((c) => c.trim().startsWith('better-auth.session_token'))
+        ?.trim() ?? allCookies;
 
     // Valida que o cookie funciona antes do reset
     const checkBefore = await app.inject({

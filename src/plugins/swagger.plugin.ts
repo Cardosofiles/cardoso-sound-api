@@ -13,6 +13,11 @@ export function shouldExposeSwaggerUi(nodeEnv: string): boolean {
   return nodeEnv !== 'production';
 }
 
+export function sessionCookieName(nodeEnv: string, baseUrl: string): string {
+  const isSecure = nodeEnv === 'production' || baseUrl.startsWith('https://');
+  return isSecure ? '__Secure-better-auth.session_token' : 'better-auth.session_token';
+}
+
 export const swaggerPlugin = fp(
   async (fastify) => {
     await fastify.register(swagger, {
@@ -42,7 +47,7 @@ export const swaggerPlugin = fp(
             cookieAuth: {
               type: 'apiKey',
               in: 'cookie',
-              name: 'better-auth.session_token',
+              name: sessionCookieName(env.NODE_ENV, env.BETTER_AUTH_URL),
             },
           },
         },
