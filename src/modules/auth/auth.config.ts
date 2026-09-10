@@ -140,7 +140,9 @@ export function createAuth(options?: CreateAuthOptions) {
     session: {
       expiresIn: 60 * 60 * 24 * 7, // 7 dias em segundos
       updateAge: 60 * 60 * 24, // 24 horas em segundos
+      cookieCache: { enabled: true, maxAge: 5 * 60 },
     },
+    logger: { level: 'error' },
     rateLimit: {
       enabled: isProduction,
       window: 60,
