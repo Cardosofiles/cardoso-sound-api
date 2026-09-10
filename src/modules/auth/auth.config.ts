@@ -6,12 +6,16 @@ import {
   createAuthMiddleware,
   requestPasswordReset,
 } from 'better-auth/api';
-import { bearer } from 'better-auth/plugins';
+import { bearer, twoFactor } from 'better-auth/plugins';
 import { env, isProduction, SOCIAL_PROVIDERS, TRUSTED_PROXY_LIST } from '../../config/env.js';
 import { db, type Database } from '../../db/client.js';
 import * as schema from '../../db/schema/index.js';
 import { mailer } from '../../shared/email/mailer.js';
-import { resetPasswordEmail, verificationEmail } from '../../shared/email/templates.js';
+import {
+  resetPasswordEmail,
+  twoFactorOtpEmail,
+  verificationEmail,
+} from '../../shared/email/templates.js';
 import { isWeakPassword } from '../../shared/security/weak-passwords.js';
 
 // Proxy dinâmico para garantir que mutações em db (via setPool no harness de testes)
@@ -94,6 +98,11 @@ export const AUTH_RATE_LIMIT_RULES = {
   '/sign-up/email': { window: 3600, max: 10 },
   '/change-password': { window: 3600, max: 10 },
   '/sign-in/social': { window: 60, max: 10 },
+  // segundo fator — F5-S05
+  '/two-factor/verify-totp': { window: 60, max: 5 },
+  '/two-factor/verify-otp': { window: 60, max: 5 },
+  '/two-factor/send-otp': { window: 3600, max: 5 },
+  '/two-factor/verify-backup-code': { window: 3600, max: 5 },
 } as const;
 
 export interface CreateAuthOptions {
@@ -102,6 +111,7 @@ export interface CreateAuthOptions {
 
 export function createAuth(options?: CreateAuthOptions) {
   return betterAuth({
+    appName: 'Cardoso Sound',
     database: drizzleAdapter(dynamicDb, { provider: 'pg', schema }),
     secret: env.BETTER_AUTH_SECRET,
     baseURL: env.BETTER_AUTH_URL,
@@ -160,7 +170,37 @@ export function createAuth(options?: CreateAuthOptions) {
         trustedProxies: TRUSTED_PROXY_LIST,
       },
     },
-    plugins: [bearer(), forgetPasswordPlugin(), weakPasswordPlugin()],
+    plugins: [
+      twoFactor({
+        issuer: 'Cardoso Sound',
+        skipVerificationOnEnable: false,
+        totpOptions: {
+          issuer: 'Cardoso Sound',
+          digits: 6,
+          period: 30,
+          backupCodes: { amount: 10 },
+        },
+        otpOptions: {
+          digits: 6,
+          period: 10,
+          async sendOTP({ user, otp }) {
+            const { subject, html } = twoFactorOtpEmail({
+              name: user.name || 'Usuário',
+              otp,
+            });
+            await mailer.send({ to: user.email, subject, html });
+          },
+        },
+        accountLockout: {
+          enabled: true,
+          maxFailedAttempts: 5,
+          durationSeconds: 900,
+        },
+      }),
+      bearer(),
+      forgetPasswordPlugin(),
+      weakPasswordPlugin(),
+    ],
   });
 }
 
