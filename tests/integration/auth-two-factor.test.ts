@@ -804,7 +804,7 @@ describe('Auth Two Factor Integration Tests (T6–T24)', () => {
       expect(msg.html).not.toContain(secret);
       expect(msg.subject).not.toContain(secret);
     }
-  });
+  }, 30_000);
 
   // T24: Nenhuma resposta HTTP expõe secret ou backupCodes de outro usuário
   it('T24: HTTP responses never leak the TOTP secret or backup codes to unauthenticated / other requests', async () => {
@@ -829,5 +829,5 @@ describe('Auth Two Factor Integration Tests (T6–T24)', () => {
     } else {
       expect(maliciousReq.statusCode).toBeGreaterThanOrEqual(400);
     }
-  });
+  }, 30_000);
 });

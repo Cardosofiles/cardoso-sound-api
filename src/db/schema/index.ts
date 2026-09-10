@@ -4,9 +4,9 @@ import { favorites } from './favorites.schema.js';
 import { playlistTracks } from './playlist-tracks.schema.js';
 import { playlists } from './playlists.schema.js';
 import { tracks } from './tracks.schema.js';
-import { twoFactor, user } from './users.schema.js';
+import { passkey, twoFactor, user } from './users.schema.js';
 
-// Reexportação das 10 tabelas e tipos
+// Reexportação das 11 tabelas e tipos
 export * from './artists.schema.js';
 export * from './favorites.schema.js';
 export * from './playlist-tracks.schema.js';
@@ -61,6 +61,13 @@ export const favoritesRelations = relations(favorites, ({ one }) => ({
 export const twoFactorRelations = relations(twoFactor, ({ one }) => ({
   user: one(user, {
     fields: [twoFactor.userId],
+    references: [user.id],
+  }),
+}));
+
+export const passkeyRelations = relations(passkey, ({ one }) => ({
+  user: one(user, {
+    fields: [passkey.userId],
     references: [user.id],
   }),
 }));

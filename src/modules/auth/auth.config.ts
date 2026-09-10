@@ -7,6 +7,7 @@ import {
   requestPasswordReset,
 } from 'better-auth/api';
 import { bearer, twoFactor } from 'better-auth/plugins';
+import { passkey } from '@better-auth/passkey';
 import { env, isProduction, SOCIAL_PROVIDERS, TRUSTED_PROXY_LIST } from '../../config/env.js';
 import { db, type Database } from '../../db/client.js';
 import * as schema from '../../db/schema/index.js';
@@ -103,6 +104,8 @@ export const AUTH_RATE_LIMIT_RULES = {
   '/two-factor/verify-otp': { window: 60, max: 5 },
   '/two-factor/send-otp': { window: 3600, max: 5 },
   '/two-factor/verify-backup-code': { window: 3600, max: 5 },
+  // passkey — F5-S06
+  '/sign-in/passkey': { window: 60, max: 10 },
 } as const;
 
 export interface CreateAuthOptions {
@@ -196,6 +199,11 @@ export function createAuth(options?: CreateAuthOptions) {
           maxFailedAttempts: 5,
           durationSeconds: 900,
         },
+      }),
+      passkey({
+        rpID: new URL(env.BETTER_AUTH_URL).hostname,
+        rpName: 'Cardoso Sound',
+        origin: env.BETTER_AUTH_URL,
       }),
       bearer(),
       forgetPasswordPlugin(),
