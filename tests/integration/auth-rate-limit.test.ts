@@ -30,7 +30,7 @@ describe('Auth Rate Limit & Security Integration Tests', () => {
     await truncateAll(testDb.db);
   });
 
-  it('T27: AUTH_RATE_LIMIT_RULES contains exactly the 8 specified endpoint keys', () => {
+  it('T27: AUTH_RATE_LIMIT_RULES contains exactly the 12 specified endpoint keys (including 2FA)', () => {
     const expectedKeys = [
       '/forget-password',
       '/request-password-reset',
@@ -40,6 +40,10 @@ describe('Auth Rate Limit & Security Integration Tests', () => {
       '/sign-up/email',
       '/change-password',
       '/sign-in/social',
+      '/two-factor/send-otp',
+      '/two-factor/verify-backup-code',
+      '/two-factor/verify-otp',
+      '/two-factor/verify-totp',
     ].sort();
 
     const actualKeys = Object.keys(AUTH_RATE_LIMIT_RULES).sort();

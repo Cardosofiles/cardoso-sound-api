@@ -73,3 +73,33 @@ export function resetPasswordEmail(input: { name: string; url: string }): {
 `.trim(),
   };
 }
+
+export function twoFactorOtpEmail(input: { name: string; otp: string }): {
+  subject: string;
+  html: string;
+} {
+  const safeName = escapeHtml(input.name.trim() || 'Usuário');
+  const safeOtp = escapeHtml(input.otp.trim());
+
+  return {
+    subject: 'Seu código de verificação — Cardoso Sound',
+    html: `
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <title>Código de Verificação de Segundo Fator</title>
+</head>
+<body style="font-family: sans-serif; line-height: 1.5; color: #333;">
+  <h2>Olá, ${safeName}!</h2>
+  <p>Você solicitou um código de autenticação de dois fatores para acessar sua conta no Cardoso Sound.</p>
+  <p style="margin: 24px 0; font-size: 28px; font-weight: bold; letter-spacing: 4px; color: #1db954;">
+    ${safeOtp}
+  </p>
+  <p>Este código é válido por 10 minutos.</p>
+  <p style="color: #666; font-size: 14px;">Se você não solicitou este código, altere sua senha imediatamente e encerre suas sessões ativas.</p>
+</body>
+</html>
+`.trim(),
+  };
+}

@@ -9,18 +9,18 @@
 
 ## Estado atual
 
-| Campo                  | Valor                                                                     |
-| ---------------------- | ------------------------------------------------------------------------- |
-| **Fase corrente**      | F5 — Produção (em andamento)                                              |
-| **Próximo sprint**     | **F5-S05** — Two Factor: TOTP, OTP e backup codes                         |
-| **Última tag**         | `v0.4.0` (preparada)                                                      |
-| **`gh` CLI**           | ✅ 2.46.0, autenticado como `Cardosofiles`, protocolo SSH (D-33)          |
-| **`pnpm install`**     | ✅ passa — `allowBuilds` decidido (D-32)                                  |
-| **Repositório**        | ✅ público `Cardosofiles/cardoso-sound-api` no GitHub                     |
-| **Branch de trabalho** | `feature/f5s04-sessao-schema-e-contrato` (default: `develop`)             |
-| **CI**                 | ✅ ativo (`.github/workflows/ci.yml`) — check obrigatório                 |
-| **Banco**              | ✅ Postgres 17 ativo via Docker Compose                                   |
-| **Última atualização** | 2026-09-09 — F5-S04 concluído: endurecimento de sessão, schema e contrato |
+| Campo                  | Valor                                                              |
+| ---------------------- | ------------------------------------------------------------------ |
+| **Fase corrente**      | F5 — Produção (em andamento)                                       |
+| **Próximo sprint**     | **F5-S06** — Passkey (WebAuthn / FIDO2)                            |
+| **Última tag**         | `v0.4.0` (preparada)                                               |
+| **`gh` CLI**           | ✅ 2.46.0, autenticado como `Cardosofiles`, protocolo SSH (D-33)   |
+| **`pnpm install`**     | ✅ passa — `allowBuilds` decidido (D-32)                           |
+| **Repositório**        | ✅ público `Cardosofiles/cardoso-sound-api` no GitHub              |
+| **Branch de trabalho** | `feature/f5s05-two-factor` (default: `develop`)                    |
+| **CI**                 | ✅ ativo (`.github/workflows/ci.yml`) — check obrigatório          |
+| **Banco**              | ✅ Postgres 17 ativo via Docker Compose                            |
+| **Última atualização** | 2026-09-10 — F5-S05 concluído: Two Factor TOTP, OTP e backup codes |
 
 > ⚠️ **Auditoria de segurança aberta.** `docs/issue/AUTHENTICATION.md` (2026-09-09) registra
 > **27 GAPs**, um deles **CRÍTICO**: `src/plugins/rate-limit.plugin.ts:8` implementa
@@ -119,7 +119,7 @@ Legenda: ⬜ pendente · 🟡 em andamento · ✅ concluído · 🔴 bloqueado
 | **F5-S02** | Blindagem de borda e rate limiting             | ✅     | #29 | 2026-09-09 | 01, 04, 05, 06, 10, 17, 21, 27 |
 | **F5-S03** | Recuperação de conta, anti-enumeração e senha  | ✅     | #30 | 2026-09-09 | 07, 08, 14, 15, 22, 24, 25     |
 | **F5-S04** | Endurecimento de sessão, schema e contrato     | ✅     | #32 | 2026-09-09 | 13, 16, 19, 20, 23, 26         |
-| **F5-S05** | Two Factor: TOTP, OTP e backup codes           | ⬜     | —   | —          | 02, 09 (parte 2FA)             |
+| **F5-S05** | Two Factor: TOTP, OTP e backup codes           | ✅     | #33 | 2026-09-10 | 02, 09 (parte 2FA)             |
 | **F5-S06** | Passkey (WebAuthn / FIDO2)                     | ⬜     | —   | —          | 03, 09 (parte passkey)         |
 | **F5-S07** | Rate limit distribuído e origens confiáveis    | ⬜     | —   | —          | 11, 12, 18                     |
 | **F5-S10** | Vínculo de contas sociais (R46–R48)            | ⬜     | —   | —          | — (D-58)                       |
@@ -206,6 +206,16 @@ antes de reimplementar.
 | Injeção de `request.ip` validado nos dois call sites da ponte Better Auth (`toFetchHeaders`) (R-01)                                                                            | F5-S04 | `src/modules/auth/auth.plugin.ts`                                    |
 | Predicado dinâmico de `sessionCookieName` para OpenAPI e Swagger (GAP-20)                                                                                                      | F5-S04 | `src/plugins/swagger.plugin.ts`                                      |
 | Suíte de testes unitários e de integração de sessão, schema, envelope e IP real (T1–T33)                                                                                       | F5-S04 | `tests/unit/**`, `tests/integration/**`                              |
+| Migração `0003_demonic_kinsey_walden.sql` (`user.twoFactorEnabled` e tabela `twoFactor` com cascade) (GAP-02, GAP-09)                                                          | F5-S05 | `drizzle/`                                                           |
+| R32: `POST /api/auth/two-factor/enable` (geração de segredo TOTP e backup codes)                                                                                               | F5-S05 | `src/modules/auth/`                                                  |
+| R33: `POST /api/auth/two-factor/verify-totp` (confirmação e verificação de código TOTP de 6 dígitos)                                                                           | F5-S05 | `src/modules/auth/`                                                  |
+| R34: `POST /api/auth/two-factor/disable` (desativação de 2FA mediante confirmação de senha)                                                                                    | F5-S05 | `src/modules/auth/`                                                  |
+| R35: `POST /api/auth/two-factor/generate-backup-codes` (regeneração de 10 códigos de backup descartáveis)                                                                      | F5-S05 | `src/modules/auth/`                                                  |
+| R36: `POST /api/auth/two-factor/verify-backup-code` (autenticação de emergência com código de uso único)                                                                       | F5-S05 | `src/modules/auth/`                                                  |
+| R37: `POST /api/auth/two-factor/send-otp` (disparo de OTP de 6 dígitos por e-mail no desafio 2FA)                                                                              | F5-S05 | `src/modules/auth/`                                                  |
+| R38: `POST /api/auth/two-factor/verify-otp` (validação de OTP de e-mail no desafio 2FA)                                                                                        | F5-S05 | `src/modules/auth/`                                                  |
+| R39: Template `twoFactorOtpEmail` e envio de OTP por e-mail em texto puro sem links (D-53)                                                                                     | F5-S05 | `src/shared/email/templates.ts`                                      |
+| Suíte de testes unitários e de integração de 2FA, lockout e rate-limiting (T1–T28)                                                                                             | F5-S05 | `tests/unit/**`, `tests/integration/**`                              |
 
 ---
 
