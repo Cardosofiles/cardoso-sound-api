@@ -1,4 +1,5 @@
 import {
+  bigint,
   boolean,
   index,
   integer,
@@ -112,6 +113,13 @@ export const passkey = pgTable(
   (t) => [index('passkey_user_id_idx').on(t.userId)],
 );
 
+export const rateLimit = pgTable('rate_limit', {
+  id: text('id').primaryKey(),
+  key: text('key').notNull().unique(),
+  count: integer('count').notNull(),
+  lastRequest: bigint('last_request', { mode: 'number' }).notNull(),
+});
+
 export type User = typeof user.$inferSelect;
 export type NewUser = typeof user.$inferInsert;
 export type Session = typeof session.$inferSelect;
@@ -124,3 +132,5 @@ export type TwoFactor = typeof twoFactor.$inferSelect;
 export type NewTwoFactor = typeof twoFactor.$inferInsert;
 export type Passkey = typeof passkey.$inferSelect;
 export type NewPasskey = typeof passkey.$inferInsert;
+export type RateLimit = typeof rateLimit.$inferSelect;
+export type NewRateLimit = typeof rateLimit.$inferInsert;

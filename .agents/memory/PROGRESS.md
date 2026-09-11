@@ -12,22 +12,20 @@
 | Campo                  | Valor                                                            |
 | ---------------------- | ---------------------------------------------------------------- |
 | **Fase corrente**      | F5 — Produção (em andamento)                                     |
-| **Próximo sprint**     | **F5-S07** — Rate limit distribuído e origens confiáveis         |
+| **Próximo sprint**     | **F5-S10** — Vínculo de contas sociais (R46–R48) (D-58)          |
 | **Última tag**         | `v0.4.0` (preparada)                                             |
 | **`gh` CLI**           | ✅ 2.46.0, autenticado como `Cardosofiles`, protocolo SSH (D-33) |
 | **`pnpm install`**     | ✅ passa — `allowBuilds` decidido (D-32)                         |
 | **Repositório**        | ✅ público `Cardosofiles/cardoso-sound-api` no GitHub            |
-| **Branch de trabalho** | `feature/f5s06-passkey-webauthn` (default: `develop`)            |
+| **Branch de trabalho** | `feature/f5s07-rate-limit-distribuido` (default: `develop`)      |
 | **CI**                 | ✅ ativo (`.github/workflows/ci.yml`) — check obrigatório        |
 | **Banco**              | ✅ Postgres 17 ativo via Docker Compose                          |
-| **Última atualização** | 2026-09-10 — F5-S06 concluído: Passkey (WebAuthn / FIDO2)        |
+| **Última atualização** | 2026-09-11 — F5-S07 concluído: Rate limit distribuído e origens  |
 
-> ⚠️ **Auditoria de segurança aberta.** `docs/issue/AUTHENTICATION.md` (2026-09-09) registra
-> **27 GAPs**, um deles **CRÍTICO**: `src/plugins/rate-limit.plugin.ts:8` implementa
-> `global: env.NODE_ENV === 'development'`, a negação exata de D-19 — em produção o plugin
-> governa **zero rotas**. Score atual em `docs/report/SECURITY_SCORE.md`: **58.3/100**.
-> As correções estão planejadas em **F5-S02 … F5-S07** e são pré-requisito do deploy (D-49).
-> **Nada disso foi corrigido ainda** — o código no `develop` continua com os 27 GAPs abertos.
+> ✅ **Auditoria de segurança encerrada (2026-09-11).** Todos os **27 GAPs** de `docs/issue/AUTHENTICATION.md`
+> foram integralmente fechados nos sprints F5-S02 … F5-S07 (GAP-11, GAP-12 e GAP-18 entregues em F5-S07).
+> O rate limiting do Better Auth está persistido no PostgreSQL (`storage: 'database'`), a chave do Fastify
+> rate limit combina IP e hash de token sem `req.user`, e as origens de produção rejeitam coringas.
 
 ### O que já tem código e o que ainda está vazio
 
@@ -121,7 +119,7 @@ Legenda: ⬜ pendente · 🟡 em andamento · ✅ concluído · 🔴 bloqueado
 | **F5-S04** | Endurecimento de sessão, schema e contrato     | ✅     | #32 | 2026-09-09 | 13, 16, 19, 20, 23, 26         |
 | **F5-S05** | Two Factor: TOTP, OTP e backup codes           | ✅     | #33 | 2026-09-10 | 02, 09 (parte 2FA)             |
 | **F5-S06** | Passkey (WebAuthn / FIDO2)                     | ✅     | #34 | 2026-09-10 | 03, 09 (parte passkey)         |
-| **F5-S07** | Rate limit distribuído e origens confiáveis    | ⬜     | —   | —          | 11, 12, 18                     |
+| **F5-S07** | Rate limit distribuído e origens confiáveis    | ✅     | #35 | 2026-09-11 | 11, 12, 18                     |
 | **F5-S10** | Vínculo de contas sociais (R46–R48)            | ⬜     | —   | —          | — (D-58)                       |
 | **F5-S08** | Deploy na Railway                              | ⬜     | —   | —          | —                              |
 | **F5-S09** | Hardening, auditoria e release `v1.0.0`        | ⬜     | —   | —          | portão dos 27                  |
@@ -223,6 +221,12 @@ antes de reimplementar.
 | R44: `POST /api/auth/passkey/verify-authentication` / `POST /api/auth/sign-in/passkey` (asserção WebAuthn e login)                                                             | F5-S06 | `src/modules/auth/`                                                  |
 | R45: `GET /api/auth/passkey/list-user-passkeys`, `POST /api/auth/passkey/delete-passkey`, `POST /api/auth/passkey/update-passkey` (gerenciamento privado)                      | F5-S06 | `src/modules/auth/`                                                  |
 | Suíte de testes unitários e de integração de Passkey e WebAuthn (T1–T24)                                                                                                       | F5-S06 | `tests/unit/**`, `tests/integration/**`                              |
+| Migração `0005_fearless_sinister_six.sql` (tabela `rate_limit` com `key` unique e `last_request` bigint mode number) (GAP-12)                                                  | F5-S07 | `drizzle/`                                                           |
+| Rate limit Better Auth persistido em banco relacional (`storage: 'database'`) (GAP-12)                                                                                         | F5-S07 | `src/modules/auth/auth.config.ts`                                    |
+| Chave estrita de rate limit sem `req.user` (`rateLimitKeyGenerator` e `extractSessionToken`) (GAP-11)                                                                          | F5-S07 | `src/plugins/rate-limit.plugin.ts`                                   |
+| Seam de produção para Redis com fail-closed (`createRedisClient`) (D-55)                                                                                                       | F5-S07 | `src/plugins/rate-limit.plugin.ts`                                   |
+| Endurecimento de origens (`CORS_ORIGIN` e `MOBILE_DEEP_LINK` sem coringas em prod) (GAP-18)                                                                                    | F5-S07 | `src/config/env.ts`                                                  |
+| Suíte de testes unitários e de integração de rate limit distribuído e origens (T1–T26)                                                                                         | F5-S07 | `tests/unit/**`, `tests/integration/**`                              |
 
 ---
 
@@ -236,7 +240,7 @@ antes de reimplementar.
 | ~~B3~~ | ~~`AGENTS.md` e `README.md` contradizem D-01/D-03/D-09/D-10/D-16~~                                                                                                | —                             | ✅ **resolvido 2026-09-03** em F1-S01                                                                                                                       |
 | B5     | Token do `gh` sem escopo `workflow`                                                                                                                               | possivelmente F1-S04 e F5-S08 | **Você**, só se um push de workflow for recusado: `gh auth refresh -h github.com -s workflow`                                                               |
 | ~~P1~~ | ~~Exigir status check obrigatório `ci` nos rulesets~~                                                                                                             | —                             | ✅ **resolvido 2026-09-04** em F1-S04 (rulesets `protection-develop` e `protection-main`)                                                                   |
-| P2     | **27 GAPs de segurança abertos** (`docs/issue/AUTHENTICATION.md`) — 1 crítico                                                                                     | F5-S08 (deploy), por D-49     | **Agentes**, em F5-S02 … F5-S07. Spec normativa: `docs/specs/08-blindagem-de-seguranca.md`                                                                  |
+| ~~P2~~ | ~~**27 GAPs de segurança abertos** (`docs/issue/AUTHENTICATION.md`) — 1 crítico~~                                                                                 | —                             | ✅ **resolvido 2026-09-11** em F5-S07 — todos os 27 GAPs integralmente fechados (PR #35)                                                                    |
 | P3     | Topologia real da borda da Railway — **`TRUSTED_PROXIES` (CIDRs) e `TRUST_PROXY_HOPS` (nº de saltos)**, as duas do D-50                                           | boot em produção              | **Você**, ao configurar as Railway Variables em F5-S08. F5-S02 já valida a ausência das duas no boot. Ver a nota abaixo sobre o valor de `TRUST_PROXY_HOPS` |
 | ~~P6~~ | ~~Achado **R-01** — a ponte do Better Auth resolve o IP só por header; `session.ip_address` e as 8 regras de rate limit de auth são falsificáveis fora da borda~~ | —                             | ✅ **resolvido 2026-09-09** em F5-S04 (§3.3, §5.7, T29–T33, PR #32)                                                                                         |
 | P4     | Produção restrita a **réplica única** até `RATE_LIMIT_REDIS_URL` existir (D-55)                                                                                   | escalar horizontalmente       | **Você**, quando houver necessidade. F5-S08 fixa `replicas: 1` e registra no runbook                                                                        |

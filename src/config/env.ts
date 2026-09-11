@@ -15,6 +15,7 @@ const envSchema = z
       .default('info'),
     RATE_LIMIT_MAX: z.coerce.number().int().positive().default(100),
     RATE_LIMIT_WINDOW: z.string().default('1 minute'),
+    RATE_LIMIT_REDIS_URL: z.url().optional(),
     TRUST_PROXY_HOPS: z.coerce.number().int().min(0).default(0),
     TRUSTED_PROXIES: z.string().default(''),
     GOOGLE_CLIENT_ID: z.string().min(1).optional(),
@@ -25,7 +26,10 @@ const envSchema = z
     FACEBOOK_CLIENT_SECRET: z.string().min(1).optional(),
     RESEND_API_KEY: z.string().startsWith('re_').optional(),
     EMAIL_FROM: z.string().min(1).default('Cardoso Sound <onboarding@resend.dev>'),
-    MOBILE_DEEP_LINK: z.string().optional(),
+    MOBILE_DEEP_LINK: z
+      .string()
+      .regex(/^[a-z][a-z0-9+.-]*:\/\/[^*\s]*$/, 'must be a scheme URL without wildcards')
+      .optional(),
   })
   .superRefine((v, ctx) => {
     if (v.NODE_ENV === 'production') {
@@ -51,6 +55,20 @@ const envSchema = z
           path: ['TRUSTED_PROXIES'],
           message: 'TRUSTED_PROXIES must list the edge CIDRs in production (D-50)',
         });
+      }
+
+      const corsList = v.CORS_ORIGIN.split(',')
+        .map((origin) => origin.trim())
+        .filter(Boolean);
+
+      for (const origin of corsList) {
+        if (!/^https?:\/\/[^*\s]+$/.test(origin)) {
+          ctx.addIssue({
+            code: 'custom',
+            path: ['CORS_ORIGIN'],
+            message: `CORS_ORIGIN item "${origin}" must match https?:// format without wildcards in production`,
+          });
+        }
       }
     }
 
@@ -91,6 +109,7 @@ export interface Env {
   LOG_LEVEL: 'fatal' | 'error' | 'warn' | 'info' | 'debug' | 'trace' | 'silent';
   RATE_LIMIT_MAX: number;
   RATE_LIMIT_WINDOW: string;
+  RATE_LIMIT_REDIS_URL?: string;
   TRUST_PROXY_HOPS: number;
   TRUSTED_PROXIES: string;
   TRUSTED_PROXY_LIST: string[];
