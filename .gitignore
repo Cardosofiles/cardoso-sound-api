@@ -17,3 +17,9 @@ coverage/
 # absolute and therefore machine-specific. Copy .agents/hooks.json.example and
 # rewrite the four command paths for your clone.
 .agents/hooks.json
+
+# Mídia de origem da F6 (D-65): os 40 MP3 e as 16 imagens são normalizados e
+# enviados à Cloudflare R2 por script, nunca versionados. São ~250 MB que não
+# saem do histórico depois de entrarem. O que o repositório guarda é a URL.
+audio/
+media/
