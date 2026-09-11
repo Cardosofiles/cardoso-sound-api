@@ -158,6 +158,7 @@ export function createAuth(options?: CreateAuthOptions) {
     logger: { level: 'error' },
     rateLimit: {
       enabled: isProduction,
+      storage: 'database',
       window: 60,
       max: 10,
       customRules: AUTH_RATE_LIMIT_RULES,

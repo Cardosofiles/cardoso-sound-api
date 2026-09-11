@@ -209,4 +209,105 @@ describe('env config', () => {
 
     expect(parsed.TRUSTED_PROXY_LIST).toEqual(['10.0.0.0/8', '172.16.0.0/12']);
   });
+
+  describe('F5-S07: MOBILE_DEEP_LINK, CORS_ORIGIN and RATE_LIMIT_REDIS_URL (T12–T20)', () => {
+    it('T12: parses valid MOBILE_DEEP_LINK', () => {
+      const parsed = parseEnv({
+        DATABASE_URL: 'postgresql://cardoso:cardoso_dev@localhost:5432/cardoso_sound',
+        BETTER_AUTH_SECRET: 'a'.repeat(32),
+        MOBILE_DEEP_LINK: 'cardososound://auth',
+      });
+
+      expect(parsed.MOBILE_DEEP_LINK).toBe('cardososound://auth');
+    });
+
+    it('T13: throws validation error when MOBILE_DEEP_LINK is wildcard "*"', () => {
+      expect(() =>
+        parseEnv({
+          DATABASE_URL: 'postgresql://cardoso:cardoso_dev@localhost:5432/cardoso_sound',
+          BETTER_AUTH_SECRET: 'a'.repeat(32),
+          MOBILE_DEEP_LINK: '*',
+        }),
+      ).toThrow(ZodError);
+    });
+
+    it('T14: throws validation error when MOBILE_DEEP_LINK contains wildcard', () => {
+      expect(() =>
+        parseEnv({
+          DATABASE_URL: 'postgresql://cardoso:cardoso_dev@localhost:5432/cardoso_sound',
+          BETTER_AUTH_SECRET: 'a'.repeat(32),
+          MOBILE_DEEP_LINK: 'https://evil.example/*',
+        }),
+      ).toThrow(ZodError);
+    });
+
+    it('T15: throws validation error when MOBILE_DEEP_LINK is empty string', () => {
+      expect(() =>
+        parseEnv({
+          DATABASE_URL: 'postgresql://cardoso:cardoso_dev@localhost:5432/cardoso_sound',
+          BETTER_AUTH_SECRET: 'a'.repeat(32),
+          MOBILE_DEEP_LINK: '',
+        }),
+      ).toThrow(ZodError);
+    });
+
+    it('T16: throws validation error in production when CORS_ORIGIN is wildcard "*"', () => {
+      expect(() =>
+        parseEnv({
+          DATABASE_URL: 'postgresql://cardoso:cardoso_dev@localhost:5432/cardoso_sound',
+          BETTER_AUTH_SECRET: 'a'.repeat(32),
+          RESEND_API_KEY: 're_12345678',
+          NODE_ENV: 'production',
+          TRUST_PROXY_HOPS: '1',
+          TRUSTED_PROXIES: '10.0.0.0/8',
+          CORS_ORIGIN: '*',
+        }),
+      ).toThrow(ZodError);
+    });
+
+    it('T17: parses production CORS_ORIGIN with multiple valid URLs', () => {
+      const parsed = parseEnv({
+        DATABASE_URL: 'postgresql://cardoso:cardoso_dev@localhost:5432/cardoso_sound',
+        BETTER_AUTH_SECRET: 'a'.repeat(32),
+        RESEND_API_KEY: 're_12345678',
+        NODE_ENV: 'production',
+        TRUST_PROXY_HOPS: '1',
+        TRUSTED_PROXIES: '10.0.0.0/8',
+        CORS_ORIGIN: 'https://a.com,https://b.com',
+      });
+
+      expect(parsed.CORS_ORIGIN_LIST).toEqual(['https://a.com', 'https://b.com']);
+    });
+
+    it('T18: allows wildcard CORS_ORIGIN in development (D-19)', () => {
+      const parsed = parseEnv({
+        DATABASE_URL: 'postgresql://cardoso:cardoso_dev@localhost:5432/cardoso_sound',
+        BETTER_AUTH_SECRET: 'a'.repeat(32),
+        NODE_ENV: 'development',
+        CORS_ORIGIN: '*',
+      });
+
+      expect(parsed.CORS_ORIGIN).toBe('*');
+      expect(parsed.CORS_ORIGIN_LIST).toEqual(['*']);
+    });
+
+    it('T19: parses environment with omitted RATE_LIMIT_REDIS_URL as undefined', () => {
+      const parsed = parseEnv({
+        DATABASE_URL: 'postgresql://cardoso:cardoso_dev@localhost:5432/cardoso_sound',
+        BETTER_AUTH_SECRET: 'a'.repeat(32),
+      });
+
+      expect(parsed.RATE_LIMIT_REDIS_URL).toBeUndefined();
+    });
+
+    it('T20: throws validation error when RATE_LIMIT_REDIS_URL is not a valid URL', () => {
+      expect(() =>
+        parseEnv({
+          DATABASE_URL: 'postgresql://cardoso:cardoso_dev@localhost:5432/cardoso_sound',
+          BETTER_AUTH_SECRET: 'a'.repeat(32),
+          RATE_LIMIT_REDIS_URL: 'nao-e-url',
+        }),
+      ).toThrow(ZodError);
+    });
+  });
 });

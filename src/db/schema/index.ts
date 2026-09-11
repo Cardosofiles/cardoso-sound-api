@@ -6,7 +6,7 @@ import { playlists } from './playlists.schema.js';
 import { tracks } from './tracks.schema.js';
 import { passkey, twoFactor, user } from './users.schema.js';
 
-// Reexportação das 11 tabelas e tipos
+// Reexportação das 12 tabelas e tipos
 export * from './artists.schema.js';
 export * from './favorites.schema.js';
 export * from './playlist-tracks.schema.js';
