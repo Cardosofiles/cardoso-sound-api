@@ -126,6 +126,7 @@ export function createAuth(options?: CreateAuthOptions) {
       accountLinking: {
         enabled: true,
         trustedProviders: ['google', 'github'],
+        allowDifferentEmails: true,
       },
     },
     emailAndPassword: {
@@ -153,6 +154,7 @@ export function createAuth(options?: CreateAuthOptions) {
     session: {
       expiresIn: 60 * 60 * 24 * 7, // 7 dias em segundos
       updateAge: 60 * 60 * 24, // 24 horas em segundos
+      freshAge: 60 * 60 * 24, // 24 horas em segundos — D-58 (c)
       cookieCache: { enabled: true, maxAge: 5 * 60 },
     },
     logger: { level: 'error' },
