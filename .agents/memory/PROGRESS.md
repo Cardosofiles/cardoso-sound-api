@@ -120,7 +120,7 @@ Legenda: ⬜ pendente · 🟡 em andamento · ✅ concluído · 🔴 bloqueado
 | **F5-S05** | Two Factor: TOTP, OTP e backup codes           | ✅     | #33 | 2026-09-10 | 02, 09 (parte 2FA)             |
 | **F5-S06** | Passkey (WebAuthn / FIDO2)                     | ✅     | #34 | 2026-09-10 | 03, 09 (parte passkey)         |
 | **F5-S07** | Rate limit distribuído e origens confiáveis    | ✅     | #35 | 2026-09-11 | 11, 12, 18                     |
-| **F5-S10** | Vínculo de contas sociais (R46–R48)            | ✅     | PR  | 2026-09-11 | — (D-58)                       |
+| **F5-S10** | Vínculo de contas sociais (R46–R48)            | ✅     | #36 | 2026-09-11 | — (D-58)                       |
 | **F5-S08** | Deploy na Railway                              | ⬜     | —   | —          | —                              |
 | **F5-S09** | Hardening, auditoria e release `v1.0.0`        | ⬜     | —   | —          | portão dos 27                  |
 
