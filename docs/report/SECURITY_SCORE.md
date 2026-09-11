@@ -7,6 +7,17 @@
 **Método:** duas passagens estáticas independentes, incluindo leitura de `node_modules/better-auth/dist/**` para confirmar comportamento de runtime. Sem execução, sem alteração de código.
 **Documento irmão:** [`docs/issue/AUTHENTICATION.md`](../issue/AUTHENTICATION.md) — 27 GAPs e plano de remediação
 
+> **Nota de 2026-09-11 — este relatório é um retrato de 2026-09-09 e não foi reescrito.**
+> Duas coisas que ele afirma mudaram depois, e a leitura precisa saber disso:
+>
+> 1. **Os 27 GAPs foram fechados** (F5-S02 … F5-S07 e F5-S10, PRs #29–#36). O score atual do
+>    `develop` não é mais o 58.3 registrado abaixo; o número aqui é o do código de 2026-09-09.
+> 2. **A numeração dos sprints mudou por D-64.** Onde se lê `F5-S08` (deploy), leia **`F7-S01`**;
+>    onde se lê `F5-S09` (auditoria e release `v1.0.0`), leia **`F7-S02`**. A F5 encerrou-se como
+>    fase de autenticação e fecha em `v0.5.0`; deploy e release formam a F7, a última fase.
+>
+> O corpo fica como estava: reescrever um relatório datado apaga o registro em vez de corrigi-lo.
+
 ---
 
 ## 1. Score

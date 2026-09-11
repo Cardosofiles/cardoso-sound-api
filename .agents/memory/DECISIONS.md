@@ -721,3 +721,304 @@ period: 10, sendOTP } })`. O 2FA é **opcional por usuário** (`user.twoFactorEn
 - **Consequência:** as duas variáveis do D-50 continuam com função real — `TRUST_PROXY_HOPS`
   limita a profundidade, `TRUSTED_PROXIES` valida o peer. `req.ip` é confiável para o rate
   limit e para os logs. `client-ip.ts` deixa de ser código sem consumidor.
+
+### D-61 · Migração de produção roda no `preDeployCommand` da Railway, nunca no runner do GitHub
+
+- **Data:** 2026-09-11 · **Sprint:** F5-S08 · **Status:** vigente · **emenda a spec `06` §7**
+- **Contexto:** a spec `06` §7 e o brief de F5-S08 mandavam o `deploy.yml` rodar
+  `railway run pnpm db:migrate:deploy`. O `railway run` executa o comando **na máquina local** —
+  aqui, o runner do GitHub Actions — apenas injetando as variáveis do serviço. A `DATABASE_URL`
+  do addon Postgres da Railway aponta para `*.railway.internal`, endereço da rede privada do
+  projeto, que não resolve fora dela. O step falharia em connection timeout em todo deploy, e a
+  falha só apareceria no primeiro push em `main`, depois de toda a infraestrutura paga e
+  configurada.
+- **Opções consideradas:** (a) manter a migração no runner apontando o step para o proxy TCP
+  público da Railway — muda uma linha e preserva a ordem prometida, ao custo de expor o Postgres
+  à internet e de guardar mais uma credencial de banco no GitHub; (b) declarar `preDeployCommand`
+  no `railway.json`, fazendo a migração rodar dentro do próprio container, na rede privada, com
+  a imagem que está subindo.
+- **Decisão:** opção (b). `railway.json` ganha
+  `"preDeployCommand": "node dist/db/migrate.js"`. O `deploy.yml` perde o step de migração e
+  passa a ter apenas `railway up --service cardoso-sound-api --detach` seguido do smoke test em
+  `/health/ready`. O Postgres **não** recebe domínio público, e o proxy público não é usado em
+  lugar nenhum do pipeline.
+- **Consequência:** a ordem deixa de ser `deploy → migrate → smoke` e passa a ser
+  `build → migrate → cutover → smoke`, que é estritamente melhor: a Railway só direciona
+  tráfego para a nova versão se o `preDeployCommand` sair com código 0, então uma migração
+  quebrada aborta o rollout em vez de deixar a versão nova servindo contra um schema velho.
+  O `COPY drizzle ./drizzle` do `Dockerfile` deixa de ser conveniência e vira dependência dura
+  do ciclo de deploy. A premissa de migração aditiva e retrocompatível **continua valendo** —
+  durante o `preDeployCommand` a versão anterior ainda está no ar servindo tráfego. O runner do
+  GitHub não precisa mais de `pnpm install` nem `pnpm build`: o `deploy.yml` fica com checkout,
+  CLI da Railway e `curl`.
+
+### D-62 · Domínio próprio desde o primeiro deploy; `BETTER_AUTH_URL` é imutável na prática
+
+- **Data:** 2026-09-11 · **Sprint:** F5-S08 · **Status:** vigente
+- **Contexto:** D-54 deriva o `rpID` do Passkey/WebAuthn de `BETTER_AUTH_URL`. O `rpID` é parte
+  da identidade da credencial no autenticador: trocar o host faz o autenticador deixar de
+  devolver toda passkey registrada sob o host anterior — não há migração, só novo registro.
+  A mesma variável governa o prefixo `__Secure-` do cookie de sessão, as `callbackURL` do
+  Better Auth e as redirect URIs registradas nos três provedores OAuth. Subir em
+  `*.up.railway.app` e trocar para domínio próprio depois significa invalidar passkeys,
+  reconfigurar três painéis OAuth e reemitir o contrato OpenAPI.
+- **Opções consideradas:** (a) subir no subdomínio da Railway e migrar depois, registrando a
+  invalidação como dívida; (b) esperar o domínio e subir já com ele.
+- **Decisão:** opção (b). O primeiro deploy usa o domínio próprio. `BETTER_AUTH_URL` recebe
+  `https://api.<domínio>` e passa a ser tratada como **imutável**: mudá-la é um evento de
+  migração com ADR próprio, não um ajuste de variável. O mesmo domínio serve o DNS do Resend
+  (D-51 tornou a verificação de e-mail obrigatória, e o remetente precisa de domínio
+  verificado), então a compra do domínio já era pré-requisito de produção por outro caminho.
+- **Consequência:** F5-S08 fica bloqueado até o domínio existir, com DNS do Resend verificado e
+  o custom domain apontado para o serviço da Railway. Em troca, nenhuma credencial de usuário
+  nasce órfã. O bloco `servers` de `docs/openapi.json` passa a precisar da URL de produção —
+  mudança em `src/plugins/swagger.plugin.ts` e `scripts/export-openapi.ts` que **não** cabe no
+  blast radius de F5-S08 (que não toca `src/**`): é trabalho de F5-S09, e continua estático e
+  determinístico, respeitando D-59 (b).
+
+### D-63 · `v1.0.0-rc.1` leva `develop` para `main`; `v1.0.0` continua sendo o portão de F5-S09
+
+- **Data:** 2026-09-11 · **Sprint:** F5-S08 · **Status:** vigente · **complementa D-08** · **emendada por D-64** (o `v1.0.0-rc.1` passa a ser o release candidate de F7)
+- **Contexto:** `main` está parada em `816c7fe release: v0.1.0 (#12)`, 34 commits atrás de
+  `develop`, e **nenhuma tag existe no repositório** — `v0.1.0`…`v0.4.0` nunca foram criadas,
+  apesar de o `PROGRESS.md` registrar `v0.4.0` como "preparada". O `deploy.yml` dispara em
+  `push` na `main`, então não há deploy possível sem antes levar os 34 commits para lá. A
+  tabela da spec `06` §6 só prevê `v1.0.0` para a Fase 5, e `v1.0.0` é o portão de F5-S09 —
+  a auditoria dos 27 GAPs e o hardening final.
+- **Opções consideradas:** (a) tag intermediária `v0.5.0`, que não existe na tabela de fases e
+  exigiria uma linha nova nela; (b) pré-release `v1.0.0-rc.1`, que não consome o `v1.0.0` nem
+  cria degrau novo no ciclo de fases.
+- **Decisão:** opção (b). Um único release `release/v1.0.0-rc.1` a partir de `develop`, **depois**
+  de F5-S08 ter sido mergeada em `develop`, leva os commits e o `deploy.yml` para `main` no
+  mesmo push — que é o que dispara o primeiro deploy. Tag anotada `v1.0.0-rc.1` e GitHub Release
+  marcada como pré-release. O back-merge `main → develop` da spec `06` §6 continua obrigatório.
+  `v1.0.0` sai em F5-S09, sem GAP aberto, como D-49 e D-08 já determinam.
+- **Consequência:** o primeiro push em `main` é o gatilho do deploy, então **toda a
+  infraestrutura precisa existir antes do merge** — projeto Railway, addon Postgres, custom
+  domain, token da Railway no GitHub, e as variáveis do §5.2 do brief preenchidas. As tags
+  `v0.2.0`, `v0.3.0` e `v0.4.0` **não serão criadas retroativamente em `main`**: `main` nunca
+  conteve aquele código, e fabricar tags apontando para commits que nunca estiveram na branch de
+  produção é registro falso. A deriva fica registrada aqui; o histórico por fase continua
+  legível em `PROGRESS.md` e nos PRs.
+
+### D-64 · Roadmap passa de 5 para 7 fases: F6 (áudio próprio) e F7 (deploy e release)
+
+- **Data:** 2026-09-11 · **Sprint:** — (decisão do dono) · **Status:** vigente · **emenda D-49 e D-63**
+- **Contexto:** o áudio do catálogo aponta para `soundhelix.com`, domínio de terceiro, com ~16
+  arquivos servindo 40 faixas. Colocar isso em produção significa depender da disponibilidade e
+  dos termos de um terceiro para a demonstração inteira, e entregar um catálogo em que o áudio
+  repete. A migração para a Cloudflare R2 estava registrada como "decidida, não implementada" em
+  `.claude/memory/handoff-migracao-audio-r2.md` desde 2026-09-04 — documento que, por D-24, não
+  vincula. Enfiar essa migração como sprint de follow-up dentro da F2 (que está selada) ou da F5
+  (que é de produção) subordina um bloco de trabalho real a uma fase cujo objetivo é outro.
+- **Opções consideradas:** (a) sprint de follow-up `F2-S05` na fase de catálogo, executada fora de
+  ordem numérica — proposta da §9.2 do guia `docs/guides/analise-migracao-audio-cloudflare-r2.md`;
+  (b) fase própria para o áudio, empurrando o deploy para uma fase seguinte.
+- **Decisão:** opção (b). O roadmap passa a ter **sete fases**:
+
+  | Fase | Objetivo                                 | Tag      |
+  | ---- | ---------------------------------------- | -------- |
+  | F5   | Blindagem, hardening e auditoria         | `v0.5.0` |
+  | F6   | Áudio e imagem próprios na Cloudflare R2 | `v0.6.0` |
+  | F7   | Deploy na Railway e release              | `v1.0.0` |
+
+  O atual `F5-S08` (Deploy na Railway) passa a ser **`F7-S01`**, e o atual `F5-S09` (hardening,
+  auditoria e release) se divide: a auditoria dos 27 GAPs fecha a **F5** com `v0.5.0`, e o release
+  fecha a **F7** com `v1.0.0`.
+
+- **Consequência:** `v1.0.0` passa a significar "no ar, com catálogo próprio", que é mais honesto
+  do que "auditado mas nunca publicado" — a crítica que D-63 já registrava. **D-63 é emendada:** o
+  `release/v1.0.0-rc.1` que leva `develop` para `main` passa a ser o release candidate de **F7**,
+  não de F5. **D-49 é emendada** na contagem: o projeto sai de 25 sprints em 5 fases para 7 fases,
+  com o total a fixar quando os briefs de F6 e F7 forem escritos. A tabela da spec `06` §6 ganha
+  as linhas de F6 e F7. Nenhuma memória de sprint fechada é reescrita — renumeração atinge apenas
+  F5-S08 e F5-S09, que nunca foram executadas.
+
+### D-65 · Áudio próprio na Cloudflare R2 como storage estático — Caminho A
+
+- **Data:** 2026-09-11 · **Sprint:** F6 · **Status:** vigente · **emenda D-10 e a Consequência de D-28**
+- **Contexto:** promoção do handoff de 2026-09-04 a decisão vinculante, que é o que o `CLAUDE.md`
+  listava como pendência aberta. O handoff mapeou seis alternativas (manter SoundHelix, Spotify,
+  previews iTunes/Deezer, YouTube, Jamendo/CC, R2) e escolheu a R2 por entregar faixa completa,
+  egress zero, catálogo autocontido e URL estática.
+- **Opções consideradas:** (a) **Caminho A** — R2 é só storage: bucket público sob domínio próprio,
+  upload por script versionado, o seed grava as URLs, a API continua read-only; (b) **Caminho B** —
+  a API gerencia o ciclo de vida do áudio, com presigned PUT, CRUD de catálogo e RBAC; (c) Caminho A
+  com entrega assinada, bucket privado e `audioUrl` de curta duração emitida pelo service.
+- **Decisão:** opção (a), **Caminho A**. A API **nunca fala com a R2** — devolve uma string que já
+  está no banco, e o cliente Flutter baixa direto do CDN. **D-09 e D-10 permanecem intactas na
+  decisão**; de D-10 muda apenas o host citado ("toca direto do SoundHelix" → "toca direto do CDN
+  próprio"). A base pública do CDN vive em `src/config/constants.ts` como `CDN_BASE_URL` — é valor
+  público, determinístico e igual em todo ambiente, logo é constante, não variável de ambiente.
+  `src/config/env.ts` e `.env.example` **não mudam**.
+- **Consequência:** **nenhum segredo novo entra na superfície de produção** — as credenciais S3 da
+  R2 vivem só na máquina do dono, para o upload. O seed continua offline e determinístico, e a
+  suíte continua sem rede. **Hotlink livre é aceito conscientemente**: a defesa (Token Auth ou URL
+  assinada) violaria D-10, e a opção (c) foi descartada por isso. A _Consequência_ de **D-28** é
+  reescrita — "o SoundHelix só publica ~16 URLs distintas, o áudio repete e isso é aceito" deixa de
+  ser verdade com 40 arquivos únicos; a _Decisão_ de D-28 (8 artistas, 40 faixas, ≥5 por gênero,
+  idempotência) permanece. `durationSeconds` passa a ser **derivado do arquivo real**, e não mais
+  inventado — o que torna T17 uma prova de verdade pela primeira vez.
+
+### D-66 · O acervo é do dono; crédito e licença ficam fora do contrato da API
+
+- **Data:** 2026-09-11 · **Sprint:** F6 · **Status:** vigente
+- **Contexto:** o catálogo tem 8 artistas e 40 títulos **fictícios**. Servir gravação de terceiro
+  sob esses nomes num bucket público soma distribuição não autorizada e atribuição falsa, com o
+  repositório público no GitHub apontando para o bucket. O guia
+  `docs/guides/analise-migracao-audio-cloudflare-r2.md` §4 levantou isso como o risco que trava a
+  fase, e ele é jurídico, não técnico.
+- **Opções consideradas:** (a) acervo de terceiros sob licença livre (CC0, domínio público, CC-BY),
+  com CC-BY exigindo crédito e portanto colunas novas em `tracks` (`license`, `attribution`,
+  `source_url`), migração e mudança de contrato; (b) acervo do próprio dono, sem obrigação de
+  atribuição a terceiros.
+- **Decisão:** opção (b). **Os 40 arquivos são do dono**, que os sobe ele mesmo. Faixa de terceiro
+  só entra sob CC0 ou domínio público — CC-BY e CC-BY-SA ficam **fora**, justamente para não
+  arrastar obrigação de crédito para dentro do payload. O crédito e a proveniência, quando
+  existirem, vivem em `docs/` e no `README.md`, **nunca** no contrato da API.
+- **Consequência:** `tracks` **não ganha coluna nenhuma** — sem migração, sem mudança no payload
+  `Track`, sem regerar `docs/openapi.json` por causa de licença. O schema fica como está. Se um dia
+  entrar acervo CC-BY, isso é fase própria com ritual de decisão completo, não item enxertado.
+  A aplicação é de portfólio e fica no ar por cerca de uma semana; o bucket some junto com a demo.
+
+### D-67 · Capas e avatares migram junto; o catálogo fica autocontido
+
+- **Data:** 2026-09-11 · **Sprint:** F6 · **Status:** vigente
+- **Contexto:** além dos 40 `audioUrl` no SoundHelix, o payload carrega 40 `coverUrl` e 8
+  `avatarUrl` apontando para `images.unsplash.com`. Medido: são 40 _ocorrências_ de `coverUrl` mas
+  apenas **8 URLs distintas** (uma por artista), mais 8 avatares — **16 imagens distintas**, um
+  terço do que o handoff estimava.
+- **Opções consideradas:** (a) migrar só o áudio e deixar as imagens no Unsplash, aceitando que o
+  payload continue apontando para dois domínios de terceiros; (b) migrar as 16 imagens junto.
+- **Decisão:** opção (b). O bucket recebe `tracks/`, `covers/` e `artists/`, e **nenhum domínio de
+  terceiro sobra no payload**. Como são 16 imagens e não 48, o custo não justifica adiar.
+- **Consequência:** o bucket fica com 40 objetos de áudio + 16 de imagem. `artists.data.ts` entra
+  no blast radius da fase junto com `tracks.data.ts`, e `CDN_BASE_URL` passa a ter dois
+  consumidores — o que confirma a escolha de `constants.ts` sobre uma constante local em
+  `tracks.data.ts`. Volume estimado ~250 MB, dentro dos 10 GB gratuitos; custo esperado US$ 0.
+
+### D-68 · Convenção de nomes em `cardosolabs.space`: escopo por projeto, CDN compartilhado
+
+- **Data:** 2026-09-11 · **Sprint:** F6 / F7 · **Status:** vigente · **emenda D-62**
+- **Contexto:** `cardosolabs.space` é domínio compartilhado, destinado a hospedar várias
+  demonstrações — APIs, web apps e trabalhos de faculdade. A convenção de host entra em ~56 URLs
+  do seed, em `BETTER_AUTH_URL`, no `CORS_ORIGIN`, no DNS do Resend e no custom domain da R2. Queimar
+  `api.` no primeiro projeto obriga o segundo a inventar outra convenção — e, por D-62,
+  `BETTER_AUTH_URL` é imutável na prática, então renomear depois invalida passkeys.
+- **Opções consideradas:** (a) `api.` e `cdn.` diretos, mais curtos, mas que consomem os dois nomes
+  mais genéricos do domínio no primeiro projeto; (b) escopo por projeto no host da API, com um CDN
+  compartilhado e prefixo de pasta por projeto; (c) um subdomínio próprio por projeto com CDN
+  aninhado, isolando tudo ao custo de mais DNS e mais um custom domain na R2 por projeto.
+- **Decisão:** opção (b).
+
+  | Papel   | Host                                                            |
+  | ------- | --------------------------------------------------------------- |
+  | API     | `https://sound-api.cardosolabs.space`                           |
+  | CDN     | `https://cdn.cardosolabs.space`                                 |
+  | Objetos | `cdn.cardosolabs.space/cardoso-sound/{tracks,covers,artists}/…` |
+
+  Um bucket R2 e um custom domain servem todos os projetos; cada projeto é um prefixo de pasta.
+  `CDN_BASE_URL` em `src/config/constants.ts` recebe `https://cdn.cardosolabs.space/cardoso-sound`.
+  `*.r2.dev` é **proibido** em produção — é rate-limited e a própria Cloudflare desaconselha.
+
+- **Consequência:** **D-62 é emendada** com o valor concreto: `BETTER_AUTH_URL` de produção é
+  `https://sound-api.cardosolabs.space`, e é ela que governa o `rpID` do passkey (D-54). O DNS do
+  Resend é verificado na zona `cardosolabs.space` e passa a servir todos os projetos do domínio.
+  A zona precisa estar **na Cloudflare** — sem isso não há custom domain para o bucket. Nome do
+  objeto: `<artist-slug>--<title-slug>.<ext>`, minúsculas ASCII, não-alfanumérico vira `-`, hifens
+  colapsados, sem hífen nas pontas. O prefixo do artista faz o namespace do CDN espelhar a
+  constraint `UNIQUE (artist_id, title)` do banco, em vez da unicidade global de título, que hoje é
+  acidental. Objeto é **imutável**: áudio novo é slug novo — é o que autoriza
+  `Cache-Control: public, max-age=31536000, immutable` no upload.
+
+- **Emenda (2026-09-11), fechando §10.3 e §10.4 do handoff de F6/F7:** o bucket chama-se
+  **`cardosolabs-media`** e é **um só para todos os projetos**
+  do domínio. Não é preferência: um custom domain da R2 conecta a **um** bucket, então
+  `cdn.cardosolabs.space/<projeto>/…` só existe com bucket único e prefixo de pasta. Um bucket por
+  projeto exigiria um host por projeto (`cdn-sound.…`), mais um registro DNS e mais um token de API
+  cada, contrariando a opção (b) acima. **Regra de CORS no bucket fica fora de escopo:** o cliente
+  Flutter é **nativo (Android/iOS)**, e app nativo não faz requisição sujeita a CORS. O passo P0.11
+  do runbook de F6 deixa de existir. A condição que reabre isto é única e deve constar na spec
+  `09-midia-e-cdn.md`: **um build Flutter Web**. Nesse dia, e só nesse dia, cria-se a regra de CORS
+  no bucket restrita à origem do app — nada a ver com `CORS_ORIGIN` da API, que é configuração do
+  Fastify e não da R2.
+
+### D-69 · Duração das faixas vem de `music-metadata` (devDependency); `ffprobe` fica fora do projeto
+
+- **Data:** 2026-09-11 · **Sprint:** F6-S02 · **Status:** vigente
+- **Contexto:** D-65 exige que os 40 `durationSeconds` do seed sejam **derivados dos arquivos MP3
+  reais**, não copiados dos valores do SoundHelix — é a única coisa que faz `T17`
+  (`120 ≤ durationSeconds ≤ 380`, `tests/integration/seed.test.ts:127-128`) valer alguma coisa.
+  O script de ingestão precisa ler duração de MP3. Medido nesta árvore: **nem `ffprobe` nem `ffmpeg`
+  existem nesta máquina** (`command -v` em ambos, ausente).
+- **Opções consideradas:** (a) `ffprobe` do `ffmpeg` do sistema — zero dependências no repositório e
+  nenhum ADR de dependência, mas exige `apt install ffmpeg` (~300 MB) que o próximo clone não
+  herda, e torna o passo não reprodutível fora desta máquina; (b) `music-metadata` como
+  **devDependency** — JS puro, sem binário externo, script autocontido, testável e executável em
+  qualquer clone e no CI, ao custo de uma dependência nova.
+- **Decisão:** opção (b), **`music-metadata` como `devDependency`**. O script de ingestão é código
+  versionado do projeto; fazê-lo depender de um binário instalado à mão contraria a mesma lógica que
+  fez o `allowBuilds` do D-32 existir. A precisão do `music-metadata` em MP3 degrada em VBR sem
+  cabeçalho Xing — caso que **P0.6 já elimina** ao exigir CBR 128–192 kbps na normalização.
+- **Consequência:** `package.json` e `pnpm-lock.yaml` entram no blast radius de F6-S02. A duração é
+  lida do arquivo e **arredondada para segundos inteiros** antes de virar `durationSeconds`; nenhum
+  valor antigo é copiado. Se alguma faixa cair fora de `120…380 s`, a correção é o **áudio** (P0.7),
+  não o teste — mexer em `T17` exige emenda declarada no brief, nunca descoberta em execução.
+  `ffmpeg` permanece fora: não é dependência do projeto nem pré-requisito de nenhum runbook.
+
+### D-70 · `tsconfig.json` passa a incluir `scripts/**/*.ts`
+
+- **Data:** 2026-09-11 · **Sprint:** F6-S02 · **Status:** vigente
+- **Contexto:** `tsconfig.json:23` declara
+  `include: ["src/**/*.ts", "tests/**/*.ts", "*.config.ts", "*.config.mts"]` — **`scripts/` não está
+  lá**. `scripts/export-openapi.ts` só é typechecked por acidente, porque
+  `tests/integration/openapi.test.ts:6` o importa. Um `scripts/ingest-media.ts` novo, sem teste que
+  o importe, **passa batido por `pnpm typecheck`** — um portão do DoD que silenciosamente não cobre
+  o arquivo.
+- **Opções consideradas:** (a) acrescentar `scripts/**/*.ts` ao `include`, fechando a lacuna para
+  todo script presente e futuro; (b) exigir, por convenção, um teste que importe cada módulo de
+  `scripts/` — resolve o script da vez e deixa o próximo escapar do mesmo jeito.
+- **Decisão:** opção (a). `include` passa a
+  `["src/**/*.ts", "tests/**/*.ts", "scripts/**/*.ts", "*.config.ts", "*.config.mts"]`.
+- **Consequência:** `tsconfig.json` entra no blast radius de F6-S02, e o typecheck de `scripts/`
+  deixa de depender de um import de teste. Hoje o risco é nulo: `scripts/` contém apenas
+  `export-openapi.ts` (já coberto) e `agent-security/`, que é shell, não TypeScript.
+  Isto **não** estende a `scripts/` o bloco de ESLint escopado em `files: ['src/**/*.ts']`: o
+  script de ingestão continua podendo ler credenciais da R2 de `process.env` legitimamente, e o
+  `no-console` continua não se aplicando a ele. Não é exceção nem gambiarra — é a fronteira correta
+  entre aplicação e ferramenta de linha de comando.
+
+### D-73 · A F5 encerra-se como fase de autenticação; a F7 é a última fase e concentra deploy, auditoria e release
+
+- **Data:** 2026-09-11 · **Sprint:** — (decisão do dono) · **Status:** vigente · **emenda D-64, D-49 e D-63**
+- **Contexto:** D-64 tirou o deploy da F5 mas deixou a F5 com um sprint de fechamento, `F5-S09`,
+  que ainda carregaria "a auditoria dos 27 GAPs". Na prática **os 27 GAPs já estavam fechados** em
+  F5-S02…F5-S07 e F5-S10 (PRs #29–#36, `PROGRESS.md` de 2026-09-11), e o brief de `F5-S09` continuava
+  se intitulando "Release `v1.0.0`", se declarando "último sprint do projeto" e "depende de F5-S08" —
+  três afirmações que D-64 tornou falsas. Restava um sprint sem trabalho próprio e um brief que
+  contradizia o ADR vigente. Já `F5-S08` vivia numa pasta (`fase-5-producao/`) cuja fase não o
+  contém mais.
+- **Opções consideradas:** (a) reescrever o brief de `F5-S09` para cobrir só a auditoria e fechar a
+  F5 com um sprint próprio — mantém a simetria "toda fase termina num sprint", mas cria um sprint
+  cujo conteúdo é reconferir o que os PRs #29–#36 já provaram; (b) encerrar a F5 nos sprints já
+  mergeados e mover auditoria, README final e release inteiros para a F7.
+- **Decisão:** opção (b).
+
+  1. A **F5 é a fase de autenticação e blindagem** e está **completa** com F5-S01…F5-S07 e F5-S10.
+     Fecha em `v0.5.0` sem sprint adicional.
+  2. `docs/sprints/fase-5-producao/F5-S09-hardening-e-release.md` é **removido**. Seu escopo real
+     (checklist da spec `08` §9 com evidência, `docs/AUDITORIA.md`, `README.md` reconciliado,
+     `docs/FLUTTER.md`, tag `v1.0.0`) passa integralmente para **`F7-S02`**, ainda a escrever.
+  3. `F5-S08-deploy-railway.md` vira `docs/sprints/fase-7-deploy/F7-S01-deploy-railway.md`, e o
+     plano do agente vira `docs/agents-plans/plan-f7-s01-deploy-railway.md`. O conteúdo auditado em
+     2026-09-11 (D-61, D-62, D-63, V4/V5 por D-56/D-51) é preservado: só a numeração muda.
+  4. **A F7 é a última fase do projeto.**
+
+- **Consequência:** o checklist da spec `04` §7 e o da spec `08` §9 passam a ser portão de
+  **`F7-S02`**, não de `F5-S09` — e a evidência deles é colhida **contra a API no ar**, o que só é
+  possível depois de `F7-S01`. Isso é mais forte que o arranjo anterior, em que a auditoria rodaria
+  contra o ambiente local. `docs/sprints/README.md`, as specs `04`, `06` e `08`, `docs/issue/AUTHENTICATION.md`
+  e `.env.example` são atualizados na mesma passada. `docs/report/SECURITY_SCORE.md` **não** é
+  reescrito: é relatório datado de 2026-09-09 e recebe apenas nota de atualização no topo, pela
+  mesma regra que proíbe reescrever memória de sprint fechada. Nenhum sprint executado é renumerado —
+  `F5-S08` e `F5-S09` nunca rodaram. A reserva **D-71/D-72** para os ADRs de `F7-S01` continua de pé.

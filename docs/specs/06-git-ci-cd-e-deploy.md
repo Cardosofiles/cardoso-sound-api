@@ -219,13 +219,25 @@ gh pr checks --watch                # alternativa equivalente
 
 Uma tag por fase (D-08).
 
-| Fase          | Tag      | Entrega                                             |
-| ------------- | -------- | --------------------------------------------------- |
-| F1 Fundação   | `v0.1.0` | Projeto compila, sobe, responde `/health`, CI verde |
-| F2 Catálogo   | `v0.2.0` | Catálogo público consultável e populado             |
-| F3 Identidade | `v0.3.0` | Cadastro, login e perfil                            |
-| F4 Biblioteca | `v0.4.0` | Playlists e favoritos, suíte E2E                    |
-| F5 Produção   | `v1.0.0` | Deploy na Railway, OpenAPI publicado                |
+| Fase             | Tag      | Entrega                                             |
+| ---------------- | -------- | --------------------------------------------------- |
+| F1 Fundação      | `v0.1.0` | Projeto compila, sobe, responde `/health`, CI verde |
+| F2 Catálogo      | `v0.2.0` | Catálogo público consultável e populado             |
+| F3 Identidade    | `v0.3.0` | Cadastro, login e perfil                            |
+| F4 Biblioteca    | `v0.4.0` | Playlists e favoritos, suíte E2E                    |
+| F5 Autenticação  | `v0.5.0` | Blindagem, 27 GAPs fechados, OpenAPI publicado      |
+| F6 Mídia própria | `v0.6.0` | Catálogo na Cloudflare R2 (D-65)                    |
+| F7 Deploy        | `v1.0.0` | Deploy na Railway e release — **última fase**       |
+
+**Pré-release de deploy — `v1.0.0-rc.1` (D-63).** O `deploy.yml` dispara em `push` na `main`, e
+`main` está 34 commits atrás de `develop`. Depois que F7-S01 for mergeada em `develop`, um único
+`release/v1.0.0-rc.1` leva os commits **e** o `deploy.yml` para `main` no mesmo push — que é o que
+dispara o primeiro deploy. Tag anotada, GitHub Release marcada como **pré-release**, back-merge
+obrigatório. Não consome o `v1.0.0`, que continua sendo o portão de **F7-S02** (D-64).
+
+> **Nenhuma tag existe hoje no repositório.** `v0.1.0`…`v0.4.0` nunca foram criadas e **não serão
+> criadas retroativamente em `main`** — `main` nunca conteve aquele código (D-63). A tabela acima
+> descreve o ciclo a partir daqui, não o histórico.
 
 Procedimento (último sprint de cada fase):
 
@@ -258,13 +270,19 @@ consolidando os `F<n>-S<nn>.md` daquela fase. Não existe antes disso.
   "build": { "builder": "DOCKERFILE", "dockerfilePath": "Dockerfile" },
   "deploy": {
     "startCommand": "node dist/server.js",
+    "preDeployCommand": "node dist/db/migrate.js",
     "healthcheckPath": "/health/ready",
-    "healthcheckTimeout": 30,
+    "healthcheckTimeout": 300,
     "restartPolicyType": "ON_FAILURE",
     "restartPolicyMaxRetries": 3
   }
 }
 ```
+
+`preDeployCommand` roda **dentro do container que vai subir**, na rede privada do projeto, antes
+do cutover (D-61). Se sair com código diferente de 0, a Railway aborta o rollout e a versão
+anterior continua servindo. É por isso que `drizzle/` na imagem é dependência dura, não
+conveniência.
 
 ### `Dockerfile` — multi-stage, `node:24-alpine`
 
@@ -274,19 +292,32 @@ consolidando os `F<n>-S<nn>.md` daquela fase. Não existe antes disso.
 | `build`  | `pnpm build` → `dist/`                                                                  |
 | `runner` | `--prod` deps + `dist/` + `drizzle/`; usuário não-root; `CMD ["node","dist/server.js"]` |
 
-> `drizzle/` **precisa** ir para a imagem final — `db:migrate:deploy` lê os `.sql` de lá.
+> `drizzle/` **precisa** ir para a imagem final — o `preDeployCommand` lê os `.sql` de lá.
+
+**`pnpm-workspace.yaml` vai junto de `package.json` e `pnpm-lock.yaml` nos três estágios.** Ele
+carrega o `allowBuilds` do D-32; sem ele o pnpm 11 aborta o install com `ERR_PNPM_IGNORED_BUILDS`
+(esbuild, unrs-resolver) e o build nunca chega ao `tsup`. Verificado em 2026-09-11.
 
 ### `.github/workflows/deploy.yml`
 
-Gatilho: `push` em `main`. Sequência:
+Gatilho: `push` em `main`. Sequência (D-61):
 
 1. `railway up --service cardoso-sound-api --detach` (token em `secrets.RAILWAY_TOKEN`)
-2. `railway run pnpm db:migrate:deploy` — **migração antes do tráfego novo**
-3. `curl -fsS "$RAILWAY_URL/health/ready"` — smoke test; falhou, o job falha
+2. a própria Railway roda o `preDeployCommand` — **migração dentro do container, antes do cutover**
+3. `curl -fsS "$RAILWAY_URL/health/ready"` com polling — smoke test; falhou, o job falha
+
+O workflow **não** instala dependências nem compila: o build acontece na Railway, a partir do
+`Dockerfile`. Checkout, CLI da Railway e `curl` bastam.
+
+> **A migração não roda no runner do GitHub.** `railway run` executa localmente com as variáveis
+> injetadas, e a `DATABASE_URL` do addon aponta para `*.railway.internal` — rede privada, que não
+> resolve de fora. Ver D-61.
 
 Variáveis no painel da Railway: `DATABASE_URL` (do Postgres do próprio projeto),
-`BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `CORS_ORIGIN`, `NODE_ENV=production`,
-`LOG_LEVEL=info`.
+`BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `CORS_ORIGIN`, `NODE_ENV=production`, `LOG_LEVEL=info`,
+`RESEND_API_KEY`, `EMAIL_FROM`, `TRUST_PROXY_HOPS`, `TRUSTED_PROXIES`, `MOBILE_DEEP_LINK` e as
+credenciais OAuth em uso. A lista normativa e o motivo de cada uma estão no §5.2 do brief de
+F7-S01; a obrigatoriedade em produção é imposta por `src/config/env.ts`, que aborta o boot.
 
 ### `docker-compose.yml` (desenvolvimento local)
 
