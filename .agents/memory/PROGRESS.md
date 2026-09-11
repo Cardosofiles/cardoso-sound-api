@@ -9,18 +9,41 @@
 
 ## Estado atual
 
-| Campo                  | Valor                                                              |
-| ---------------------- | ------------------------------------------------------------------ |
-| **Fase corrente**      | F5 — Produção (em andamento)                                       |
-| **Próximo sprint**     | **F5-S08** — Deploy na Railway                                     |
-| **Última tag**         | `v0.4.0` (preparada)                                               |
-| **`gh` CLI**           | ✅ 2.46.0, autenticado como `Cardosofiles`, protocolo SSH (D-33)   |
-| **`pnpm install`**     | ✅ passa — `allowBuilds` decidido (D-32)                           |
-| **Repositório**        | ✅ público `Cardosofiles/cardoso-sound-api` no GitHub              |
-| **Branch de trabalho** | `feature/f5s10-vinculo-de-contas-sociais` (default: `develop`)     |
-| **CI**                 | ✅ ativo (`.github/workflows/ci.yml`) — check obrigatório          |
-| **Banco**              | ✅ Postgres 17 ativo via Docker Compose                            |
-| **Última atualização** | 2026-09-11 — F5-S10 concluído: Vínculo de contas sociais (R46–R48) |
+| Campo                  | Valor                                                            |
+| ---------------------- | ---------------------------------------------------------------- |
+| **Fase corrente**      | **F5 — Autenticação e blindagem: COMPLETA** (D-73)               |
+| **Próximo sprint**     | **F6-S01** — a escrever (áudio próprio na R2)                    |
+| **Última tag**         | **nenhuma** — o repositório não tem tags (D-63)                  |
+| **`gh` CLI**           | ✅ 2.46.0, autenticado como `Cardosofiles`, protocolo SSH (D-33) |
+| **`pnpm install`**     | ✅ passa — `allowBuilds` decidido (D-32)                         |
+| **Repositório**        | ✅ público `Cardosofiles/cardoso-sound-api` no GitHub            |
+| **Branch de trabalho** | `develop` (default)                                              |
+| **CI**                 | ✅ ativo (`.github/workflows/ci.yml`) — check obrigatório        |
+| **Banco**              | ✅ Postgres 17 ativo via Docker Compose                          |
+| **Última atualização** | 2026-09-11 — F5 encerrada; deploy e release vão à F7 (D-73)      |
+
+> 📌 **O roadmap mudou em 2026-09-11 (D-64, emendado por D-73).** A **F5 está encerrada** —
+> era a fase de autenticação e blindagem, e os 27 GAPs foram fechados em F5-S02…F5-S07 e F5-S10.
+> Não há `F5-S09`: o brief foi removido e seu escopo (auditoria final, README reconciliado,
+> `docs/FLUTTER.md`, tag `v1.0.0`) virou **F7-S02**. Sequência daqui em diante:
+> **F6** (áudio e imagem próprios na Cloudflare R2, fecha `v0.6.0`) → **F7** (deploy na Railway,
+> auditoria e release, fecha `v1.0.0`). **A F7 é a última fase.**
+> Os sprints de F6 e F7 **ainda não foram escritos**. Todo o insumo de planejamento — decisões
+> fechadas, blast radius medido e armadilhas — está em
+> `.claude/memory/handoff-f6-f7-audio-e-deploy.md`. Leia esse arquivo antes de escrever qualquer
+> brief de F6 ou F7.
+>
+> 🔴 **F7-S01 (deploy, era F5-S08) está bloqueado por infraestrutura, não por código.** Brief e
+> plano do agente auditados e corrigidos em 2026-09-11. A execução só começa com o domínio
+> `cardosolabs.space` comprado, a zona DNS **na Cloudflare**, o DNS do Resend verificado (D-51
+> tornou a verificação de e-mail obrigatória) e `sound-api.cardosolabs.space` apontado para o
+> serviço da Railway (D-68). `BETTER_AUTH_URL` é imutável na prática — trocá-la depois invalida
+> toda passkey registrada (D-54, D-62). Lista completa: os oito pré-requisitos da §1 de
+> `docs/sprints/fase-7-deploy/F7-S01-deploy-railway.md`.
+>
+> **`main` está 34 commits atrás de `develop` e não existe nenhuma tag no repositório.** O deploy
+> só dispara com um `release/v1.0.0-rc.1` levando `develop` para `main`, já em F7 (D-63 emendada
+> por D-64). `v0.1.0`…`v0.4.0` não serão criadas retroativamente.
 
 > ✅ **Auditoria de segurança encerrada (2026-09-11).** Todos os **27 GAPs** de `docs/issue/AUTHENTICATION.md`
 > foram integralmente fechados nos sprints F5-S02 … F5-S07 (GAP-11, GAP-12 e GAP-18 entregues em F5-S07).
@@ -47,7 +70,7 @@ suíte E2E dos fluxos completos (E1–E15, 5 specs via `app.inject()` com contai
 
 ---
 
-## Roadmap — 25 sprints em 5 fases
+## Roadmap — 7 fases (D-64)
 
 Legenda: ⬜ pendente · 🟡 em andamento · ✅ concluído · 🔴 bloqueado
 
@@ -95,10 +118,11 @@ Legenda: ⬜ pendente · 🟡 em andamento · ✅ concluído · 🔴 bloqueado
 | **F4-S02** | Módulo `favorites`             | ✅     | #26 | 2026-09-06 |
 | **F4-S03** | Suíte E2E dos fluxos completos | ✅     | #27 | 2026-09-08 |
 
-### F5 — Produção → tag `v1.0.0`
+### F5 — Autenticação e blindagem → tag `v0.5.0` · **COMPLETA**
 
-> Objetivo: contrato publicado, **os 27 GAPs da auditoria de segurança fechados**, deploy
-> funcionando, segurança auditada.
+> Objetivo: contrato publicado e **os 27 GAPs da auditoria de segurança fechados**. Por **D-73**,
+> esta fase **não** contém deploy nem release — ambos são da F7 — e não tem sprint de fechamento:
+> encerra-se nos oito sprints mergeados abaixo.
 >
 > **Renumerada em 2026-09-09 por D-49.** A auditoria de `docs/issue/AUTHENTICATION.md` levantou
 > 27 GAPs, um deles crítico (rate limit global desligado justamente em produção). Seis sprints de
@@ -110,19 +134,64 @@ Legenda: ⬜ pendente · 🟡 em andamento · ✅ concluído · 🔴 bloqueado
 > número é identidade, não ordem. Fecha as três rotas de vínculo de conta social que a coringa
 > já responde sem contrato nem teste. Depende do índice `account_provider_account_unique` de
 > F5-S04 (GAP-16).
+>
+> **Reestruturada em 2026-09-11 por D-64 e encerrada por D-73.** O deploy saiu da F5 e virou
+> **F7-S01**; o release `v1.0.0` virou **F7-S02**; e o `F5-S09` que fecharia a fase foi
+> **removido**, porque os 27 GAPs já haviam sido fechados em F5-S02…F5-S07 e F5-S10. A F5 fecha
+> em `v0.5.0` com os oito sprints abaixo, sem sprint adicional.
 
-| Sprint     | Título                                         | Status | PR  | Data       | GAPs                           |
-| ---------- | ---------------------------------------------- | ------ | --- | ---------- | ------------------------------ |
-| **F5-S01** | OpenAPI: export, verificação no CI e polimento | ✅     | #28 | 2026-09-09 | —                              |
-| **F5-S02** | Blindagem de borda e rate limiting             | ✅     | #29 | 2026-09-09 | 01, 04, 05, 06, 10, 17, 21, 27 |
-| **F5-S03** | Recuperação de conta, anti-enumeração e senha  | ✅     | #30 | 2026-09-09 | 07, 08, 14, 15, 22, 24, 25     |
-| **F5-S04** | Endurecimento de sessão, schema e contrato     | ✅     | #32 | 2026-09-09 | 13, 16, 19, 20, 23, 26         |
-| **F5-S05** | Two Factor: TOTP, OTP e backup codes           | ✅     | #33 | 2026-09-10 | 02, 09 (parte 2FA)             |
-| **F5-S06** | Passkey (WebAuthn / FIDO2)                     | ✅     | #34 | 2026-09-10 | 03, 09 (parte passkey)         |
-| **F5-S07** | Rate limit distribuído e origens confiáveis    | ✅     | #35 | 2026-09-11 | 11, 12, 18                     |
-| **F5-S10** | Vínculo de contas sociais (R46–R48)            | ✅     | #36 | 2026-09-11 | — (D-58)                       |
-| **F5-S08** | Deploy na Railway                              | ⬜     | —   | —          | —                              |
-| **F5-S09** | Hardening, auditoria e release `v1.0.0`        | ⬜     | —   | —          | portão dos 27                  |
+| Sprint     | Título                                            | Status | PR  | Data       | GAPs                           |
+| ---------- | ------------------------------------------------- | ------ | --- | ---------- | ------------------------------ |
+| **F5-S01** | OpenAPI: export, verificação no CI e polimento    | ✅     | #28 | 2026-09-09 | —                              |
+| **F5-S02** | Blindagem de borda e rate limiting                | ✅     | #29 | 2026-09-09 | 01, 04, 05, 06, 10, 17, 21, 27 |
+| **F5-S03** | Recuperação de conta, anti-enumeração e senha     | ✅     | #30 | 2026-09-09 | 07, 08, 14, 15, 22, 24, 25     |
+| **F5-S04** | Endurecimento de sessão, schema e contrato        | ✅     | #32 | 2026-09-09 | 13, 16, 19, 20, 23, 26         |
+| **F5-S05** | Two Factor: TOTP, OTP e backup codes              | ✅     | #33 | 2026-09-10 | 02, 09 (parte 2FA)             |
+| **F5-S06** | Passkey (WebAuthn / FIDO2)                        | ✅     | #34 | 2026-09-10 | 03, 09 (parte passkey)         |
+| **F5-S07** | Rate limit distribuído e origens confiáveis       | ✅     | #35 | 2026-09-11 | 11, 12, 18                     |
+| **F5-S10** | Vínculo de contas sociais (R46–R48)               | ✅     | #36 | 2026-09-11 | — (D-58)                       |
+| ~~F5-S09~~ | ~~Hardening e auditoria~~ — **removido por D-73** | ❌     | —   | 2026-09-11 | escopo foi para **F7-S02**     |
+
+> `F5-S08` (Deploy na Railway) **saiu desta fase** — virou `F7-S01` por D-64, e em 2026-09-11 foi
+> efetivamente movido e renumerado para `docs/sprints/fase-7-deploy/F7-S01-deploy-railway.md`
+> (plano: `docs/agents-plans/plan-f7-s01-deploy-railway.md`). **A F5 está completa**: fecha em
+> `v0.5.0` sem sprint adicional (D-73).
+
+### F6 — Áudio e imagem próprios na Cloudflare R2 → tag `v0.6.0`
+
+> Objetivo: tirar o catálogo de `soundhelix.com` e `images.unsplash.com` e colocá-lo num bucket
+> R2 próprio, sob `cdn.cardosolabs.space/cardoso-sound/`. **Caminho A (D-65): a API nunca fala
+> com a R2** — continua read-only, devolvendo URL estática. D-09 e D-10 preservadas.
+>
+> **Fase criada em 2026-09-11 por D-64.** Decisões: D-65 (R2 Caminho A), D-66 (acervo do dono,
+> crédito fora do contrato), D-67 (capas e avatares migram), D-68 (convenção de nomes, emendado
+> em 2026-09-11 com o bucket `cardosolabs-media` e CORS fora de escopo), **D-69** (duração via
+> `music-metadata`, não `ffprobe`) e **D-70** (`tsconfig.json` inclui `scripts/**/*.ts`).
+> Insumo de planejamento: `.claude/memory/handoff-f6-f7-audio-e-deploy.md`.
+> **Sprints ainda não escritos — mas os dois bloqueios de F6-S02 foram resolvidos em 2026-09-11.**
+
+| Sprint | Título     | Status | PR  | Data |
+| ------ | ---------- | ------ | --- | ---- |
+| —      | a escrever | ⬜     | —   | —    |
+
+### F7 — Deploy e release → tag `v1.0.0`
+
+> Objetivo: a API no ar em `sound-api.cardosolabs.space`, com o catálogo próprio da F6, e o
+> release `v1.0.0` selado. **Fase criada em 2026-09-11 por D-64.**
+>
+> **Esta é a última fase do projeto (D-73).** `F7-S01` é o antigo `F5-S08`, já auditado (D-61,
+> D-62, D-63) e **movido e renumerado em 2026-09-11** para `docs/sprints/fase-7-deploy/`.
+> `F7-S02` absorve o escopo do antigo `F5-S09`, que foi removido: checklist da spec `08` §9 com
+> evidência colhida contra a API no ar, `docs/AUDITORIA.md`, `README.md` reconciliado,
+> `docs/FLUTTER.md` e a tag `v1.0.0`. **Ainda a escrever.**
+> Os ADRs que F7-S01 registra são **D-71** (seed manual) e
+> **D-72** (sem rollback automático) — renumerados de D-69/D-70 em 2026-09-11, porque a F6 roda
+> antes e tomou esses números.
+
+| Sprint     | Título                       | Status | PR  | Data | Origem              |
+| ---------- | ---------------------------- | ------ | --- | ---- | ------------------- |
+| **F7-S01** | Deploy na Railway            | 🔴     | —   | —    | era `F5-S08`        |
+| **F7-S02** | Auditoria e release `v1.0.0` | ⬜     | —   | —    | era `F5-S09` (D-73) |
 
 ---
 

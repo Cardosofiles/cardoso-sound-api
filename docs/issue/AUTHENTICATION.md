@@ -722,8 +722,9 @@ Verificado de forma independente nas duas passagens:
 > **Status: planejado e autorizado (2026-09-09).** Os seis sprints abaixo existem, com anatomia
 > D-30 e blast radius fechado. A spec normativa é
 > [`docs/specs/08-blindagem-de-seguranca.md`](../specs/08-blindagem-de-seguranca.md) — a §10 dela
-> mapeia GAP × sprint × seção, e a §9 é o checklist que fecha a `v1.0.0` em `F5-S09`.
-> Por **D-49**, a blindagem inteira roda **antes** do deploy (`F5-S08`).
+> mapeia GAP × sprint × seção, e a §9 é o checklist que fecha a `v1.0.0` em **`F7-S02`**.
+> Por **D-49**, a blindagem inteira roda **antes** do deploy (**`F7-S01`**); por **D-64**, deploy e
+> release saíram da F5 e formam a F7, a última fase.
 
 | Sprint     | Brief                                                                                                                 | GAPs                           |
 | :--------- | :-------------------------------------------------------------------------------------------------------------------- | :----------------------------- |

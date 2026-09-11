@@ -1,5 +1,15 @@
 # HANDOFF — Migração do áudio do seed para Cloudflare R2
 
+> ⚠️ **SUPERADO em 2026-09-11. Não execute este mapa.** A _decisão_ foi promovida a ADR
+> (**D-65**, Caminho A) e continua válida; o _mapa de alterações_ envelheceu três fases.
+> O que vale agora: `.claude/memory/handoff-f6-f7-audio-e-deploy.md`.
+>
+> Erros conhecidos deste documento: "nova D-41" (o número correto é D-65) · "14 arquivos de
+> documentação + 2 de código" (são **29** arquivos) · "E14 é opcional" (**falso** — quebra junto
+> com T16 desde F4-S03) · "48 imagens" (são **16** distintas) · "regerar o plano de F2-S02"
+> (regerar plano de sprint fechada falsifica registro — a regra hoje é nota de rodapé).
+> Mantido no repositório porque a §1 registra _por que_ a R2 venceu as seis alternativas.
+
 > **Status:** decidido, **não implementado**. Nada foi alterado ainda — este documento é o
 > mapa completo do que mudar, levantado por varredura em `docs/`, `.agents/`, `README.md`
 > e `AGENTS.md`.

@@ -457,7 +457,7 @@ ser condicional a `!isProduction`. `scripts/export-openapi.ts` roda com `NODE_EN
 
 `RATE_LIMIT_REDIS_URL` presente liga o store Redis do `@fastify/rate-limit`; ausente mantém o
 contador local. **Enquanto a variável não existir em produção, a aplicação roda com réplica
-única** — restrição que F5-S08 registra no runbook de deploy, porque com `k` réplicas o limite
+única** — restrição que F7-S01 registra no runbook de deploy, porque com `k` réplicas o limite
 efetivo vira `k × max`.
 
 ### 8.3 Origens confiáveis — F5-S07
@@ -512,7 +512,8 @@ para não documentar um cookie que não existe.
 
 ## 9. Checklist de auditoria — substitui e amplia a spec `04` §7
 
-Portão de **F5-S09**. Cada item precisa de evidência; item sem evidência conta como falha.
+Portão de **F7-S02** (renumerado de `F5-S09` por D-64). Cada item precisa de evidência; item sem
+evidência conta como falha.
 
 ### Herdados da spec `04` §7 — continuam valendo
 

@@ -572,12 +572,13 @@ no repositório público.
 
 ---
 
-## 7. Checklist de auditoria de segurança (F5-S09)
+## 7. Checklist de auditoria de segurança (F7-S02)
 
 > **⚠️ Este checklist continua válido mas está incompleto.** A auditoria de 2026-09-09 acrescentou
 > 27 GAPs; o checklist que efetivamente fecha a `v1.0.0` é o da **spec `08` §9**, que reproduz os
 > itens abaixo e soma outros 25. Use os dois — o daqui como base histórica, o da `08` como portão.
-> A numeração do sprint mudou de `F5-S03` para **`F5-S09`** por D-49.
+> A numeração do sprint mudou de `F5-S03` para `F5-S09` por D-49 e, por **D-64**, para
+> **`F7-S02`** — o último sprint do projeto, já na fase de deploy e release.
 
 - [ ] `.env` fora do git; `git log -p` não contém segredo em nenhum commit
 - [ ] `mcp_config.json` sem token real

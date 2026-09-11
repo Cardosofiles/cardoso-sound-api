@@ -86,29 +86,45 @@ choice into a spec or brief as though the project had already decided it.
 removed) · D-09/D-10 (catalog read-only, raw `audioUrl`, no streaming, no counters) ·
 D-31 (another user's resource answers **404, never 403**).
 
-**Open — needs the owner's decision:**
+**Open — nothing right now.** Every question that was open on 2026-09-11 has been answered and
+recorded as an ADR.
 
-- **Audio hosting** — `.claude/memory/handoff-migracao-audio-r2.md` records the SoundHelix →
-  Cloudflare R2 move as "decided, not implemented", but it is not an ADR, so per D-24 it does
-  not bind. Promote it to the next free `D-NN` or keep the seed on SoundHelix.
-
-`pnpm openapi:export` points at `scripts/export-openapi.ts`, which does not exist yet — that is
-F5-S01 work (D-21), not drift.
+**Nothing in F5, F6 or F7's shape is open any more.** **F5 is closed** as the authentication and
+hardening phase and ships `v0.5.0` with no further sprint; `F5-S09` was deleted and its scope
+(spec `08` §9 checklist with evidence, `docs/AUDITORIA.md`, reconciled `README.md`,
+`docs/FLUTTER.md`, the `v1.0.0` tag) became **F7-S02** (**D-73**). **F7 is the last phase.** Audio hosting is **D-65** (Caminho A: R2 is static storage, the
+API never talks to R2, D-09 and D-10 preserved); durations come from **`music-metadata`** as a
+devDependency, not `ffprobe` (**D-69**); `tsconfig.json` gains `scripts/**/*.ts` (**D-70**); the
+bucket is `cardosolabs-media`, shared across projects, and R2 CORS is out of scope because the
+Flutter client is native (both an amendment to **D-68**). F7-S01's ADRs were renumbered to
+**D-71/D-72** — F6 took D-69/D-70.
 
 ## Project state
 
-F1 (Foundation) and F2 (Catalog) are **complete and merged** — this is a working application,
-not a scaffold. Current phase **F3 — Identity**, next sprint **F3-S01 (Better Auth: config,
-plugin, guards)**. Authoritative state is `.agents/memory/PROGRESS.md`.
+**F1–F5 are complete and merged** — this is a working application with
+264 green tests, not a scaffold. Authoritative state is `.agents/memory/PROGRESS.md`; read it
+first, every session.
+
+**The roadmap was restructured on 2026-09-11 (D-64): seven phases, not five.**
+
+| Phase | Objective                               | Tag      | State                                        |
+| ----- | --------------------------------------- | -------- | -------------------------------------------- |
+| F5    | Authentication, hardening, 27-GAP audit | `v0.5.0` | **complete** — S01–S07 and S10 merged (D-73) |
+| F6    | Own audio and images on Cloudflare R2   | `v0.6.0` | **sprints not yet written**                  |
+| F7    | Deploy, audit and release · **last**    | `v1.0.0` | S01 brief written, blocked on infra; S02 TBD |
 
 Implemented: toolchain and the five gates · Docker Compose + `src/config/env.ts` · CI ·
-`AppError` hierarchy, app factory, logger · edge plugins, `/health`, Swagger · full Drizzle
-schema with `pg_trgm` GIN indexes · idempotent seed · Testcontainers harness · `artists` and
-`tracks` modules.
+`AppError` hierarchy, app factory, logger · edge plugins, `/health`, Swagger + versioned
+`docs/openapi.json` · full Drizzle schema with `pg_trgm` GIN indexes · idempotent seed ·
+Testcontainers harness · `artists`, `tracks`, `auth` (Better Auth with e-mail, social, 2FA and
+passkey), `users`, `playlists`, `favorites` · full E2E suite.
 
-Still empty (0 bytes), pending their sprints: `src/modules/{auth,users,playlists,favorites}/*`,
-`src/shared/types/fastify.d.ts`, `tests/e2e/specs/`, `Dockerfile`, `railway.json`,
+Still empty (0 bytes), pending F7-S01 (brief at
+`docs/sprints/fase-7-deploy/F7-S01-deploy-railway.md`): `Dockerfile`, `railway.json`,
 `.github/workflows/deploy.yml`. **Check that a file has content before assuming it does.**
+
+Before writing any F6 or F7 brief, read `.claude/memory/handoff-f6-f7-audio-e-deploy.md` — it
+carries the closed decisions, the measured blast radius and the open questions.
 
 ## Commands
 
