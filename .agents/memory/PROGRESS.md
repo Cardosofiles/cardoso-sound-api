@@ -9,18 +9,18 @@
 
 ## Estado atual
 
-| Campo                  | Valor                                                            |
-| ---------------------- | ---------------------------------------------------------------- |
-| **Fase corrente**      | F5 — Produção (em andamento)                                     |
-| **Próximo sprint**     | **F5-S10** — Vínculo de contas sociais (R46–R48) (D-58)          |
-| **Última tag**         | `v0.4.0` (preparada)                                             |
-| **`gh` CLI**           | ✅ 2.46.0, autenticado como `Cardosofiles`, protocolo SSH (D-33) |
-| **`pnpm install`**     | ✅ passa — `allowBuilds` decidido (D-32)                         |
-| **Repositório**        | ✅ público `Cardosofiles/cardoso-sound-api` no GitHub            |
-| **Branch de trabalho** | `feature/f5s07-rate-limit-distribuido` (default: `develop`)      |
-| **CI**                 | ✅ ativo (`.github/workflows/ci.yml`) — check obrigatório        |
-| **Banco**              | ✅ Postgres 17 ativo via Docker Compose                          |
-| **Última atualização** | 2026-09-11 — F5-S07 concluído: Rate limit distribuído e origens  |
+| Campo                  | Valor                                                              |
+| ---------------------- | ------------------------------------------------------------------ |
+| **Fase corrente**      | F5 — Produção (em andamento)                                       |
+| **Próximo sprint**     | **F5-S08** — Deploy na Railway                                     |
+| **Última tag**         | `v0.4.0` (preparada)                                               |
+| **`gh` CLI**           | ✅ 2.46.0, autenticado como `Cardosofiles`, protocolo SSH (D-33)   |
+| **`pnpm install`**     | ✅ passa — `allowBuilds` decidido (D-32)                           |
+| **Repositório**        | ✅ público `Cardosofiles/cardoso-sound-api` no GitHub              |
+| **Branch de trabalho** | `feature/f5s10-vinculo-de-contas-sociais` (default: `develop`)     |
+| **CI**                 | ✅ ativo (`.github/workflows/ci.yml`) — check obrigatório          |
+| **Banco**              | ✅ Postgres 17 ativo via Docker Compose                            |
+| **Última atualização** | 2026-09-11 — F5-S10 concluído: Vínculo de contas sociais (R46–R48) |
 
 > ✅ **Auditoria de segurança encerrada (2026-09-11).** Todos os **27 GAPs** de `docs/issue/AUTHENTICATION.md`
 > foram integralmente fechados nos sprints F5-S02 … F5-S07 (GAP-11, GAP-12 e GAP-18 entregues em F5-S07).
@@ -120,7 +120,7 @@ Legenda: ⬜ pendente · 🟡 em andamento · ✅ concluído · 🔴 bloqueado
 | **F5-S05** | Two Factor: TOTP, OTP e backup codes           | ✅     | #33 | 2026-09-10 | 02, 09 (parte 2FA)             |
 | **F5-S06** | Passkey (WebAuthn / FIDO2)                     | ✅     | #34 | 2026-09-10 | 03, 09 (parte passkey)         |
 | **F5-S07** | Rate limit distribuído e origens confiáveis    | ✅     | #35 | 2026-09-11 | 11, 12, 18                     |
-| **F5-S10** | Vínculo de contas sociais (R46–R48)            | ⬜     | —   | —          | — (D-58)                       |
+| **F5-S10** | Vínculo de contas sociais (R46–R48)            | ✅     | #36 | 2026-09-11 | — (D-58)                       |
 | **F5-S08** | Deploy na Railway                              | ⬜     | —   | —          | —                              |
 | **F5-S09** | Hardening, auditoria e release `v1.0.0`        | ⬜     | —   | —          | portão dos 27                  |
 
@@ -227,6 +227,10 @@ antes de reimplementar.
 | Seam de produção para Redis com fail-closed (`createRedisClient`) (D-55)                                                                                                       | F5-S07 | `src/plugins/rate-limit.plugin.ts`                                   |
 | Endurecimento de origens (`CORS_ORIGIN` e `MOBILE_DEEP_LINK` sem coringas em prod) (GAP-18)                                                                                    | F5-S07 | `src/config/env.ts`                                                  |
 | Suíte de testes unitários e de integração de rate limit distribuído e origens (T1–T26)                                                                                         | F5-S07 | `tests/unit/**`, `tests/integration/**`                              |
+| R46: `GET /api/auth/list-accounts` (listagem isolada de contas vinculadas ao usuário autenticado, array cru)                                                                   | F5-S10 | `src/modules/auth/auth.config.ts`                                    |
+| R47: `POST /api/auth/link-social` (iniciação de vínculo de provedores confiáveis Google/GitHub com e-mails distintos)                                                          | F5-S10 | `src/modules/auth/auth.config.ts`                                    |
+| R48: `POST /api/auth/unlink-account` (desvinculação com fresh session de 24h e proteção de última conta)                                                                       | F5-S10 | `src/modules/auth/auth.config.ts`                                    |
+| Suíte de testes unitários e de integração de vínculo de contas e freshAge (T1–T18)                                                                                             | F5-S10 | `tests/unit/**`, `tests/integration/**`                              |
 
 ---
 
