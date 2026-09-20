@@ -82,7 +82,7 @@ streaming, no counters) · D-31 (another user's resource ⇒ **404, never 403**)
 
 ## Project state
 
-**F1–F5 complete and merged — a working application with 264 green tests, not a scaffold.**
+**F1–F5 complete and merged — a working application with 466 green tests, not a scaffold.**
 Authoritative state is `.agents/memory/PROGRESS.md`; read it first, every session.
 
 | Phase | Objective                             | Tag      | State                         |

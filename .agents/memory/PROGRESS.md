@@ -52,9 +52,10 @@
 
 ### O que já tem código e o que ainda está vazio
 
-O scaffold **não** está mais vazio: F1, F2, F3 e F4 estão integralmente implementadas e os cinco portões
-(`typecheck`, `lint`, `format`, `test`, `build`) passam com 264 testes verdes. Ainda assim, **verifique que um
-arquivo tem conteúdo antes de assumir que tem** — vários continuam com 0 bytes.
+O scaffold **não** está mais vazio: F1, F2, F3 e F4 estão integralmente implementadas e os seis portões
+(`typecheck`, `lint`, `format:check`, `test`, `build`, `openapi:check`) passam com 466 testes verdes em 51
+arquivos. Ainda assim, **verifique que um arquivo tem conteúdo antes de assumir que tem** — vários continuam
+com 0 bytes.
 
 **Implementado:** toolchain e portões · Docker Compose e `src/config/env.ts` · CI ·
 hierarquia `AppError`, app factory, logger · plugins de borda, `/health`, Swagger ·
