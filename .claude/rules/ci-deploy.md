@@ -41,15 +41,15 @@ F7-S01 brief, not by this rule — this rule states the invariants that brief mu
 Six parallel jobs plus an aggregator, on `pull_request`, `push` (`develop`, `main`) and
 `workflow_dispatch`:
 
-| Job           | Gate                                                                  | Blocking     |
-| ------------- | --------------------------------------------------------------------- | ------------ |
-| `quality`     | matrix: `typecheck`, `lint`, `format:check`                           | yes          |
-| `test`        | `pnpm test` (Testcontainers, no service container)                    | yes          |
-| `build`       | `pnpm build` + the three entry points exist in `dist/`                | yes          |
-| `contracts`   | `openapi:check`, then `db:generate` + `git diff --exit-code drizzle/` | yes          |
-| `audit`       | `pnpm audit --prod --audit-level=high`                                | **advisory** |
-| `secret-scan` | gitleaks over full history, checksum-verified binary                  | yes          |
-| `ci`          | aggregator — the required status check                                | —            |
+| Job           | Gate                                                                  | Blocking |
+| ------------- | --------------------------------------------------------------------- | -------- |
+| `quality`     | matrix: `typecheck`, `lint`, `format:check`                           | yes      |
+| `test`        | `pnpm test` (Testcontainers, no service container)                    | yes      |
+| `build`       | `pnpm build` + the three entry points exist in `dist/`                | yes      |
+| `contracts`   | `openapi:check`, then `db:generate` + `git diff --exit-code drizzle/` | yes      |
+| `audit`       | `pnpm audit --prod --audit-level=high`                                | yes      |
+| `secret-scan` | gitleaks over full history, checksum-verified binary                  | yes      |
+| `ci`          | aggregator — the required status check                                | —        |
 
 `quality` + `contracts` together are the six Definition-of-Done gates from `CLAUDE.md`.
 Runner `ubuntu-latest` everywhere, Node 24, pnpm from `packageManager`, explicit `timeout-minutes`,
@@ -59,8 +59,7 @@ pinned by commit SHA, `persist-credentials: false` on every checkout.
 **`ci` is the required status check.** Keep that job id and `name: ci` — branch protection is
 configured against that exact name, and renaming it silently disables the gate. It fails when any
 dependency reports `failure`, `cancelled` **or `skipped`**: a required gate that did not run has not
-passed. `audit` is deliberately outside its `needs` while it is advisory, because a job with
-`continue-on-error` reports an ambiguous result there. Add it the day the flag comes off.
+passed. All six jobs are in its `needs`.
 
 CodeQL is a separate workflow (`codeql.yml`) rather than a job here: it carries its own weekly
 `schedule`, so newly published queries reach existing code without waiting for a push. It runs
@@ -135,12 +134,29 @@ Every gate was verified against the tree before being made blocking: `format:che
 repository-wide, `db:generate` reports "No schema changes, nothing to migrate" with a clean
 `drizzle/`, and gitleaks reports no leaks across all 88 commits with `.gitleaks.toml` applied.
 
-**`audit` is the exception — it is advisory, and it fails today.** `pnpm audit --prod` reports one
-critical and two high advisories. Most are dev tooling that `better-auth` declares as a _runtime_
-dependency (`vitest`, `drizzle-kit` → `vite`, `esbuild`), so `--prod` picks up CVEs in dev servers
-that no production path reaches. One is real and ours: **`@fastify/static <= 10.1.0`, reached
-through `@fastify/swagger-ui` — route guard bypass via path traversal, fixed in `>= 10.1.2`.** Fix
-that one, then re-check what is left before removing `continue-on-error`.
+### The dependency tree, cleaned up on 2026-09-20
+
+`audit` started advisory because the production tree reported 9 advisories — 1 critical, 2 high,
+6 moderate. Two upgrades cleared everything above the threshold, and the job is now blocking:
+
+- **`@fastify/swagger-ui` `^5.2.0` → `^6.1.1`.** The real one, and the only advisory in the API's
+  own request path: `@fastify/swagger-ui@5` pins `@fastify/static@^9`, and the route-guard-bypass
+  fix exists only in major 10, so an override could not reach it. Resolves `@fastify/static@10.1.4`.
+- **`vitest` `^2.1.8` → `^4.1.11`.** `better-auth` lists `vitest` and `drizzle-kit` among its
+  runtime dependencies, which is why `--prod` reaches them — but pnpm deduplicates to **our** copy,
+  so the critical `vitest` advisory and the `vite` / `@vitest/mocker` chain under it were ours to
+  fix, not better-auth's. One devDependency bump closed six findings. It also forced the Vitest 4
+  config migration: `defineWorkspace` and `vitest.workspace.ts` are gone, and the three projects now
+  live in `vitest.config.ts` under `test.projects`, each repeating `pool: 'forks'` +
+  `singleFork: true` (D-36) because project options no longer inherit from the root `test` block.
+
+**What remains, deliberately**: two `esbuild` advisories, one moderate and one low, both below the
+`high` gate. One arrives through `drizzle-kit → @esbuild-kit/esm-loader → @esbuild-kit/core-utils`,
+packages deprecated upstream and not bumpable without an override that risks drizzle-kit itself; the
+other through `vite`. Both are dev-server issues that no production path reaches.
+
+**Never raise `--audit-level` to silence a finding.** Patch the dependency, or record here why it is
+accepted.
 
 ## 4. The two artifact gates
 
@@ -216,7 +232,7 @@ does **not** type-check. The type gate is `pnpm typecheck`, which runs separatel
 `entry: ['src/**/*.ts']`, `dist/db/migrate.js`, `dist/jobs/runner.js` and `dist/server.js` all exist
 after a build without any extra entry configuration.
 
-`test` is `vitest run` across the three projects in `vitest.workspace.ts` (`unit`, `integration`,
+`test` is `vitest run` across the three projects in `vitest.config.ts` (`unit`, `integration`,
 `e2e`), single-fork (D-36).
 
 ## 7. Docker — specification for F7-S01
@@ -309,8 +325,10 @@ host` is what lets the container reach the service; without it, only `/health` c
   3. `docker logs api || true` on `failure()` — tolerate a missing container, since the Trivy gate
      can fail before the container is ever started — and `docker rm -f api || true` on `always()`.
   - Use `target:` matching the stage F7-S01 names (`runner`), not `production`.
-- **Make `audit` blocking**: remove `continue-on-error` once `@fastify/static` is patched and the
-  remaining advisories are understood. Add `audit` back to the aggregator's `needs` the same day.
+- **Clear the last two `esbuild` advisories**: both are below the `high` gate, so this is not
+  urgent. It needs either drizzle-kit to drop the deprecated `@esbuild-kit` chain upstream, or an
+  `esbuild` override here — which would have to be proven against `pnpm db:generate` and
+  `db:migrate` before it is trusted.
 - **Coverage gate**: deliberately absent. D-27 rejects a percentage target — what blocks a merge is
   the named list of mandatory cases in the sprint brief. Do not add a threshold without a new ADR.
   This also means no coverage artifact upload: an artifact nobody gates on is ceremony.

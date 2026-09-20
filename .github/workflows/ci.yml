@@ -174,12 +174,12 @@ jobs:
     name: Dependency audit
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    # Advisory, not blocking: the production tree currently reports 1 critical
-    # and 2 high advisories, most of them dev tooling that better-auth declares
-    # as a runtime dependency (vitest, drizzle-kit) and which no production code
-    # path reaches. Flip `continue-on-error` off once the tree is clean — see
-    # .claude/rules/ci-deploy.md §11.
-    continue-on-error: true
+    # Blocking. What is left below the high threshold is two esbuild advisories
+    # reached only through better-auth's runtime dependency on drizzle-kit and
+    # vitest; both are dev-server issues no production path reaches, and the
+    # deprecated @esbuild-kit chain cannot be bumped without an override that
+    # risks drizzle-kit. Raising the threshold to silence something is not the
+    # fix — patch the dependency or record why it is accepted.
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -226,14 +226,10 @@ jobs:
 
   # Single required status check for branch protection. Keep this job id and
   # name as `ci`: that is the check name branch protection is configured with.
-  #
-  # `audit` is deliberately absent from `needs`: it is advisory, and a job with
-  # continue-on-error reports an ambiguous result here. Add it the same day the
-  # flag comes off.
   ci:
     name: ci
     runs-on: ubuntu-latest
-    needs: [quality, test, build, contracts, secret-scan]
+    needs: [quality, test, build, contracts, audit, secret-scan]
     if: always()
     steps:
       - name: Verify all required jobs succeeded

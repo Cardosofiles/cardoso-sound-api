@@ -26,15 +26,15 @@ ref, economizando minuto de runner em pushes sucessivos num PR.
 
 São seis jobs paralelos e um agregador:
 
-| Job           | O que verifica                                               | Bloqueia?          |
-| ------------- | ------------------------------------------------------------ | ------------------ |
-| `quality`     | matriz com `typecheck`, `lint` e `format:check`              | sim                |
-| `test`        | `pnpm test` — as três suítes do `vitest.workspace.ts`        | sim                |
-| `build`       | `pnpm build` e a existência dos três entry points em `dist/` | sim                |
-| `contracts`   | `openapi:check` e o drift de migração do Drizzle             | sim                |
-| `audit`       | `pnpm audit --prod --audit-level=high`                       | **não** (advisory) |
-| `secret-scan` | gitleaks sobre todo o histórico                              | sim                |
-| `ci`          | agregador — é o _required status check_                      | —                  |
+| Job           | O que verifica                                               | Bloqueia? |
+| ------------- | ------------------------------------------------------------ | --------- |
+| `quality`     | matriz com `typecheck`, `lint` e `format:check`              | sim       |
+| `test`        | `pnpm test` — as três suítes do `vitest.config.ts`           | sim       |
+| `build`       | `pnpm build` e a existência dos três entry points em `dist/` | sim       |
+| `contracts`   | `openapi:check` e o drift de migração do Drizzle             | sim       |
+| `audit`       | `pnpm audit --prod --audit-level=high`                       | sim       |
+| `secret-scan` | gitleaks sobre todo o histórico                              | sim       |
+| `ci`          | agregador — é o _required status check_                      | —         |
 
 ### `quality`
 
@@ -84,14 +84,23 @@ Dois portões de artefato versionado, no padrão "gerar e conferir":
 
 ### `audit`
 
-Está com `continue-on-error: true` porque a árvore de produção **reprova hoje**. A maior parte é
-ruído: o `better-auth` declara `vitest` e `drizzle-kit` como dependência de _runtime_, então `--prod`
-acaba puxando CVE de servidor de desenvolvimento (vite, esbuild) que nenhum caminho de produção
-alcança. Há uma real: `@fastify/static <= 10.1.0`, alcançada via `@fastify/swagger-ui`.
+Bloqueante. Nasceu advisory, com 9 advisories na árvore de produção (1 crítica, 2 high, 6 moderate);
+dois upgrades limparam tudo acima do limiar em 20/09/2026:
 
-Por estar em modo advisory, o job fica **fora** do `needs` do agregador — um job com
-`continue-on-error` reporta resultado ambíguo em `needs.*.result`. Quando a flag sair, ele volta
-para a lista no mesmo commit.
+- **`@fastify/swagger-ui` `^5.2.0` → `^6.1.1`** — a única que estava no caminho de requisição da API.
+  O major 5 fixa `@fastify/static@^9`, e a correção do route guard bypass só existe no major 10, fora
+  do alcance de qualquer override. Resolve `@fastify/static@10.1.4`.
+- **`vitest` `^2.1.8` → `^4.1.11`** — o `better-auth` declara `vitest` e `drizzle-kit` como
+  dependência de _runtime_, mas o pnpm deduplica para a **nossa** cópia. Ou seja: a crítica do
+  `vitest` e a cadeia `vite` / `@vitest/mocker` embaixo dela eram nossas, não dele. Um bump de
+  devDependency fechou seis achados.
+
+Sobram duas advisories de `esbuild` (uma moderate, uma low), ambas **abaixo do limiar `high`** e
+ambas de servidor de desenvolvimento. Uma vem da cadeia `@esbuild-kit`, deprecada upstream, que o
+drizzle-kit ainda arrasta.
+
+**Nunca suba o `--audit-level` para calar um achado.** Corrija a dependência ou registre aqui por que
+ela é aceita.
 
 `pnpm audit` lê o lockfile, então este job não roda `pnpm install`.
 
