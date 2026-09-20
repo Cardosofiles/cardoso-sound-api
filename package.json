@@ -18,6 +18,7 @@
     "lint": "eslint .",
     "test": "vitest run",
     "format": "prettier . --write",
+    "format:check": "prettier . --check",
     "test:watch": "vitest",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
@@ -39,7 +40,7 @@
     "@fastify/rate-limit": "^10.1.1",
     "@fastify/sensible": "^6.0.2",
     "@fastify/swagger": "^9.5.1",
-    "@fastify/swagger-ui": "^5.2.0",
+    "@fastify/swagger-ui": "^6.1.1",
     "@fastify/under-pressure": "^9.0.3",
     "better-auth": "^1.7.2",
     "dotenv": "^17.2.1",
@@ -73,6 +74,6 @@
     "tsx": "4.23.1",
     "typescript": "^5.7.2",
     "typescript-eslint": "^8.18.1",
-    "vitest": "^2.1.8"
+    "vitest": "^4.1.11"
   }
 }

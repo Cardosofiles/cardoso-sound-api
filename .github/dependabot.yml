@@ -1,0 +1,52 @@
+version: 2
+updates:
+  # Application dependencies (pnpm).
+  - package-ecosystem: npm
+    directory: '/'
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 10
+    versioning-strategy: increase
+    groups:
+      # Batch low-risk updates into single PRs to cut review noise.
+      dev-dependencies:
+        dependency-type: development
+        update-types: [minor, patch]
+      production-minor-patch:
+        dependency-type: production
+        update-types: [minor, patch]
+    labels:
+      - dependencies
+
+  # GitHub Actions — this is what keeps the SHA pins in .github/workflows/*
+  # current. Without it the pins silently rot: they were three majors behind
+  # before this file existed.
+  - package-ecosystem: github-actions
+    directory: '/'
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      # init and analyze (and any other codeql-action sub-action) MUST bump
+      # together — a mixed version pair fails with "Loaded a configuration file
+      # for version X, but running version Y". Batch them into one PR.
+      codeql-action:
+        patterns:
+          - 'github/codeql-action*'
+    labels:
+      - dependencies
+      - github-actions
+
+  # Base image referenced by the Dockerfile. The Dockerfile is still 0 bytes
+  # (F7-S01 owns it); this entry is a no-op until that sprint lands.
+  - package-ecosystem: docker
+    directory: '/'
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - docker

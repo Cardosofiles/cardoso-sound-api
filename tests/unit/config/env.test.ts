@@ -158,7 +158,7 @@ describe('env config', () => {
         TRUST_PROXY_HOPS: '0',
         TRUSTED_PROXIES: '10.0.0.0/8',
       }),
-    ).toThrowError(/TRUST_PROXY_HOPS/);
+    ).toThrow(/TRUST_PROXY_HOPS/);
   });
 
   it('T20: throws validation error in production when TRUSTED_PROXIES is empty', () => {
@@ -171,7 +171,7 @@ describe('env config', () => {
         TRUST_PROXY_HOPS: '1',
         TRUSTED_PROXIES: '',
       }),
-    ).toThrowError(/TRUSTED_PROXIES/);
+    ).toThrow(/TRUSTED_PROXIES/);
   });
 
   it('T21: parses valid production environment with both proxy variables set', () => {

@@ -153,7 +153,7 @@ describe('Redis store seam (T21–T22)', () => {
   it('T22: buildRateLimitOptions with RATE_LIMIT_REDIS_URL throws readable error when ioredis is missing', () => {
     expect(() =>
       buildRateLimitOptions(makeEnv({ RATE_LIMIT_REDIS_URL: 'redis://localhost:6379' })),
-    ).toThrowError(
+    ).toThrow(
       /RATE_LIMIT_REDIS_URL está definida mas `ioredis` não está instalado\.\s*Rode `pnpm add ioredis` e registre o ADR correspondente \(D-32\)\./,
     );
   });

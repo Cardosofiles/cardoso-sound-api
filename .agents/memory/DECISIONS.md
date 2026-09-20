@@ -1022,3 +1022,30 @@ period: 10, sendOTP } })`. O 2FA é **opcional por usuário** (`user.twoFactorEn
   reescrito: é relatório datado de 2026-09-09 e recebe apenas nota de atualização no topo, pela
   mesma regra que proíbe reescrever memória de sprint fechada. Nenhum sprint executado é renumerado —
   `F5-S08` e `F5-S09` nunca rodaram. A reserva **D-71/D-72** para os ADRs de `F7-S01` continua de pé.
+
+### D-74 · O agente é confinado ao diretório do projeto, e o `.env` real é negado sem exceção
+
+- **Data:** 2026-09-20 · **Sprint:** — (decisão do dono) · **Status:** vigente
+- **Contexto:** `scripts/agent-security/policy.sh` cobre comando destrutivo, exfiltração e segredo
+  em conteúdo, mas tem **duas lacunas**: não existe fronteira de diretório — nada impedia
+  `Read ../../outro-projeto/src/x.ts`, `cd ~` ou `git -C /srv/repo` — e o `.env` real é apenas
+  `ask` na leitura, ou seja, uma aprovação distraída basta para o valor vivo entrar no contexto.
+  Dois guardas autocontidos foram escritos para fechar as duas lacunas.
+- **Opções consideradas:** (a) estender o `policy.sh` com as duas regras, mantendo um único ponto
+  de política; (b) manter os guardas separados, com biblioteca própria (`lib/hook-io.sh`) e sem
+  dependência do restante do repositório, rodando em paralelo aos adapters de política.
+- **Decisão:** opção (b). Os dois guardas vivem em `.claude/hooks/guard-env-file.sh` e
+  `.claude/hooks/guard-project-scope.sh`, registrados em `.claude/settings.json` nos matchers
+  `Read|Write|Edit|NotebookEdit|Glob|Grep|Bash` e `mcp__.*`. São **mais estritos e mais estreitos**
+  que a política: `deny` duro em qualquer operação com dotenv real, e um limite de diretório que a
+  política não tem. Falham fechado — sem `jq` nem `python3`, ou com payload ilegível, negam.
+  A convenção equivalente para os agentes da Antigravity, que **não** passam por hook nenhum, é
+  `.agents/rules/agent-security.md`.
+- **Consequência:** comparar este repositório com um projeto vizinho deixa de ser possível dentro
+  da sessão — passa a exigir que o dono traga o material. É o custo aceito: a fronteira só vale se
+  não tiver exceção conveniente. `HK_SCOPE_EXTRA_ALLOW` e `HK_ENV_ALLOWED_EXTRA` existem para
+  ampliar de forma declarada, nunca por contorno. Cobertura em
+  `scripts/agent-security/test-guards.sh` (50 casos). **Pendência conhecida:** o tokenizador de
+  `guard-project-scope.sh` trata um endereço de `sed`/`awk` iniciado por `/` como caminho absoluto
+  (`sed -n '/^### D-70/,/^### D-73/p'` é negado). Falso positivo registrado, correção ainda não
+  decidida — ver a seção de limites em `.claude/hooks/README.md`.

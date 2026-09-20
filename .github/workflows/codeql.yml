@@ -1,0 +1,53 @@
+name: codeql
+
+on:
+  push:
+    branches: [develop, main]
+  pull_request:
+    branches: [develop, main]
+  schedule:
+    # Weekly scan (Mondays 03:27 UTC) so newly published queries reach the
+    # existing code without waiting for the next push.
+    - cron: '27 3 * * 1'
+  workflow_dispatch:
+
+# Least privilege by default; the analyze job raises only what it needs.
+permissions:
+  contents: read
+
+concurrency:
+  group: codeql-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyze:
+    name: Analyze (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      security-events: write # upload results to the Security tab
+      actions: read
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [javascript-typescript]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # init and analyze must stay on the same version — Dependabot groups them
+      # (.github/dependabot.yml) because a mixed pair fails at runtime.
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@1c5b675653bb5c22dbe9b12b556ec555138e09fd # v4.38.1
+        with:
+          languages: ${{ matrix.language }}
+          # Deeper security queries: this API carries sessions, passkeys and 2FA.
+          queries: security-extended
+
+      # JavaScript/TypeScript is interpreted — no build step is required.
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@1c5b675653bb5c22dbe9b12b556ec555138e09fd # v4.38.1
+        with:
+          category: '/language:${{ matrix.language }}'

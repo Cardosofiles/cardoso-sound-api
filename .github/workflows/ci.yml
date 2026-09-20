@@ -1,35 +1,152 @@
 name: ci
 
+# Every third-party action is pinned to a full commit SHA; the trailing comment
+# records the tag it resolved from. Bump both together, and resolve the SHA from
+# the API rather than copying it — see .claude/rules/ci-deploy.md §2.
+# Dependabot keeps these current (.github/dependabot.yml).
+
 on:
   pull_request:
     branches: [develop, main]
   push:
     branches: [develop, main]
+  workflow_dispatch:
 
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+# Least privilege by default; a job that needs more raises it for itself.
 permissions:
   contents: read
 
 jobs:
-  ci:
+  quality:
+    name: Quality (${{ matrix.check }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        # Same commands as the Definition of Done in CLAUDE.md. These are static
+        # checks: none of them loads src/config/env.ts, so no env block here.
+        check: [typecheck, lint, format]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # no `version:` input on purpose — the action reads `packageManager` from
+      # package.json, which is the single source of truth for the pnpm version
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run ${{ matrix.check }}
+        # through env rather than interpolated into the script, per the rule in
+        # .claude/rules/ci-deploy.md §5 — consistent even where the value is ours
+        env:
+          CHECK: ${{ matrix.check }}
+        run: |
+          case "$CHECK" in
+            typecheck) pnpm typecheck ;;
+            lint)      pnpm lint ;;
+            format)    pnpm format:check ;;
+            *)         echo "unknown check: $CHECK"; exit 1 ;;
+          esac
+
+  test:
+    name: Tests
+    runs-on: ubuntu-latest
+    # No `services:` block: the integration and e2e projects start their own
+    # ephemeral postgres:17-alpine through Testcontainers
+    # (tests/setup/testcontainers.ts). A service container here would be a
+    # second, conflicting database. This is why the runner must be ubuntu-latest
+    # — Testcontainers needs the Docker daemon it ships with.
+    timeout-minutes: 30
+    env:
+      NODE_ENV: test
+      # must parse as a URL (src/config/env.ts is fail-fast); never has to be reachable
+      DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
+      BETTER_AUTH_URL: http://localhost:3333
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          cache: pnpm
+
+      # env.ts demands min(32); generating it keeps a credential literal out of
+      # a tracked file. Must run before any step that loads env.ts.
+      - name: Generate ephemeral auth secret
+        run: echo "BETTER_AUTH_SECRET=$(openssl rand -base64 32)" >> "$GITHUB_ENV"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run tests
+        run: pnpm test
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build (tsup)
+        run: pnpm build
+
+      # tsup runs with `bundle: false` (D-35) and globs src/**/*.ts, so these
+      # three entry points exist only as long as that glob keeps matching them.
+      # dist/db/migrate.js is what Railway's preDeployCommand runs (D-61): if it
+      # ever stops being emitted, this fails here instead of during a deploy.
+      - name: Verify build entry points
+        run: |
+          for f in dist/server.js dist/db/migrate.js dist/jobs/runner.js; do
+            test -f "$f" || { echo "missing build output: $f"; exit 1; }
+          done
+          echo "all entry points present"
+
+  contracts:
+    name: Contracts
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
       NODE_ENV: test
-      DATABASE_URL: postgresql://cardoso:cardoso_dev@localhost:5432/cardoso_sound
+      DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
       BETTER_AUTH_URL: http://localhost:3333
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 24
           cache: pnpm
@@ -40,17 +157,93 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Lint
-        run: pnpm lint
-
-      - name: Typecheck
-        run: pnpm typecheck
-
-      - name: Test
-        run: pnpm test
-
-      - name: Build
-        run: pnpm build
-
+      # the committed contract must match the routes that produce it
       - name: Verify OpenAPI specification
-        run: pnpm openapi:export -- --check
+        run: pnpm openapi:check
+
+      # a schema edit with no migration passes every other gate and dies on
+      # deploy, when Railway runs the preDeployCommand (D-61). drizzle-kit
+      # generate diffs against drizzle/meta/ and opens no connection.
+      - name: Regenerate migrations
+        run: pnpm db:generate
+
+      - name: Verify migration drift
+        run: git diff --exit-code drizzle/
+
+  audit:
+    name: Dependency audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Blocking. What is left below the high threshold is two esbuild advisories
+    # reached only through better-auth's runtime dependency on drizzle-kit and
+    # vitest; both are dev-server issues no production path reaches, and the
+    # deprecated @esbuild-kit chain cannot be bumped without an override that
+    # risks drizzle-kit. Raising the threshold to silence something is not the
+    # fix — patch the dependency or record why it is accepted.
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+
+      # pnpm audit reads the lockfile — no `pnpm install` needed.
+      - name: Audit production dependencies
+        run: pnpm audit --prod --audit-level=high
+
+  secret-scan:
+    name: Secret scan (gitleaks)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      # The gitleaks-action wrapper requires a paid license for org-owned
+      # repositories; the CLI itself is MIT. Pin the version and verify the
+      # release checksum rather than trusting the download.
+      GITLEAKS_VERSION: '8.30.1'
+      GITLEAKS_SHA256: '551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # full history: the scan covers every commit, not just the tip
+          persist-credentials: false
+
+      - name: Install gitleaks
+        run: |
+          curl -sSfL -o gitleaks.tar.gz \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          echo "${GITLEAKS_SHA256}  gitleaks.tar.gz" | sha256sum -c -
+          tar -xzf gitleaks.tar.gz gitleaks
+          ./gitleaks version
+
+      # .gitleaks.toml extends the default ruleset and relaxes only the
+      # heuristic generic-api-key rule on test fixtures and sprint records.
+      - name: Scan repository history
+        run: ./gitleaks git . --config .gitleaks.toml --redact --exit-code 1
+
+  # Single required status check for branch protection. Keep this job id and
+  # name as `ci`: that is the check name branch protection is configured with.
+  ci:
+    name: ci
+    runs-on: ubuntu-latest
+    needs: [quality, test, build, contracts, audit, secret-scan]
+    if: always()
+    steps:
+      - name: Verify all required jobs succeeded
+        # `skipped` counts as a failure: a required gate that did not run has
+        # not passed. The results come through env rather than being
+        # interpolated into the script.
+        env:
+          RESULTS: ${{ join(needs.*.result, ',') }}
+        run: |
+          echo "job results: $RESULTS"
+          case "$RESULTS" in
+            *failure* | *cancelled* | *skipped*)
+              echo "one or more required jobs did not succeed"
+              exit 1
+              ;;
+          esac
+          echo "all required jobs passed"
