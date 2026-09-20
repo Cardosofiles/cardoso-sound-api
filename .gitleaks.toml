@@ -1,0 +1,23 @@
+title = "cardoso-sound-api"
+
+# Start from the upstream ruleset and only narrow it below.
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = """
+Integration tests build their fixtures with literal passwords, and the sprint
+memory / review records quote those same request payloads verbatim. They are not
+credentials: no account, environment or provider they unlock exists.
+
+Scoped with targetRules so only the heuristic `generic-api-key` rule is relaxed
+here. Every provider-specific rule (AWS keys, Resend tokens, private keys, ...)
+stays active on these paths, so a real credential pasted into a test file is
+still caught.
+"""
+targetRules = ["generic-api-key"]
+paths = [
+  '''^tests/.*\.test\.ts$''',
+  '''^\.agents/memory/.*\.md$''',
+  '''^docs/agents-reviews/.*\.md$''',
+]
