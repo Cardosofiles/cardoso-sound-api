@@ -78,6 +78,35 @@
             "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/guard-mcp.sh",
             "timeout": 10,
             "statusMessage": "Checking MCP tool arguments"
+          },
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/guard-env-file.sh",
+            "timeout": 10,
+            "statusMessage": "Checking dotenv access"
+          },
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/guard-project-scope.sh",
+            "timeout": 10,
+            "statusMessage": "Checking project boundary"
+          }
+        ]
+      },
+      {
+        "matcher": "Read|Write|Edit|NotebookEdit|Glob|Grep|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/guard-env-file.sh",
+            "timeout": 10,
+            "statusMessage": "Checking dotenv access"
+          },
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/guard-project-scope.sh",
+            "timeout": 10,
+            "statusMessage": "Checking project boundary"
           }
         ]
       }
