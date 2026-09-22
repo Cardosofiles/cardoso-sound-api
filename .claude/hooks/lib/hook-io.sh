@@ -39,6 +39,14 @@ hk_deny() { # <reason>
   exit 0
 }
 
+# Block a UserPromptSubmit turn. That event has no permissionDecision: exit
+# code 2 is what erases the prompt, and stderr is what the user reads. The
+# prompt never reaches the model, so the reason is addressed to the owner.
+hk_block_prompt() { # <reason>
+  printf '%s\n' "$1" >&2
+  exit 2
+}
+
 # --- payload parsing -------------------------------------------------------
 
 hk__python() { # <mode: get|strings|paths>

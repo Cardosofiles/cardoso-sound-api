@@ -1049,3 +1049,42 @@ period: 10, sendOTP } })`. O 2FA é **opcional por usuário** (`user.twoFactorEn
   `guard-project-scope.sh` trata um endereço de `sed`/`awk` iniciado por `/` como caminho absoluto
   (`sed -n '/^### D-70/,/^### D-73/p'` é negado). Falso positivo registrado, correção ainda não
   decidida — ver a seção de limites em `.claude/hooks/README.md`.
+
+### D-75 · A fronteira de diretório também vale para a menção `@` digitada pelo dono
+
+- **Data:** 2026-09-22 · **Sprint:** — (decisão do dono) · **Status:** vigente
+- **Contexto:** o `guard-project-scope.sh` de **D-74** é `PreToolUse` — ele julga o que o _modelo_
+  pede. Uma referência `@../outro-projeto/` digitada pelo dono **não passa por ferramenta nenhuma**:
+  o Claude Code resolve o caminho no momento do submit e injeta o resultado no turno como registro
+  `attachment` (`{"type":"directory","path":"/…/fastify/cardosofiles-api","displayPath":"../cardosofiles-api"}`,
+  observado em duas sessões deste projeto). Sem `tool_name`, nenhum matcher de `PreToolUse` pode
+  vê-la — a fronteira de D-74 era contornável digitando `@`, e pelo mesmo caminho `@.env` passava
+  por cima do `guard-env-file.sh`. O único evento que enxerga esse turno é `UserPromptSubmit`, onde
+  o `guard-user-prompt.sh` declarava, por desenho, _never blocks the user_.
+- **Opções consideradas:** (a) manter o desenho e apenas avisar, devolvendo `additionalContext`
+  dizendo que o anexo está fora do escopo — o conteúdo já está no contexto e a contenção vira
+  pedido de obediência ao modelo, não controle; (b) bloquear no `UserPromptSubmit`, resolvendo cada
+  token `@` contra a mesma allow-list e apagando o turno quando cair fora.
+- **Decisão:** opção (b), em guarda **separado** — `.claude/hooks/guard-prompt-scope.sh` — e não
+  dentro do `guard-user-prompt.sh`, que continua sendo só o detector de credencial que nunca
+  bloqueia. Um arquivo, um dever. A fronteira em si sai de `guard-project-scope.sh` para
+  `.claude/hooks/lib/hook-scope.sh`, consumida pelos dois guardas: a allow-list passa a existir
+  **uma vez**, porque duas cópias divergem e uma cópia ampliada é um buraco que nada denuncia.
+  `UserPromptSubmit` não tem `permissionDecision`; o bloqueio é **exit 2** com o motivo em stderr
+  (`hk_block_prompt`), o que apaga o prompt e mostra a razão só ao dono.
+- **Consequência:** este é o único guarda que trava o **dono**, não o modelo — custo aceito, porque
+  a fronteira de D-74 só vale se não tiver exceção conveniente, e `@` era exatamente a exceção.
+  Ler o projeto vizinho passa a exigir abrir o Claude Code no diretório dele, ou copiar o material
+  para dentro deste, ou ampliar `HK_SCOPE_EXTRA_ALLOW` de forma declarada. Só o token `@` é julgado:
+  caminho citado em prosa não é bloqueado, porque prosa não lê arquivo. Limite conhecido: referência
+  com espaço no caminho não é reconstruível a partir do texto do prompt, então só a primeira palavra
+  é julgada. Cobertura em `scripts/agent-security/test-guards.sh` (67 casos, 17 novos). A pendência
+  do tokenizador registrada em D-74 (endereço de `sed`/`awk` iniciado por `/`) **continua aberta** —
+  a extração para `lib/hook-scope.sh` preservou o comportamento, não o corrigiu.
+- **Endurecimento junto:** os 13 hooks do `.claude/settings.json` passam a ser invocados como
+  `bash ${CLAUDE_PROJECT_DIR}/.claude/hooks/<script>.sh`, não pelo caminho direto. O bit de execução
+  é versionado (`100755`), então um clone normal não precisa de `chmod` — mas um clone em exFAT/NTFS
+  ou com `core.fileMode=false` o perde, e um hook que não executa sai com **126**, que o protocolo
+  trata como erro _não bloqueante_: a chamada passa e o guarda fica desligado em silêncio. Pelo
+  `bash`, o bit deixa de importar. Mesmo princípio de falha fechada já aplicado em `hk_init` quando
+  faltam `jq` e `python3`.

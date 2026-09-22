@@ -6,9 +6,10 @@ Two families, both registered in `.claude/settings.json` (project scope, version
    [Claude Code hook protocol](https://code.claude.com/docs/en/hooks) and the shared
    policy in `scripts/agent-security/policy.sh`. Broad coverage: destructive
    commands, exfiltration, secrets in content.
-2. **Self-contained guards** (`guard-env-file.sh`, `guard-project-scope.sh`) —
-   narrower and stricter, backed by `lib/hook-io.sh` and depending on nothing
-   but `bash` plus `jq` **or** `python3`.
+2. **Self-contained guards** (`guard-env-file.sh`, `guard-project-scope.sh`,
+   `guard-prompt-scope.sh`) — narrower and stricter, backed by `lib/hook-io.sh`
+   (plus `lib/hook-scope.sh` for the two that share the directory boundary) and
+   depending on nothing but `bash` plus `jq` **or** `python3`.
 
 They run together on the same call; one denial is enough to stop it.
 
@@ -16,6 +17,7 @@ They run together on the same call; one denial is enough to stop it.
 | ----------------------------- | ------------------ | ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------- |
 | `session-security-context.sh` | `SessionStart`     | –                                          | States the active policy once, so a denial is understood instead of worked around                                       |
 | `guard-user-prompt.sh`        | `UserPromptSubmit` | –                                          | Warns when a live credential was pasted into the prompt. **Never blocks the user**                                      |
+| `guard-prompt-scope.sh`       | `UserPromptSubmit` | –                                          | **Blocks** the prompt when an `@` reference resolves outside `CLAUDE_PROJECT_DIR` (D-75)                                |
 | `guard-bash.sh`               | `PreToolUse`       | `Bash`                                     | Destructive commands, force pushes, `--no-verify`, `curl \| bash`, credential reads, exfiltration, privilege escalation |
 | `guard-file-write.sh`         | `PreToolUse`       | `Write\|Edit\|NotebookEdit`                | Protects `.env` and guardrail files; blocks secret literals before they reach disk                                      |
 | `guard-file-read.sh`          | `PreToolUse`       | `Read\|Glob\|Grep`                         | Keeps `~/.ssh`, `~/.aws`, `/etc/shadow` and friends out of the model context                                            |
@@ -25,7 +27,7 @@ They run together on the same call; one denial is enough to stop it.
 | `guard-env-file.sh`           | `PreToolUse`       | file tools, `Bash`, `mcp__.*`              | **Denies** every read, write, copy, move, `source` or delete of a real dotenv file                                      |
 | `guard-project-scope.sh`      | `PreToolUse`       | file tools, `Bash`, `mcp__.*`              | **Denies** any path resolving outside `CLAUDE_PROJECT_DIR`, symlinks included                                           |
 
-## The two self-contained guards
+## The self-contained guards
 
 `guard-env-file.sh` denies **any** operation whose target is a real dotenv file —
 `Read`/`Write`/`Edit`, `cat`/`rm`/`cp`/`mv`/`sed -i`/`source`/`--env-file`, a `Glob`
@@ -47,6 +49,21 @@ the agent scratchpad (`/tmp/claude-*`), and **this** project's own state under
 
 Git refs that only look like paths (`git diff HEAD~1..HEAD`, `main..develop`), a `Grep`
 regex containing `\.\./`, and redirections like `2>/dev/null` do not trip it.
+
+`guard-prompt-scope.sh` applies the **same boundary** — literally the same allow-list, from
+`lib/hook-scope.sh` — to the `@` references the owner types. It exists because `@../other/`
+is not a tool call: Claude Code resolves it at submit time and injects an `attachment`
+record into the turn, so it carries no `tool_name` and **no `PreToolUse` matcher can see
+it**. Without this hook, `@../other-project/` and `@.env` walk past `guard-project-scope.sh`
+and `guard-env-file.sh` alike. Since there is no tool call to deny, it blocks the turn
+instead: exit 2, the prompt is erased, the reason goes to the owner on stderr. This is the
+one guard that stops the **owner**, not the model — see `D-75`.
+
+Only `@` tokens are inspected, and only as paths: a path written in prose (`compare with
+../../other/src/x.ts`) is left alone, because prose does not read a file. An e-mail address
+(`joao@example.com`) is not at the start of a token and never matches; `@Injectable()`
+resolves inside the root and is allowed. **Known limit:** a reference whose path contains a
+space cannot be recovered from the prompt text, so only its first word is judged.
 
 **Known limits.** Indirect reads are not caught: `grep -r DATABASE_URL .` can surface a
 value without naming `.env` — blocking the leak of the _content_ is the policy's job
@@ -70,6 +87,9 @@ not been applied without the owner's decision. Recorded in `D-74`.
 
 - **Deny/ask** is emitted as
   `{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"..."}}`.
+- **`UserPromptSubmit` has no `permissionDecision`.** Blocking there is exit code 2 with the
+  reason on stderr: the prompt is erased and only the owner reads it. `hk_block_prompt` in
+  `lib/hook-io.sh` is the one place that shape is written.
 - **Allow is silence.** The hooks exit 0 with no output when the policy is
   quiet. Emitting `"permissionDecision":"allow"` would auto-approve the call and
   bypass the permission settings the user configured — a guard may only
@@ -81,11 +101,18 @@ not been applied without the owner's decision. Recorded in `D-74`.
 ## Conventions
 
 - `lib/adapter.sh` owns payload parsing (jq, falling back to python3) and JSON
-  emission for the policy adapters. `lib/hook-io.sh` does the same for the two
-  self-contained guards, plus lexical path resolution. Hook scripts stay short
-  enough to audit at a glance.
+  emission for the policy adapters. `lib/hook-io.sh` does the same for the
+  self-contained guards, plus lexical path resolution. `lib/hook-scope.sh` owns
+  the directory boundary itself — the allow-list lives there **once**, because
+  two copies drift and a widened copy is a hole nothing reports. Hook scripts
+  stay short enough to audit at a glance.
 - JSON output escaping is pure bash, so a denial can still be reported on a
   host without `jq`.
+- **Invoked as `bash <path>`, never directly.** Git does version the executable
+  bit (`100755`), so a normal clone needs no `chmod`. But a clone on exFAT/NTFS
+  or with `core.fileMode=false` loses it, and a hook that cannot execute exits
+  126 — a _non-blocking_ error, which means the tool call goes through and the
+  guard is silently off. Going through `bash` makes the bit irrelevant.
 - **Fail closed.** If `scripts/agent-security/policy.sh` is missing, the adapter
   denies rather than failing open. If neither `jq` nor `python3` is on `PATH`, or
   the payload will not parse, the guards deny too — a guard that cannot validate
@@ -96,7 +123,7 @@ not been applied without the owner's decision. Recorded in `D-74`.
 ```bash
 bash scripts/agent-security/test-policy.sh   # the policy rules
 bash scripts/agent-security/test-hooks.sh    # the policy adapters
-bash scripts/agent-security/test-guards.sh   # the two self-contained guards
+bash scripts/agent-security/test-guards.sh   # the self-contained guards
 ```
 
 A single case by hand:

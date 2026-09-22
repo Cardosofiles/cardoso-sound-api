@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/session-security-context.sh",
+            "command": "bash ${CLAUDE_PROJECT_DIR}/.claude/hooks/session-security-context.sh",
             "timeout": 10,
             "statusMessage": "Loading agent security policy"
           }
@@ -18,9 +18,15 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/guard-user-prompt.sh",
+            "command": "bash ${CLAUDE_PROJECT_DIR}/.claude/hooks/guard-user-prompt.sh",
             "timeout": 10,
             "statusMessage": "Scanning prompt for credentials"
+          },
+          {
+            "type": "command",
+            "command": "bash ${CLAUDE_PROJECT_DIR}/.claude/hooks/guard-prompt-scope.sh",
+            "timeout": 10,
+            "statusMessage": "Checking @ references against the project boundary"
           }
         ]
       }
@@ -31,7 +37,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/guard-bash.sh",
+            "command": "bash ${CLAUDE_PROJECT_DIR}/.claude/hooks/guard-bash.sh",
             "timeout": 10,
             "statusMessage": "Validating command against security policy"
           }
@@ -42,7 +48,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/guard-file-write.sh",
+            "command": "bash ${CLAUDE_PROJECT_DIR}/.claude/hooks/guard-file-write.sh",
             "timeout": 10,
             "statusMessage": "Checking write target and secret patterns"
           }
@@ -53,7 +59,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/guard-file-read.sh",
+            "command": "bash ${CLAUDE_PROJECT_DIR}/.claude/hooks/guard-file-read.sh",
             "timeout": 10,
             "statusMessage": "Checking read target"
           }
@@ -64,7 +70,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/guard-web-access.sh",
+            "command": "bash ${CLAUDE_PROJECT_DIR}/.claude/hooks/guard-web-access.sh",
             "timeout": 10,
             "statusMessage": "Checking network egress"
           }
@@ -75,19 +81,19 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/guard-mcp.sh",
+            "command": "bash ${CLAUDE_PROJECT_DIR}/.claude/hooks/guard-mcp.sh",
             "timeout": 10,
             "statusMessage": "Checking MCP tool arguments"
           },
           {
             "type": "command",
-            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/guard-env-file.sh",
+            "command": "bash ${CLAUDE_PROJECT_DIR}/.claude/hooks/guard-env-file.sh",
             "timeout": 10,
             "statusMessage": "Checking dotenv access"
           },
           {
             "type": "command",
-            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/guard-project-scope.sh",
+            "command": "bash ${CLAUDE_PROJECT_DIR}/.claude/hooks/guard-project-scope.sh",
             "timeout": 10,
             "statusMessage": "Checking project boundary"
           }
@@ -98,13 +104,13 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/guard-env-file.sh",
+            "command": "bash ${CLAUDE_PROJECT_DIR}/.claude/hooks/guard-env-file.sh",
             "timeout": 10,
             "statusMessage": "Checking dotenv access"
           },
           {
             "type": "command",
-            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/guard-project-scope.sh",
+            "command": "bash ${CLAUDE_PROJECT_DIR}/.claude/hooks/guard-project-scope.sh",
             "timeout": 10,
             "statusMessage": "Checking project boundary"
           }
@@ -117,7 +123,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/inspect-untrusted-output.sh",
+            "command": "bash ${CLAUDE_PROJECT_DIR}/.claude/hooks/inspect-untrusted-output.sh",
             "timeout": 15,
             "statusMessage": "Scanning tool output for prompt injection"
           }
