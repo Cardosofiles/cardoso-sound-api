@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # ---------------------------------------------------------------------------
-# Smoke test for the two self-contained guards in .claude/hooks/. No side
-# effects: it only feeds fabricated PreToolUse payloads to the hooks and checks
-# the decision they emit.
+# Smoke test for the three self-contained guards in .claude/hooks/. No side
+# effects: it only feeds fabricated PreToolUse / UserPromptSubmit payloads to
+# the hooks and checks the decision they emit.
 #
 #   bash scripts/agent-security/test-guards.sh   # expects "pass=N fail=0"
 #
@@ -17,6 +17,7 @@ SLUG="${ROOT//\//-}" # how Claude Code names this project's own state directory
 DOT='.env'           # kept in a variable so this file has no bare .env token
 E=guard-env-file.sh
 S=guard-project-scope.sh
+P=guard-prompt-scope.sh
 PASS=0
 FAIL=0
 
@@ -35,6 +36,24 @@ run() { # <hook> <expect: deny|allow> <label> <payload>
 
 bash_payload() { printf '{"tool_name":"Bash","cwd":"%s","tool_input":{"command":"%s"}}' "$ROOT" "$1"; }
 file_payload() { printf '{"tool_name":"%s","cwd":"%s","tool_input":{"file_path":"%s"}}' "$1" "$ROOT" "$2"; }
+
+# UserPromptSubmit has no permissionDecision: exit 2 is the block, and the
+# reason goes to stderr. Same contract, different wire format.
+prompt_payload() { printf '{"hook_event_name":"UserPromptSubmit","cwd":"%s","prompt":"%s"}' "$ROOT" "$1"; }
+
+run_prompt() { # <expect: block|allow> <label> <prompt text>
+  local expect="$1" label="$2" out code got
+  out="$(prompt_payload "$3" | "$HOOKS/$P" 2>&1)"
+  code=$?
+  if [ "$code" -eq 2 ]; then got=block; else got=allow; fi
+  if [ "$got" = "$expect" ]; then
+    PASS=$((PASS + 1))
+    printf 'ok   %-5s %s\n' "$got" "$label"
+  else
+    FAIL=$((FAIL + 1))
+    printf 'FAIL want=%s got=%s (exit %s) %s\n     %s\n' "$expect" "$got" "$code" "$label" "$out"
+  fi
+}
 
 echo "--- $E ---"
 run $E deny "Read $DOT" "$(file_payload Read "$DOT")"
@@ -89,6 +108,25 @@ run $S allow "Grep regex containing ../" "$(printf '{"tool_name":"Grep","cwd":"%
 run $S allow "Write a doc that mentions ../" "$(printf '{"tool_name":"Write","cwd":"%s","tool_input":{"file_path":"docs/x.md","content":"use ../../foo in examples"}}' "$ROOT")"
 run $S deny "mcp tool escaping the project" "$(printf '{"tool_name":"mcp__fs__read","cwd":"%s","tool_input":{"path":"../../secrets/x"}}' "$ROOT")"
 run $S deny "malformed payload fails closed" '{"tool_name":"Bash","tool_input":{"command":"cd \& ls"'
+
+echo "--- $P ---"
+run_prompt allow "no @ reference at all" "o hook nao funcionou, investiga"
+run_prompt allow "@ reference inside the project" "explica o @src/app.ts"
+run_prompt allow "@ reference to a hook" "o hook @.claude/hooks/guard-project-scope.sh falhou"
+run_prompt allow "@ reference normalising back inside" "veja @src/../src/app.ts"
+run_prompt allow "@ reference to this project own state" "veja @${HOME:-/root}/.claude/projects/$SLUG/memory/x.md"
+run_prompt allow "@ reference to the agent scratchpad" "veja @/tmp/claude-$(id -u)/abc/scratchpad/x.txt"
+run_prompt allow "an e-mail address is not a reference" "fale com joao@example.com sobre isso"
+run_prompt allow "a decorator is not an escape" "@Injectable() no nest"
+run_prompt allow "a path in prose is not an attachment" "o padrao ../../outro-projeto aparece no exemplo"
+run_prompt block "@../sibling-project/ (the reported bypass)" "eu pedi para ler assim: @../cardosofiles-api/"
+run_prompt block "@ reference two levels up" "compara com @../../outro-projeto/src/x.ts"
+run_prompt block "@ absolute path elsewhere" "veja @/etc/passwd"
+run_prompt block "@ home-relative path" "veja @~/.ssh/id_rsa"
+run_prompt block "@ another project agent state" "veja @${HOME:-/root}/.claude/projects/-home-other/memory/x.md"
+run_prompt block "@ reference glued to markdown punctuation" "veja isso (@../outro-projeto/README.md) agora"
+run_prompt block "@ reference with trailing comma" "veja @../outro-projeto/README.md, por favor"
+run_prompt block "@ reference mid-sentence, quoted" "abre o @../outro-projeto/package.json e resume"
 
 echo
 echo "pass=$PASS fail=$FAIL"

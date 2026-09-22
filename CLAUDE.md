@@ -30,7 +30,7 @@ change, to unblock the toolchain, or for a throwaway spike. Otherwise: write the
 
 Higher row wins. Applying this is not "choosing silently" — it is applying a recorded decision.
 
-1. `.agents/memory/DECISIONS.md` — ADRs `D-01`…`D-73`. **Single source of truth.**
+1. `.agents/memory/DECISIONS.md` — ADRs `D-01`…`D-75`. **Single source of truth.**
 2. `docs/specs/**` — 00 vision · 01 architecture · 02 data model · 03 API contract ·
    04 auth & security · 05 testing · 06 git/CI/CD · 07 agent protocol · 08 security hardening.
 3. `.agents/rules/**` (conventions) · `.agents/skills/**` (runbooks).

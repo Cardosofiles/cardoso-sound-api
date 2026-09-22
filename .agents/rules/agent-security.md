@@ -1,11 +1,12 @@
 # Agent security boundaries
 
 Two boundaries bind every agent working in this repository: **the project directory** and
-**the real `.env`**. They are recorded as `D-74` in `.agents/memory/DECISIONS.md`.
+**the real `.env`**. They are recorded as `D-74` in `.agents/memory/DECISIONS.md`, extended by
+`D-75` to the `@` reference the owner types.
 
 > **Enforcement is asymmetric, and that matters.** For Claude Code they are hooks
-> (`.claude/hooks/guard-project-scope.sh`, `.claude/hooks/guard-env-file.sh`) — a violation is
-> refused before the tool runs. For the Antigravity agents nothing intercepts the call, so here
+> (`.claude/hooks/guard-project-scope.sh`, `.claude/hooks/guard-prompt-scope.sh`,
+> `.claude/hooks/guard-env-file.sh`) — a violation is refused before the tool runs. For the Antigravity agents nothing intercepts the call, so here
 > the same boundaries are a **convention you are responsible for keeping**. An agent that steps
 > outside has not found a loophole; it has produced a defect.
 
