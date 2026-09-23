@@ -1,3 +1,9 @@
+---
+trigger: glob
+glob: 'tests/**'
+description: Protocolos de testes unitários Vitest, Testcontainers e E2E via app.inject()
+---
+
 # Testing & Quality Assurance Rules
 
 Protocols for unit, integration, and end-to-end testing across the codebase.

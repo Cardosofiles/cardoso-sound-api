@@ -1,3 +1,8 @@
+---
+trigger: always_on
+description: Padrões de código TypeScript estrito, ESM e Zod para Gemini 3.8 Flash
+---
+
 # Coding Standards & TypeScript Conventions
 
 Guidelines and constraints for writing clean, performant, and type-safe code tailored for the **Gemini 3.8 Flash** model execution.

@@ -1,3 +1,8 @@
+---
+trigger: always_on
+description: Limites de segurança operacional e proteção do ambiente .env
+---
+
 # Agent security boundaries
 
 Two boundaries bind every agent working in this repository: **the project directory** and
