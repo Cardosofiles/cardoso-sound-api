@@ -1,3 +1,8 @@
+---
+trigger: model_decision
+description: Regras de Arquitetura Limpa, camadas unidirecionais e Fastify 5
+---
+
 # Architecture & Structural Rules
 
 This workspace implements a **Simplified Clean Architecture** organized by domain modules using **Fastify 5** and **TypeScript**.

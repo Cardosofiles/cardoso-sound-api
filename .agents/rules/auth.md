@@ -1,3 +1,9 @@
+---
+trigger: glob
+glob: 'src/modules/auth/**'
+description: Regras de autenticação Better Auth, sessões e proteção de rotas Fastify
+---
+
 # Authentication & Security Rules
 
 Guidelines for user authentication using **Better Auth** and Fastify security plugins.

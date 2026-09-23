@@ -1,3 +1,9 @@
+---
+trigger: glob
+glob: 'src/db/**'
+description: Regras de modelagem relacional PostgreSQL 17 e Drizzle ORM
+---
+
 # Database & Drizzle ORM Rules
 
 Conventions for relational data modeling with PostgreSQL and Drizzle ORM.
