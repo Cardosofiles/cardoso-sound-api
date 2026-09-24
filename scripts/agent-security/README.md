@@ -44,7 +44,7 @@ a mais severa e todos os motivos são concatenados.
 | --- | ------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------- |
 | 1   | **Prompt injection** em página web, README de dependência ou saída de comando                          | `PostToolUse` marca o conteúdo como DADO, nunca instrução, e descreve o que o texto tentou induzir |
 | 2   | **Exfiltração de segredos** (`cat .env \| curl ...`)                                                   | Regra composta: fonte de segredo + saída de rede no mesmo comando = `deny`                         |
-| 3   | **Destruição do repositório** (`rm -rf`, `git reset --hard`, force push, rewrite de histórico)         | `deny` para alvos críticos, `ask` para alvos descartáveis                                          |
+| 3   | **Destruição do repositório** (`rm -rf`, `git reset --hard`, force push, rewrite de histórico)         | `deny` para apagar/mover/truncar arquivo, qualquer alvo; `ask` para `git reset --hard`             |
 | 4   | **Supply chain** (`curl \| bash`, troca de registry, install por URL)                                  | `deny` / `ask`                                                                                     |
 | 5   | **Roubo de credenciais locais** (`~/.ssh`, `~/.aws`, `gh auth token`)                                  | `deny` em leitura, escrita e cópia                                                                 |
 | 6   | **Commit de segredo**                                                                                  | Escrita de literal com formato de credencial é bloqueada antes de tocar o disco                    |
@@ -61,9 +61,19 @@ a mais severa e todos os motivos são concatenados.
 - **`deny`** — nunca é legítimo dentro de uma sessão de agente. O agente recebe
   o motivo e deve propor alternativa ou pedir que a pessoa execute no próprio
   shell.
-- **`ask`** — legítimo às vezes, caro quando errado (`rm -rf dist`,
-  `git reset --hard`, editar `.github/workflows/`, ler `.env`). Vai para
-  aprovação humana.
+- **`ask`** — legítimo às vezes, caro quando errado (`git reset --hard`,
+  editar `.github/workflows/`, ler `.env`). Vai para aprovação humana — **exceto
+  em auto mode, que resolve o `ask` sem perguntar**. Por isso, o que precisa
+  ser barrado de fato é `deny`, nunca `ask`. Apagar, mover ou truncar arquivo
+  pelo shell é `deny` em qualquer alvo, inclusive `dist` e `node_modules`:
+  `rm` (com ou sem flags), `rmdir`, `unlink`, `mv`, `git rm`, `git mv`,
+  `truncate`, `> arquivo`, `find -delete`, `rsync --delete`, `git clean -f` e
+  one-liners de interpretador (`fs.rmSync`, `os.remove`, `shutil.rmtree`).
+  Essas operações a pessoa executa no próprio shell.
+- **Limite conhecido** — a política é casamento de regex, não sandbox.
+  Obfuscação por variável (`a=r; ${a}m x`) ou escape hexadecimal passa. A
+  ferramenta `Write` também pode esvaziar um arquivo, e nenhuma regra de
+  comando alcança isso.
 - **`allow`** — a política se cala. **Os hooks nunca emitem `allow` explícito
   no Claude Code**: um hook só pode apertar, jamais afrouxar as permissões que
   a pessoa já configurou.

@@ -114,18 +114,34 @@ agp_guard_command() { # <command-string>
   agp__rule deny fs.rm_repo_core \
     'rm[[:space:]]+[^;&|]*-[[:alnum:]]*[rf][^;&|]*(\.git|\.env|\.claude|\.agents|\.husky|/?src|/?tests)([[:space:]/]|$)' \
     'Recursive/forced rm targeting source, tests, git metadata or agent guardrails.'
-  agp__rule ask  fs.rm_recursive \
+  # Every rule below is deny, not ask: in auto mode an "ask" is resolved without
+  # a human, so it is no barrier at all. Deleting, moving or truncating a file
+  # from the shell is run by the user, never the agent.
+  agp__rule deny fs.rm_recursive \
     'rm[[:space:]]+[^;&|]*-[[:alnum:]]*[rf]' \
-    'Recursive/forced deletion. Confirm the target is a disposable build artifact.'
+    'Recursive/forced deletion is never run by the agent. Ask the user to run it from their own shell.'
+  # Word-bounded rather than anchored to command position, so `xargs rm`,
+  # `bash -c "rm x"`, `/bin/rm` and `git rm` are all caught. The leading class
+  # excludes `-`, which keeps `docker run --rm` allowed; the trailing space
+  # keeps the R48 route `/api/auth/unlink-account` allowed.
+  agp__rule deny fs.delete_or_move \
+    '(^|[^[:alnum:]_.-])(rm|rmdir|unlink|mv|truncate)([[:space:]]|\)|$)' \
+    'Deleting, moving or truncating files (rm, rmdir, unlink, mv, git rm, git mv, truncate) is never run by the agent. Ask the user to run it from their own shell.'
+  agp__rule deny fs.truncate_redirect \
+    '(^|;|&&|\||\()[[:space:]]*:?[[:space:]]*>[[:space:]]*[^&[:space:]>]' \
+    'A bare redirection (`> file`, `: > file`) empties the file. Ask the user to run it from their own shell.'
+  agp__rule deny fs.script_delete \
+    '(rmSync|unlinkSync|rmdirSync|fs(\.promises)?\.(rm|unlink|rmdir)\(|os\.(remove|unlink|rmdir|removedirs)\(|shutil\.rmtree|unlink\()' \
+    'Deleting files through an interpreter one-liner (node, python, perl) is the same deletion. Ask the user to run it.'
   agp__rule deny fs.disk_destroy \
     '(mkfs[.[:alnum:]]*[[:space:]]|shred[[:space:]]|wipefs|dd[[:space:]]+[^;&|]*of=/dev/|>[[:space:]]*/dev/(sd|nvme|disk))' \
     'Raw device / disk destruction command.'
   agp__rule deny fs.forkbomb \
     ':\(\)[[:space:]]*\{|\{[[:space:]]*:\|:' \
     'Fork bomb pattern.'
-  agp__rule ask  fs.find_delete \
-    'find[[:space:]]+[^;&|]*(-delete|-exec[[:space:]]+rm)' \
-    'Bulk deletion via find.'
+  agp__rule deny fs.bulk_delete \
+    'find[[:space:]]+[^;&|]*(-delete|-exec[[:space:]]+rm)|rsync[^;&|]*--delete' \
+    'Bulk deletion via find or rsync.'
 
   # --- git history / remote integrity -----------------------------------
   agp__rule deny git.force_push \
@@ -146,9 +162,9 @@ agp_guard_command() { # <command-string>
   agp__rule ask  git.hard_reset \
     'git[[:space:]]+reset[^;&|]*--hard|git[[:space:]]+checkout[[:space:]]+--[[:space:]]*\.' \
     'Discards uncommitted work irreversibly.'
-  agp__rule ask  git.clean_force \
+  agp__rule deny git.clean_force \
     'git[[:space:]]+clean[^;&|]*-[[:alnum:]]*[fx]' \
-    'Deletes untracked files, including local .env files.'
+    'Deletes untracked files, including local .env files. Ask the user to run it from their own shell.'
   agp__rule ask  git.remote_change \
     'git[[:space:]]+remote[[:space:]]+(add|set-url)' \
     'Changing the git remote can redirect pushes to an attacker-controlled repo.'
