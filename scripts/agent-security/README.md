@@ -52,6 +52,7 @@ a mais severa e todos os motivos são concatenados.
 | 8   | **SSRF / metadata de nuvem** (`169.254.169.254`) e sinks de exfiltração (`webhook.site`, `ngrok`, ...) | `deny` em `WebFetch`, `read_url_content` e comandos de shell                                       |
 | 9   | **MCP com acesso a sistema real** (Postgres, GitHub)                                                   | Todo argumento string do MCP passa pela política de comando e de URL                               |
 | 10  | **Escalonamento / persistência** (`sudo`, `crontab`, `~/.bashrc`)                                      | `deny`                                                                                             |
+| 11  | **Destruição de dados locais** (SQL destrutivo, `docker compose down -v`, `docker volume rm/prune`)    | `deny`; `docker compose down` sem `-v` continua permitido                                          |
 
 ---
 

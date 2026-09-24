@@ -224,6 +224,9 @@ agp_guard_command() { # <command-string>
   agp__rule deny db.drizzle_drop \
     '(drizzle-kit[[:space:]]+drop|db:push[^;&|]*--force|drizzle-kit[[:space:]]+push[^;&|]*--force)' \
     'Forced schema push drops columns/tables without a reviewed migration.'
+  agp__rule deny db.docker_volume_destroy \
+    'docker(-compose|[[:space:]]+compose)[[:space:]][^;&|]*down[^;&|]*[[:space:]](-v|--volumes)([[:space:]=]|$)|docker[[:space:]]+volume[[:space:]]+(rm|remove|prune)([[:space:]]|$)|docker[[:space:]]+system[[:space:]]+prune[^;&|]*--volumes' \
+    'Destroys Docker volumes, including the local Postgres data. Ask the user to run it from their own shell.'
 
   # --- composite: secret source + network sink in one command --------------
   if agp__match '(\.env([^.a-z]|$)|\.env\.[a-z]*local|id_rsa|\.aws/credentials|\.netrc|\.npmrc|printenv|process\.env|DATABASE_URL|BETTER_AUTH_SECRET)' \
