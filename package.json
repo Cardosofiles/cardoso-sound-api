@@ -63,7 +63,7 @@
     "@types/pg": "^8.11.10",
     "autocannon": "^8.0.0",
     "drizzle-kit": "^0.31.4",
-    "eslint": "^9.17.0",
+    "eslint": "^10.10.0",
     "eslint-import-resolver-typescript": "^3.7.0",
     "eslint-plugin-boundaries": "^5.0.1",
     "husky": "^9.1.7",
